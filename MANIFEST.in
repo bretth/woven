@@ -1,0 +1,14 @@
+include INSTALL.txt
+include LICENSE.txt
+include MANIFEST.in
+include README.txt
+include AUTHORS.txt
+recursive-include woven/templates *
+recursive-include docs *.py *.rst Makefile
+global-exclude *.pyc .DS_Store
+prune tests/
+
+
+
+
+

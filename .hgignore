@@ -1,0 +1,16 @@
+syntax: glob
+MANIFEST
+*.pyc
+*.kpf
+.DS_Store
+*.gz
+*.egg
+build/*
+dist/*
+*.pybundle
+*.db
+*.tmproj
+html/*
+tests/*
+*.egg-info/*
+docs/Makefile
