@@ -1,3 +1,5 @@
+Woven assumes you have Django already installed.
+
 If you have downloaded woven to install it, run the following command inside
 this directory::
 
@@ -17,8 +19,5 @@ Or if you're using ``pip``::
     Fabric 0.9 comes bundled with paramiko 1.7.4. The bundled version of paramiko has `issues <http://code.fabfile.org/issues/show/158>`_. You should delete the bundled version from your installed Fabric in the site-packages. Failure to do this may cause your terminal session to *hang* at the end of executing woven. Hopefully Fabric will be released unbundled soon.
 
 
-Requirements
-============
 
-Woven requires Fabric >= 0.9
 

@@ -111,7 +111,7 @@ def setup_environ(settings=None):
     #Finally pip reqs - for deployment
     if not env.get('PIP_REQUIREMENTS'): env.PIP_REQUIREMENTS = ''
 
-def setupserver(rollback=False):
+def setupnode(rollback=False):
     """
     Install a baseline host. Can be run multiple times
     """

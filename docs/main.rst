@@ -31,13 +31,13 @@ Run setupserver from your project directory.
 
 .. code-block:: bash
 
-    python manage.py setupserver ipaddress
+    python manage.py setupnode ipaddress
 
 or
 
 .. code-block:: bash
 
-    python manage.py setupserver user@ipaddress
+    python manage.py setupnode user@ipaddress
 
 where user is the *new* user that will be created (instead of the current os user).
 

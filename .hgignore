@@ -14,3 +14,4 @@ html/*
 tests/*
 *.egg-info/*
 docs/Makefile
+*.zip

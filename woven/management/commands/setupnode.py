@@ -2,7 +2,7 @@
 from optparse import make_option
 
 from fabric import state
-from woven.main import setupserver
+from woven.main import setupnode
 from woven.management.base import WovenCommand
 
 class Command(WovenCommand):
@@ -15,7 +15,7 @@ class Command(WovenCommand):
     
     def handle_host(self,*args, **options):
         # Log to stdout
-        setupserver()
+        setupnode()
 
 
         
