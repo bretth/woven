@@ -74,5 +74,5 @@ The main goals of this project are to:
 * allow command usage within a standard Fabric fabfile.py if complex configuration is required
 * provide standard django templates for all configuration files such as apache, nginx, mod-wsgi
 
-The woven project is hosted on bitbucket at http://bitbucket.org/hedgeddown/woven/.
+The woven project is hosted on github at http://github.com/bretth/woven.
 
