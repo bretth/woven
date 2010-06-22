@@ -1,1 +1,2 @@
-django>=1.2
+fabric>=0.9
+django>=1.0

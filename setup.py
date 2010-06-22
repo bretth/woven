@@ -6,12 +6,12 @@ from setuptools import setup, find_packages
 from woven import get_version
 
 setup(name='woven',
-      version='0.1',
+      version=get_version(),
       description='A deployment tool for Django built on Fabric',
       author='Brett Haydon',
       author_email='brett@haydon.id.au',
-      url='http://bitbucket.org/hedgeddown/woven/wiki/',
-      #download_url='http://bitbucket.org/hedgeddown/woven/get/v0.1.gz',
+      url='http://github.com/bretth/woven',
+      download_url='http://github.com/bretth/woven/downloads/',
       package_dir={'woven': 'woven'},
       packages=find_packages(),
       include_package_data = True,
@@ -25,5 +25,5 @@ setup(name='woven',
                    'Programming Language :: Python',
                    'Topic :: Software Development :: Libraries :: Python Modules',
                    'Topic :: Utilities'],
-      install_requires=['Fabric >=0.9'],
+      install_requires=['Fabric','Paramiko'],
       )

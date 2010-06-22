@@ -1,7 +1,15 @@
 #!/usr/bin/env python
-import os
+import os,sys
+
+from django.utils.importlib import import_module
+
+from fabric.api import env, local
+from fabric.main import find_fabfile
+
 from woven.ubuntu import install_packages, upgrade_ubuntu, setup_ufw, disable_root
 from woven.ubuntu import uncomment_sources, restrict_ssh, upload_ssh_key, change_ssh_port, set_timezone
+from woven.utils import project_version, root_domain
+from woven.global_settings import woven_env
 
 def setup_environ(settings=None):
     """
@@ -13,7 +21,12 @@ def setup_environ(settings=None):
     #switch the working directory to the distribution root where setup.py is
     original_fabfile = env.fabfile
     env.fabfile = 'setup.py'
-    local_working_dir = os.path.split(find_fabfile())[0]
+    fabfile_path = find_fabfile()
+    if not fabfile_path:
+        print 'Error: You must have a simple setup.py above your project directory'
+        sys.exit(1)
+        
+    local_working_dir = os.path.split(fabfile_path)[0]
     env.fabfile = original_fabfile
     os.chdir(local_working_dir)
 
@@ -50,16 +63,27 @@ def setup_environ(settings=None):
     env.update(woven_env)
     
     #set any user/password defaults if they are not supplied
-    env.user = project_settings.HOST_USER
-    env.password = project_settings.HOST_PASSWORD
+    #Fabric would get the user from the options by default as the system user
+    #We will overwrite that
+    if woven_env.HOST_USER:
+        env.user = woven_env.HOST_USER
+    env.password = woven_env.HOST_PASSWORD
+    
+    #set the hosts
+    if not env.hosts: env.hosts = woven_env.HOSTS
     
     #since port is not handled by fabric.main.normalize we'll do it ourselves
     host_list = []
-    for host_string in env.all_hosts:
+    for host_string in env.hosts:
+        #print 'host_string',woven_env.HOST_SSH_PORT
         if not ':' in host_string:
-            host_string += ':%s'% str(project_settings.HOST_SSH_PORT)
+            host_string += ':%s'% str(woven_env.HOST_SSH_PORT)
+        #not sure that this is necessary but it seems clearer to make full
+        #hoststrings with the correct user
+        if not '@' in host_string:
+            host_string = env.user + '@' + host_string
         host_list.append(host_string)
-        env.all_hosts = host_list
+        env.hosts = host_list
     
     #Now update the env with any settings that are not woven specific
     #but may be used by woven or fabric
@@ -77,11 +101,14 @@ def setup_environ(settings=None):
     if not hasattr(env,'INTERACTIVE'): env.INTERACTIVE=True
     
     #The default domain - usually taken from a directory name
-    if not env.get('DOMAINS'): env.DOMAINS = [root_domain()]
+    #TODO - this is only required for deployment
+    #if not env.get('DOMAINS'): env.DOMAINS = [root_domain()]
     
     #TODO - deployment_root is used for deployment but may be best set in the deploy script
     #since it uses hoststring context
-    #if not env.get("deployment_root"): env.deployment_root = '/home/%s/%s'% (env.user,env.DOMAINS[0])    
+    #if not env.get("deployment_root"): env.deployment_root = '/home/%s/%s'% (env.user,env.DOMAINS[0])
+    
+    #Finally pip reqs - for deployment
     if not env.get('PIP_REQUIREMENTS'): env.PIP_REQUIREMENTS = ''
 
 def setupserver(rollback=False):
@@ -105,6 +132,8 @@ def setupserver(rollback=False):
         setup_ufw()
         install_packages()
         set_timezone()
+        if env.verbosity:
+            print env.host,"setupserver COMPLETE"
         
     else:
         #rollback in reverse order of installation

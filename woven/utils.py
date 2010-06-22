@@ -5,14 +5,11 @@ import os, sys, tempfile
 from functools import wraps
 from pkg_resources import parse_version
 
-from django.utils.importlib import import_module
 from django.template.loader import render_to_string
 
 from fabric.api import env,  local, put, run, sudo, prompt
 from fabric.contrib.files import append, exists, contains
 from fabric.context_managers import cd, hide, settings
-from fabric.main import find_fabfile
-from fabric.decorators import runs_once
 
 from woven.global_settings import woven_env
 

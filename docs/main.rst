@@ -31,14 +31,20 @@ Run setupserver from your project directory.
 
 .. code-block:: bash
 
-    python manage.py setupserver --hosts=user@ipaddress
-    
-where user is the username you wish woven to setup (not root).
-    
+    python manage.py setupserver ipaddress
+
+or
+
+.. code-block:: bash
+
+    python manage.py setupserver user@ipaddress
+
+where user is the *new* user that will be created (instead of the current os user).
+
 Lets go through what this actually does:
 
 1. Changes the default ssh port to 10022
-2. Creates the new `user` and disables the `root`
+2. Creates the new `user` which defaults to the current user and disables the `root` user
 3. Uploads your public ssh-key
 4. Restricts ssh login to the ssh-key and adds a few other restrictions
 5. Adds additional sources `universe` to sources.list

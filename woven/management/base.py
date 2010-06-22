@@ -9,6 +9,7 @@ from django.core.management.color import no_style
 from fabric import state 
 from fabric.main import _merge
 from fabric.network import normalize
+from fabric.context_managers import hide
 
 from woven.main import setup_environ
 
@@ -41,16 +42,16 @@ class WovenCommand(BaseCommand):
             default=[],
             help="comma-separated list of hosts to operate on"
         ),
-    
-        make_option('-R', '--roles',
-            default=[],
-            help="comma-separated list of roles to operate on"
-        ),
+        #TODO
+        #make_option('-R', '--roles',
+        #    default=[],
+        #    help="comma-separated list of roles to operate on"
+        #),
         
     )
     help = ""
+    args = "host1 [host2 ...] or user@host1 ..."
     requires_model_validation = False
-    name = __name__.split('.')[-1]
   
     def handle_host(self, *args, **options):
         """
@@ -72,6 +73,10 @@ class WovenCommand(BaseCommand):
         #Django passes in a dictionary instead of the optparse options objects
         for option in options:
             state.env[option] = options[option]
+        
+        #Hosts can be args or options
+        #args will be tuple, --host option will be same as Fabric
+        if args: state.env.hosts = ','.join(args)
 
         #This next section is taken pretty much verbatim from fabric.main
         #so we follow an almost identical but more limited execution strategy
@@ -84,18 +89,20 @@ class WovenCommand(BaseCommand):
         #We now need to load django project woven settings into env
         #This is the equivalent to module level execution of the fabfile.py.
         #If we were using a fabfile.py then we would include setup_environ()
-        setup_environ(settings)
+        if state.env.verbosity > 1:
+            with hide('warnings', 'running', 'stdout', 'stderr'):
+                setup_environ(settings)
+        else: setup_environ(settings)
         
         #Back to the standard execution strategy
         # Set current command name (used for some error messages)
-        state.env.command = self.name
+        #state.env.command = self.name
         # Set host list (also copy to env)
         state.env.all_hosts = hosts = _merge(state.env.hosts,state.env.roles)
         # If hosts found, execute the function on each host in turn
         for host in hosts:
             # Preserve user
             prev_user = state.env.user
-            
             # Split host string and apply to env dict
             #TODO - This section is replaced by network.interpret_host_string in Fabric 1.0
             username, hostname, port = normalize(host)
@@ -103,12 +110,13 @@ class WovenCommand(BaseCommand):
             state.env.host = hostname
             state.env.user = username
             state.env.port = port
-            #print 'normalized',username, hostname, port
-            # Log to stdout
-            if state.env.verbosity:
-                print("[%s] Executing task '%s'" % (host, self.name))
+
             # Actually run command
-            #commands[name](*args, **kwargs)
+            if state.env.verbosity > 1:
+                with hide('warnings', 'running', 'stdout', 'stderr'):
+                    self.handle_host(*args, **options)
+            else:
+                self.handle_host(*args, **options)
             # Put old user back
             state.env.user = prev_user
 

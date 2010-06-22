@@ -56,21 +56,26 @@ def change_ssh_port(rollback=False):
     host_string=join_host_strings('root',host,before)
 
     with settings(host_string=host_string, user='root', password=env.ROOT_PASSWORD):
-        
+        if env.verbosity:
+            print env.host, "CHANGING SSH PORT TO: "+str(after)
         if not rollback:
                 try:
                     #Both test the port and also the ubuntu version.
                     distribution, version = ubuntu_version()
+                    #    print env.host, distribution, version
                     if version < 9.10:
-                        print 'Woven is only compatible with Ubuntu versions 9.10 and greater'
+                        print env.host, 'Woven is only compatible with Ubuntu versions 9.10 and greater'
                         sys.exit(1)
-                        
+                except KeyboardInterrupt:
+                    if env.verbosity:
+                        print >> sys.stderr, "\nStopped."
+                    sys.exit(1)
                 except: #No way to catch the failing connection without catchall? 
-                    print "Warning: Default port not responding. It may have already been changed, or the host is down. Skipping.."
+                    print env.host, "Warning: Default port not responding. It may have already been changed, or the host is down. Skipping.."
                     return False
                 sed('/etc/ssh/sshd_config','Port '+ str(before),'Port '+str(after),use_sudo=True)
-                
-                print "RESTARTING SSH on",after
+                if env.verbosity:
+                    print env.host, "RESTARTING SSH on",after
                 sudo('/etc/init.d/ssh restart')
                 set_server_state('ssh_port_changed',content=str(before))
                 return True
@@ -99,14 +104,14 @@ def disable_root(rollback=False):
         password1 = prompt('Enter the password for %s:'% original_username)
         password2 = prompt('Re-enter the password:')
         if password1 <> password2:
-            print 'The password was not the same'
+            print env.host, 'The password was not the same'
             enter_password()
         return password1
     if not rollback:
         #TODO write a test in paramiko to see whether root has already been disabled
         #Fabric doesn't have a way of detecting a login fail which would be the best way
         #that we could assume that root has been disabled
-        #print 'settings:', env.host_string, env.user, env.port
+        #print env.host, 'settings:', env.host_string, env.user, env.port
         original_username = env.user
         original_password = env.get('HOST_PASSWORD','')
         (olduser,host,port) = normalize(env.host_string)
@@ -117,7 +122,8 @@ def disable_root(rollback=False):
                 set_server_state('sudo-added')
             home_path = '/home/%s'% original_username
             if not exists(home_path, use_sudo=True):
-                print 'Creating a new account: %s'% original_username
+                if env.verbosity:
+                    print env.host, 'CREATING A NEW ACCOUNT: %s'% original_username
                 
                 if not original_password:
 
@@ -139,7 +145,8 @@ def disable_root(rollback=False):
                 sudo('adduser %s sudo'% original_username)
         env.password = original_password
         #finally disable root
-        #print env.host_string, env.user, env.port
+        if env.verbosity:
+            print env.host, 'DISABLING ROOT'
         sudo("usermod -L %s"% 'root')
         return True
     else: #rollback to root
@@ -169,12 +176,12 @@ def ubuntu_version():
     """
     Get the version # of Ubuntu as a float
     """
-    version = run('cat /etc/issue').split()[:1]
+    version = run('cat /etc/issue').split(' ')[:2]
     try:
-        version = float(version[1])
+        version[1] = float(version[1])
     except ValueError:
         pass
-    return version
+    return version[0],version[1]
 
    
 def install_packages(rollback = False,overwrite=False):
@@ -186,7 +193,9 @@ def install_packages(rollback = False,overwrite=False):
     """
     u = env.HOST_BASE_PACKAGES + env.HOST_EXTRA_PACKAGES
     if not rollback:
-        
+        if env.verbosity:
+            print env.host, "INSTALLING & CONFIGURING PACKAGES:"
+            print ','.join(u)
         #Get a list of installed packages
         p = run("dpkg -l | awk '/ii/ {print $2}'").split('\n')
     
@@ -206,11 +215,15 @@ def install_packages(rollback = False,overwrite=False):
                 preinstalled = True
 
             if package == 'apache2' and (overwrite or not preinstalled):
+                if env.verbosity:
+                    print "Uploading Apache2 template /etc/apache2/ports.conf"
                 upload_template('woven/apache2/ports.conf','/etc/apache2/ports.conf',use_sudo=True)
                 #Turn keep alive off on apache
                 sed('/etc/apache2/apache2.conf',before='KeepAlive On',after='KeepAlive Off',use_sudo=True)
                 sudo("apache2ctl graceful")
             elif package == 'nginx' and (overwrite or not preinstalled):
+                if env.verbosity:
+                    print "Uploading Nginx templates /etc/nginx/nginx.conf /etc/nginx/proxy.conf"
                 upload_template('woven/nginx/nginx.conf','/etc/nginx/nginx.conf',use_sudo=True)
                 #Upload a default proxy
                 upload_template('woven/nginx/proxy.conf','/etc/nginx/proxy.conf',use_sudo=True)
@@ -218,6 +231,8 @@ def install_packages(rollback = False,overwrite=False):
         #Set unattended-updates configuration
         unattended_config = '/etc/apt/apt.conf.d/10periodic'
         if not exists(unattended_config, use_sudo=True):
+            if env.verbosity:
+                "Configuring unattended-updates /etc/apt/apt.conf.d/10periodic"
             sudo('touch '+unattended_config)
             #in theory append() should intelligently ignore lines if they already exist
             #in practice this doesn't work as expected for this particular list.
@@ -273,13 +288,15 @@ def restrict_ssh(rollback=False):
 
     if not rollback:
         if server_state('ssh_restricted'):
-            print 'Warning: sshd_config has already been modified. Skipping..'
+            print env.host, 'Warning: sshd_config has already been modified. Skipping..'
             return False
-        
+
         sshd_config = '/etc/ssh/sshd_config'
+        if env.verbosity:
+            print env.host, "RESTRICTING SSH with "+sshd_config
         filename = 'sshd_config'
         if not exists('/home/%s/.ssh/authorized_keys'% env.user): #do not pass go do not collect $200
-            print 'You need to upload_ssh_key first.'
+            print env.host, 'You need to upload_ssh_key first.'
             return False
         backup_file(sshd_config)
         context = {"HOST_SSH_PORT": env.HOST_SSH_PORT}
@@ -300,7 +317,7 @@ def restrict_ssh(rollback=False):
             uncomment(sshd_config,'#(\s?)PasswordAuthentication(\s*)no',use_sudo=True)
             sudo('/etc/init.d/ssh restart')
         else: #rollback
-            print 'Rolling back sshd_config'
+            print env.host, 'Rolling back sshd_config'
             restore_file('/etc/ssh/sshd_config')
             
             sudo('/etc/init.d/ssh restart')
@@ -322,8 +339,11 @@ def set_timezone(rollback=False):
     """
     if not rollback:
         if contains(text=env.TIME_ZONE,filename='/etc/timezone',use_sudo=True):
-            print 'Time Zone already set to '+env.TIME_ZONE
+            if env.verbosity:
+                print env.host, 'Time Zone already set to '+env.TIME_ZONE
             return False
+        if env.verbosity:
+            print env.host, "CHANGING TIMEZONE /etc/timezone to "+env.TIME_ZONE
         backup_file('/etc/timezone')
         sudo('echo %s > /tmp/timezone'% env.TIME_ZONE)
         sudo('cp -f /tmp/timezone /etc/timezone')
@@ -350,6 +370,8 @@ def setup_ufw(rollback=False):
         #It would be nice to handle an existing installation but until ufw can easily
         #predefine rules in a conf we'll need to just mark it if woven installs it
         if not ufw:
+            if env.verbosity:
+                print env.host, "INSTALLING & ENABLING FIREWALL ufw"
             apt_get_install('ufw')
             set_server_state('ufw_installed')
         sudo('ufw allow %s/tcp'% env.port) #ssh port
@@ -374,6 +396,8 @@ def uncomment_sources(rollback=False):
     """
     if not rollback:
         if contains(filename='/etc/apt/sources.list',text='#(.?)deb(.*)http:(.*)universe'):
+            if env.verbosity:
+                print env.host, "UNCOMMENTING universe SOURCES in /etc/apt/sources.list"
             backup_file('/etc/apt/sources.list')
             uncomment('/etc/apt/sources.list','#(.?)deb(.*)http:(.*)universe',use_sudo=True)
     else:
@@ -383,6 +407,8 @@ def upgrade_ubuntu():
     """
     Update to latest packages 
     """
+    if env.verbosity:
+        print env.host, "apt-get UPDATING and UPGRADING SERVER PACKAGES"
     sudo('apt-get -qqy update')
     sudo('apt-get -qqy upgrade')
 
@@ -412,6 +438,8 @@ def upload_ssh_key(rollback=False):
             
             if exists(auth_keys):
                 backup_file(auth_keys)
+            if env.verbosity:
+                print env.host, "UPLOADING SSH KEY if it doesn't already exist on host"
             append(ssh_file,auth_keys) #append prevents uploading twice
         return
     else:
