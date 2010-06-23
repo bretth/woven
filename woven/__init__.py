@@ -4,7 +4,7 @@ All :mod:`woven.main` functions can be imported directly from here instead
 """
 from woven.main import setup_environ, setupnode
 
-VERSION = (0, 1, 1, 'final', 1)
+VERSION = (0, 2, 0, 'alpha', 0)
 
 def get_version():
     version = '%s.%s' % (VERSION[0], VERSION[1])
