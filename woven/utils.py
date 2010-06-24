@@ -165,9 +165,6 @@ def root_domain():
         domain = 'example.com'
     return domain
   
-
-
-  
 def upload_template(filename,  destination,  context={},  use_sudo=False):
     """
     Render and upload a template text file to a remote host using the Django
