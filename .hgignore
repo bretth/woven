@@ -11,7 +11,7 @@ dist/*
 *.db
 *.tmproj
 html/*
-tests/*
+tests/example.com/*
 *.egg-info/*
 docs/Makefile
 *.zip

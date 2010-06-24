@@ -9,19 +9,44 @@ from fabric.main import find_fabfile
 from woven.ubuntu import install_packages, upgrade_ubuntu, setup_ufw, disable_root
 from woven.ubuntu import uncomment_sources, restrict_ssh, upload_ssh_key, change_ssh_port, set_timezone
 from woven.utils import project_version, root_domain
+from woven.virtualenv import mkvirtualenv #rmvirtualenv,
 from woven.global_settings import woven_env
 
-def setup_environ(settings=None):
+def deploy():
+    """
+    deploy a versioned project on the host
+    """
+    mkvirtualenv()
+    #pip_install_requirements()
+    #deploy_project()
+    #deploy_media()
+    #deploy_wsgi()
+    #deploy_webservers(webserver='apache2')
+    #deploy_webservers(webserver='nginx')
+    #syncdb()
+    #activate()
+
+def setup_environ(settings=None, setup_dir=''):
     """
     Used in management commands or at the module level of a fabfile to
-    integrate project django.conf settings into fabric, and set the local current
-    working directory to the distribution root (where setup.py lives). 
+    integrate woven project django.conf settings into fabric, and set the local current
+    working directory to the distribution root (where setup.py lives).
+    
+    ``settings`` is your optional django.conf imported settings.
+    
+    ``setup_dir`` is an optional path to the directory containing setup.py
+    This would be used in instances where setup.py was not above the cwd
 
     """
+    #TODO tighter integration with fabric 1.0 fabric.contrib.django
+    
     #switch the working directory to the distribution root where setup.py is
     original_fabfile = env.fabfile
     env.fabfile = 'setup.py'
-    fabfile_path = find_fabfile()
+    if setup_dir:
+        fabfile_path = os.path.join(setup_dir,'setup.py')
+    else:
+        fabfile_path = find_fabfile()
     if not fabfile_path:
         print 'Error: You must have a simple setup.py above your project directory'
         sys.exit(1)
@@ -111,9 +136,12 @@ def setup_environ(settings=None):
     #Finally pip reqs - for deployment
     if not env.get('PIP_REQUIREMENTS'): env.PIP_REQUIREMENTS = ''
 
+
 def setupnode(rollback=False):
     """
     Install a baseline host. Can be run multiple times
+    
+    rollback=True to teardown the installation
     """
     
     #either fabric or manage.py will setup the roles & hosts env

@@ -14,7 +14,7 @@ from woven.utils import server_state, set_server_state, upload_template
     
 def add_user(username='',password='',group=''):
     """
-    Adds the current user or username
+    Adds the username
     """
     if group: group = '-g %s'% group
     

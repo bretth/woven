@@ -47,6 +47,9 @@ class WovenCommand(BaseCommand):
         #    default=[],
         #    help="comma-separated list of roles to operate on"
         #),
+        make_option('--setup',
+            help='The /path/to/dir containing the setup.py module. The command will execute from this directory. Only required if you are not executing the command from below the setup.py directory',
+        ),
         
     )
     help = ""
@@ -91,8 +94,8 @@ class WovenCommand(BaseCommand):
         #If we were using a fabfile.py then we would include setup_environ()
         if state.env.verbosity > 1:
             with hide('warnings', 'running', 'stdout', 'stderr'):
-                setup_environ(settings)
-        else: setup_environ(settings)
+                setup_environ(settings,state.env.setup)
+        else: setup_environ(settings,state.env.setup)
         
         #Back to the standard execution strategy
         # Set current command name (used for some error messages)

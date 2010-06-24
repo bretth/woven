@@ -46,17 +46,28 @@ def set_server_state(name,content='',delete=False):
     else:
         sudo('rm -f /var/local/woven/%s'% name)
 
-def server_state(name):
+def server_state(name, prefix=False):
     """
     If the server state exists return the file as a string or True if
-    no content exists
+    no content exists.
+    
+    If prefix returns True if any files exist with ls name*
     """
-    if exists('/var/local/woven/%s'% name, use_sudo=True):
+    
+    if not prefix and exists('/var/local/woven/%s'% name, use_sudo=True):
         content = sudo('cat /var/local/woven/%s'% name).strip()
         if content:
             return content
         else:
             return True
+    elif prefix:
+        with settings(warn_only=True):
+            state = sudo('ls /var/local/woven/%s*'% name)
+        if state.failed:
+            return False
+        else:
+            return True
+        
     else:
         return False
 
