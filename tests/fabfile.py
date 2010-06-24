@@ -17,7 +17,8 @@ from fabric.context_managers import settings
 
 from woven.ubuntu import disable_root, upload_ssh_key, change_ssh_port, restrict_ssh
 from woven.ubuntu import uncomment_sources, upgrade_ubuntu, setup_ufw, install_packages, set_timezone
-from woven.utils import server_state, set_server_state
+from woven.utils import server_state, set_server_state, root_domain
+from woven.virtualenv import mkvirtualenv, rmvirtualenv
 from woven.management.base import WovenCommand
 from woven.main import setup_environ, setupnode
 
@@ -29,7 +30,7 @@ sys.path.insert(0,setup_dir)
 
 #Simulate command line
 c = WovenCommand()
-c.handle(hosts='woven@192.168.188.10',interactive=False,setup=setup_dir)
+c.handle(hosts='woven@192.168.188.10',interactive=False,setup=setup_dir, verbosity=2)
 
 assert env.INTERACTIVE==False
 assert env.host == '192.168.188.10'
@@ -160,6 +161,45 @@ def test_setupnode_rollback():
     print "TESTING ROLLBACK SETUPSERVER"
     #output['debug']=True
     setupnode(rollback=True)
+
+### DEPLOYMENT TESTS
+
+# Test related util functions
+def test_root_domain():
+    #In the event of noinput, the domain will default to example.com
+    domain = root_domain()
+    assert domain == 'example.com'
+
+# First Deployment step
+def test_virtualenv():
+    #Ensure we're cleared out
+    set_server_state('created_virtualenv_example_project-0.1', delete=True)
+    set_server_state('created_virtualenv_example_project-0.2', delete=True)
+    v = mkvirtualenv()
+    #Returns True if it is created
+    assert v
+    assert exists('/home/woven/example.com/env/example_project-0.1/bin/python')
+    
+    v = mkvirtualenv()
+    #Returns False if not created.
+    assert not v
+    
+    #test updating the version no#
+    v = mkvirtualenv('0.2')
+    
+    #teardown
+    assert exists('/home/woven/example.com/env/example_project-0.2/bin/python')
+    rmvirtualenv('0.2')
+    assert not exists('/home/woven/example.com/env/example_project-0.2/bin/python')
+    assert exists('/home/woven/example.com/env/example_project-0.1/bin/python')
+    rmvirtualenv()
+    assert not exists('/home/woven/example.com')
+    assert not server_state('created_virtualenv_example_project-0.2')
+
+
+
+
+
 
    
 def test_project_version():
