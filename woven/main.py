@@ -9,7 +9,8 @@ from fabric.main import find_fabfile
 from woven.ubuntu import install_packages, upgrade_ubuntu, setup_ufw, disable_root
 from woven.ubuntu import uncomment_sources, restrict_ssh, upload_ssh_key, change_ssh_port, set_timezone
 from woven.utils import project_version, root_domain
-from woven.virtualenv import mkvirtualenv #rmvirtualenv,
+from woven.virtualenv import mkvirtualenv
+from woven.pip import pip_install_requirements
 from woven.global_settings import woven_env
 
 def deploy():
@@ -17,7 +18,7 @@ def deploy():
     deploy a versioned project on the host
     """
     mkvirtualenv()
-    #pip_install_requirements()
+    pip_install_requirements()
     #deploy_project()
     #deploy_media()
     #deploy_wsgi()

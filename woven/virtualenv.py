@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+"""
+Anything related to deploying a python virtual environment is in this module.
+
+"""
+
 from fabric.state import env
 
 #TODO check these
@@ -12,26 +17,28 @@ from woven.utils import root_domain, server_state, set_server_state
 
 class Virtualenv(object):
     """
-    Simple virtualenv proxy
+    Simple virtualenv proxy and base class for subclasses that use a
+    virtualenv environment
     """
+    state = 'created_virtualenv_'
     def __init__(self, version=''):
         if not version: self.version = env.project_fullname
         else: self.version = env.project_name+'-'+version
-        env.deployment_root = '/home/%s/%s/'% (env.user,root_domain())
+        env.deployment_root = env.get(env.deployment_root,'/home/%s/%s/'% (env.user,root_domain()))
         self.root = env.deployment_root +'env' 
         self.path = '/'.join([self.root,self.version])
-        print self.path
-        if server_state('created_virtualenv_'+self.version):self.exists = True
-        else: self.exists = False
+        self.python_path = '/'.join([self.path,'bin','python'])
+        if server_state(self.state+self.version):self.installed = True
+        else: self.installed = False
 
 def mkvirtualenv(version=''):
     """
     Create the ``current version`` or specified ``version`` env on the node
     """
     v = Virtualenv(version)
-    if v.exists:
+    if v.installed:
         if env.verbosity:
-            print env.host,'Warning: Virtualenv %s already exists. Skipping..'% v.version
+            print env.host,'Warning: Virtualenv %s already installed. Skipping..'% v.version
         return False
     else:
         #TODO: We need the apache conf to use WSGIPythonHome /usr/local/pythonenv/BASELINE
@@ -67,9 +74,12 @@ def rmvirtualenv(version=''):
     Remove the current or ``version`` env and all content in it
     """
     v = Virtualenv(version)
-    if v.exists: #delete
+    if v.installed: #delete
         sudo('rm -rf '+v.path)
         set_server_state('created_virtualenv_'+v.version,delete=True)
     #If there are no further remaining envs we'll delete the home directory to effectively teardown the project
     if not server_state('created_virtualenv_',prefix=True):
         sudo('rm -rf '+env.deployment_root)
+
+
+

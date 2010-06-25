@@ -21,6 +21,8 @@ from woven.utils import server_state, set_server_state, root_domain
 from woven.virtualenv import mkvirtualenv, rmvirtualenv
 from woven.management.base import WovenCommand
 from woven.main import setup_environ, setupnode
+from woven.pip import pip_install_requirements
+
 
 #Test the setup_environ indirectly by calling the management command 
 settings_module = os.environ['DJANGO_SETTINGS_MODULE']
@@ -196,11 +198,44 @@ def test_virtualenv():
     assert not exists('/home/woven/example.com')
     assert not server_state('created_virtualenv_example_project-0.2')
 
+def bundle():
+    local('pip bundle -r requirements.txt dist/example_project.pybundle')
 
+#Second deployment step
+def test_pip_install_requirements():
+    #Ensure nothing already there
+    local('rm -f dist/example_project.pybundle')
+    rmvirtualenv()
+    set_server_state('pip_installed_example_project-0.1', delete=True)
+    
+    #Try installing without an virtual env which should fail
+    p = pip_install_requirements()
+    assert not p
+    v = mkvirtualenv()
 
-
-
-
+    #Install our example staticfiles
+    p = pip_install_requirements()
+    assert p
+    assert exists('/home/woven/example.com/env/example_project-0.1/lib/python2.6/site-packages/staticfiles')
+    
+    #Try installing again - should fail
+    p = pip_install_requirements()
+    assert not p
+    
+    #Try rolling back installation
+    pip_install_requirements(rollback=True)
+    assert not exists('/home/woven/example.com/env/example_project-0.1/lib/python2.6/site-packages/staticfiles')
+    
+    #Bundle something up into the dist directory
+    bundle()
+    p = pip_install_requirements()
+    assert exists('/home/woven/example.com/dist/example_project.pybundle')
+    assert exists('/home/woven/example.com/env/example_project-0.1/lib/python2.6/site-packages/staticfiles')
+    
+    #Finally clean up 
+    pip_install_requirements(rollback=True)  
+    rmvirtualenv()
+    local('rm -f dist/example_project.pybundle')
    
 def test_project_version():
     """
