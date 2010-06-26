@@ -9,8 +9,7 @@ from fabric.main import find_fabfile
 from woven.ubuntu import install_packages, upgrade_ubuntu, setup_ufw, disable_root
 from woven.ubuntu import uncomment_sources, restrict_ssh, upload_ssh_key, change_ssh_port, set_timezone
 from woven.utils import project_version, root_domain
-from woven.virtualenv import mkvirtualenv
-from woven.pip import pip_install_requirements
+from woven.virtualenv import mkvirtualenv, pip_install_requirements
 from woven.global_settings import woven_env
 
 def deploy():
@@ -126,14 +125,6 @@ def setup_environ(settings=None, setup_dir=''):
     #noinput
     if not hasattr(env,'INTERACTIVE'): env.INTERACTIVE=True
     
-    #The default domain - usually taken from a directory name
-    #TODO - this is only required for deployment
-    #if not env.get('DOMAINS'): env.DOMAINS = [root_domain()]
-    
-    #TODO - deployment_root is used for deployment but may be best set in the deploy script
-    #since it uses hoststring context
-    #if not env.get("deployment_root"): env.deployment_root = '/home/%s/%s'% (env.user,env.DOMAINS[0])
-    
     #Finally pip reqs - for deployment
     if not env.get('PIP_REQUIREMENTS'): env.PIP_REQUIREMENTS = ''
 
@@ -162,7 +153,7 @@ def setupnode(rollback=False):
         install_packages()
         set_timezone()
         if env.verbosity:
-            print env.host,"setupserver COMPLETE"
+            print env.host,"SETUPNODE complete"
         
     else:
         #rollback in reverse order of installation

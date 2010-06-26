@@ -153,17 +153,19 @@ def root_domain():
     """
     Deduce the root domain name, usually a 'naked' domain but not necessarily. 
     """
-    cwd = os.getcwd().split(os.sep)
-    domain = ''
-    #we'll just pick the first directory in the path which has a period.
-    for d in cwd:
-        if '.' in d: 
-            domain = d
-    if not domain and env.INTERACTIVE:
-        domain = prompt('Enter the root domain for this project ie example.com',default='example.com')
-    else:
-        domain = 'example.com'
-    return domain
+    if not hasattr(env,'root_domain'):
+        cwd = os.getcwd().split(os.sep)
+        domain = ''
+        #we'll just pick the first directory in the path which has a period.
+        for d in cwd:
+            if '.' in d: 
+                domain = d
+        if not domain and env.INTERACTIVE:
+            domain = prompt('Enter the root domain for this project ie example.com',default='example.com')
+        else:
+            domain = 'example.com'
+        env.domain = domain
+    return env.domain
   
 def upload_template(filename,  destination,  context={},  use_sudo=False):
     """

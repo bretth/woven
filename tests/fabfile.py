@@ -18,10 +18,10 @@ from fabric.context_managers import settings
 from woven.ubuntu import disable_root, upload_ssh_key, change_ssh_port, restrict_ssh
 from woven.ubuntu import uncomment_sources, upgrade_ubuntu, setup_ufw, install_packages, set_timezone
 from woven.utils import server_state, set_server_state, root_domain
-from woven.virtualenv import mkvirtualenv, rmvirtualenv
+from woven.virtualenv import mkvirtualenv, rmvirtualenv, pip_install_requirements
 from woven.management.base import WovenCommand
 from woven.main import setup_environ, setupnode
-from woven.pip import pip_install_requirements
+
 
 
 #Test the setup_environ indirectly by calling the management command 
