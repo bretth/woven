@@ -13,6 +13,17 @@ from fabric.context_managers import cd, hide, settings
 
 from woven.global_settings import woven_env
 
+def active_version():
+    """
+    Determine the current active version on the server
+    
+    Just examine the which environment is symlinked
+    """
+    link = os.path.join(env.deployment_root,env.project_name)
+    if not exists(link): return None
+    active = os.path.split(run('ls -al '+link).split(' -> ')[1])[1]
+    return active
+
 def backup_file(path):
     """
     Backup a file but never overwrite an existing backup file
@@ -71,7 +82,32 @@ def server_state(name, prefix=False):
     else:
         return False
 
+def interactive():
+    if not hasattr(env, 'INTERACTIVE'):
+        env.INTERACTIVE = False
+    return env.INTERACTIVE
+
 def project_version(version=''):
+    if not hasattr(env, 'project_version'):
+       env.project_version = parse_project_version(version)
+    return env.project_version
+    
+
+def project_name():
+    """
+    Get the project name from the setup.py
+    """
+    if not hasattr(env,'project_name'):
+        env.project_name = local('python setup.py --name').rstrip()
+        env.project_fullname = env.project_name + '-' + project_version()
+    return env.project_name
+
+def project_fullname():
+    if not hasattr(env,'project_fullname'):
+        env.project_fullname = project_name() + '-' + project_version()
+    return env.project_fullname
+        
+def parse_project_version(version=''):
     """
     Returns the significant part of the version excluding the build
        
@@ -160,7 +196,7 @@ def root_domain():
         for d in cwd:
             if '.' in d: 
                 domain = d
-        if not domain and env.INTERACTIVE:
+        if not domain and interactive():
             domain = prompt('Enter the root domain for this project ie example.com',default='example.com')
         else:
             domain = 'example.com'

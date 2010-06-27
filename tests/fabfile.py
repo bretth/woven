@@ -10,7 +10,7 @@ import os
 import sys
 import time
 
-from fabric.api import env, run, local, sudo
+from fabric.api import env, run, local, sudo, put
 from fabric.state import output
 from fabric.contrib.files import exists
 from fabric.context_managers import settings
@@ -19,6 +19,7 @@ from woven.ubuntu import disable_root, upload_ssh_key, change_ssh_port, restrict
 from woven.ubuntu import uncomment_sources, upgrade_ubuntu, setup_ufw, install_packages, set_timezone
 from woven.utils import server_state, set_server_state, root_domain
 from woven.virtualenv import mkvirtualenv, rmvirtualenv, pip_install_requirements
+from woven.virtualenv import Project, deploy_project
 from woven.management.base import WovenCommand
 from woven.main import setup_environ, setupnode
 
@@ -199,12 +200,13 @@ def test_virtualenv():
     assert not server_state('created_virtualenv_example_project-0.2')
 
 def bundle():
-    local('pip bundle -r requirements.txt dist/example_project.pybundle')
+    local('pip bundle -r requirements.txt dist/example_project-0.1.pybundle')
 
 #Second deployment step
 def test_pip_install_requirements():
+    #output.debug = True
     #Ensure nothing already there
-    local('rm -f dist/example_project.pybundle')
+    local('rm -f dist/example_project-0.1.pybundle')
     rmvirtualenv()
     set_server_state('pip_installed_example_project-0.1', delete=True)
     
@@ -225,18 +227,40 @@ def test_pip_install_requirements():
     #Try rolling back installation
     pip_install_requirements(rollback=True)
     assert not exists('/home/woven/example.com/env/example_project-0.1/lib/python2.6/site-packages/staticfiles')
+    assert not exists('/home/woven/example.com/dist/')
+    assert not exists('/home/woven/example.com/package-cache/')
     
     #Bundle something up into the dist directory
     bundle()
     p = pip_install_requirements()
-    assert exists('/home/woven/example.com/dist/example_project.pybundle')
+    assert exists('/home/woven/example.com/dist/example_project-0.1.pybundle')
     assert exists('/home/woven/example.com/env/example_project-0.1/lib/python2.6/site-packages/staticfiles')
-    
-    #Finally clean up 
-    pip_install_requirements(rollback=True)  
+    #
+    ##Finally clean up
+    #Test to ensure it doesn't delete everything
+    put('dist/example_project-0.1.pybundle','/home/woven/example.com/dist/example_project-0.2.pybundle')
+    pip_install_requirements(rollback=True)
+    assert exists('/home/woven/example.com/dist/example_project-0.2.pybundle')
     rmvirtualenv()
-    local('rm -f dist/example_project.pybundle')
-   
+    local('rm -f dist/example_project-0.1.pybundle')
+    set_server_state('pip_installed_example_project-0.1', delete=True)
+    
+
+def test_deploy_project():
+    run('rm -rf /home/woven/example.com')
+    set_server_state('deployed_project_example_project-0.1',delete=True)
+    deploy_project()
+    assert exists('/home/woven/example.com/env/example_project-0.1/project/requirements.txt')
+    #make sure we can't overwrite an existing project
+    p = deploy_project()
+    assert not p
+    #teardown
+    p = Project()
+    p.delete()
+    
+    set_server_state('deployed_project_example_project-0.1',delete=True)
+    
+  
 def test_project_version():
     """
     Test the project version

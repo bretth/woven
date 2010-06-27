@@ -8,7 +8,7 @@ from fabric.main import find_fabfile
 
 from woven.ubuntu import install_packages, upgrade_ubuntu, setup_ufw, disable_root
 from woven.ubuntu import uncomment_sources, restrict_ssh, upload_ssh_key, change_ssh_port, set_timezone
-from woven.utils import project_version, root_domain
+from woven.utils import project_name, project_version, root_domain
 from woven.virtualenv import mkvirtualenv, pip_install_requirements
 from woven.global_settings import woven_env
 
@@ -18,13 +18,15 @@ def deploy():
     """
     mkvirtualenv()
     pip_install_requirements()
-    #deploy_project()
+    deploy_project()
     #deploy_media()
     #deploy_wsgi()
     #deploy_webservers(webserver='apache2')
     #deploy_webservers(webserver='nginx')
     #syncdb()
     #activate()
+    
+   
 
 def setup_environ(settings=None, setup_dir=''):
     """
@@ -55,19 +57,15 @@ def setup_environ(settings=None, setup_dir=''):
     env.fabfile = original_fabfile
     os.chdir(local_working_dir)
 
-    env.project_name = local('python setup.py --name').rstrip()
-    env.project_version = project_version()
-    env.project_fullname = env.project_name + '-' + env.project_version
-    
     #We'll assume that if the settings aren't passed in we're running from a fabfile
     if not settings:
         sys.path.insert(0,local_working_dir)
         #First try a multi-site configuration
         #TODO - import multiple settings files for per-site settings
         try:
-            project_settings = import_module(env.project_name+'settings.settings')
+            project_settings = import_module(project_name()+'settings.settings')
         except ImportError:
-            project_settings = import_module(env.project_name+'.settings')
+            project_settings = import_module(project_name()+'.settings')
     else:
         project_settings = settings
     
