@@ -7,7 +7,7 @@ import os
 from fabric.state import env
 
 #TODO check these
-from fabric.api import env, local, run, prompt, put, sudo
+from fabric.api import env, local, run, prompt, get, put, sudo
 from fabric.context_managers import cd, hide, settings
 from fabric.contrib.files import exists
 from fabric.contrib.project import rsync_project, upload_project
