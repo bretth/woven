@@ -19,7 +19,8 @@ from woven.ubuntu import disable_root, upload_ssh_key, change_ssh_port, restrict
 from woven.ubuntu import uncomment_sources, upgrade_ubuntu, setup_ufw, install_packages, set_timezone
 from woven.utils import server_state, set_server_state, root_domain
 from woven.virtualenv import mkvirtualenv, rmvirtualenv, pip_install_requirements
-from woven.virtualenv import Project, deploy_project, deploy_static_media
+from woven.virtualenv import Project, StaticMedia, Public
+from woven.virtualenv import deploy_project, deploy_static_media, deploy_public
 from woven.management.base import WovenCommand
 from woven.main import setup_environ, setupnode
 
@@ -301,7 +302,52 @@ def test_deploy_static_media():
     run('rm -rf /home/woven/example.com')
     set_server_state('deployed_staticmedia_example_project-0.1',delete=True)
     
+    #Test simple with no app media
     deploy_static_media()
+    
+    #Test with just admin_media
+    env.INSTALLED_APPS += ['django.contrib.admin']
+    deploy_static_media()
+    assert exists('/home/woven/example.com/env/example_project-0.1/staticmedia/media/css')
+    
+    #Teardown
+    s = StaticMedia()
+    s.delete()
+    assert not server_state('deployed_staticmedia_example_project-0.1')    
+
+def test_deploy_public():
+    run('rm -rf /home/woven/example.com')
+    run('rm -f dist/django-pony1.jpg')
+    set_server_state('deployed_public_example_project-0.1',delete=True)
+    
+    #Test simple with no media_root - fails
+    deploy_public()
+    
+    #Test with a real media directory
+    env.MEDIA_ROOT = os.path.join(setup_dir,'media_root','')
+    print env.MEDIA_ROOT
+    env.MEDIA_URL = 'http://media.example.com/media/'
+    deploy_public()
+    assert exists('/home/woven/example.com/public/media.example.com/media/django-pony.jpg')
+    
+    #Test with no files - skips
+    deploy_public()
+    
+    #Test we don't delete accidentally
+    env.MEDIA_ROOT = os.path.join(setup_dir,'dist','')
+    local('cp -f media_root/django-pony.jpg dist/django-pony1.jpg')
+    deploy_public()
+    assert exists('/home/woven/example.com/public/media.example.com/media/django-pony1.jpg')
+    assert exists('/home/woven/example.com/public/media.example.com/media/django-pony.jpg')
+    
+    #Teardown
+    p = Public()
+    p.delete()
+    assert not server_state('deployed_public_example_project-0.1') 
+    local('rm -f dist/django-pony1.jpg')
+    
+    
+    
     
 def test_project_version():
     """
