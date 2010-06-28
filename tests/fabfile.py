@@ -19,8 +19,8 @@ from woven.ubuntu import disable_root, upload_ssh_key, change_ssh_port, restrict
 from woven.ubuntu import uncomment_sources, upgrade_ubuntu, setup_ufw, install_packages, set_timezone
 from woven.utils import server_state, set_server_state, root_domain
 from woven.virtualenv import mkvirtualenv, rmvirtualenv, pip_install_requirements
-from woven.virtualenv import Project, StaticMedia, Public
-from woven.virtualenv import deploy_project, deploy_static_media, deploy_public
+from woven.project import Project, Static, Public
+from woven.project import deploy_project, deploy_static, deploy_public
 from woven.management.base import WovenCommand
 from woven.main import setup_environ, setupnode
 
@@ -297,23 +297,23 @@ def test_deploy_project():
     p = Project(version='0.1')
     p.delete()
     
-def test_deploy_static_media():
+def test_deploy_static():
     change_version('0.2','0.1')
     run('rm -rf /home/woven/example.com')
-    set_server_state('deployed_staticmedia_example_project-0.1',delete=True)
+    set_server_state('deployed_static_example_project-0.1',delete=True)
     
     #Test simple with no app media
-    deploy_static_media()
+    deploy_static()
     
     #Test with just admin_media
     env.INSTALLED_APPS += ['django.contrib.admin']
-    deploy_static_media()
-    assert exists('/home/woven/example.com/env/example_project-0.1/staticmedia/media/css')
+    deploy_static()
+    assert exists('/home/woven/example.com/env/example_project-0.1/static/media/css')
     
     #Teardown
-    s = StaticMedia()
+    s = Static()
     s.delete()
-    assert not server_state('deployed_staticmedia_example_project-0.1')    
+    assert not server_state('deployed_static_example_project-0.1')    
 
 def test_deploy_public():
     run('rm -rf /home/woven/example.com')
