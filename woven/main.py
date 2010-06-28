@@ -10,6 +10,7 @@ from woven.ubuntu import install_packages, upgrade_ubuntu, setup_ufw, disable_ro
 from woven.ubuntu import uncomment_sources, restrict_ssh, upload_ssh_key, change_ssh_port, set_timezone
 from woven.utils import project_name, project_version, root_domain
 from woven.virtualenv import mkvirtualenv, pip_install_requirements
+from woven.virtualenv import deploy_static_media, deploy_project
 from woven.global_settings import woven_env
 
 def deploy():
@@ -19,7 +20,7 @@ def deploy():
     mkvirtualenv()
     pip_install_requirements()
     deploy_project()
-    #deploy_media()
+    deploy_static_media()
     #deploy_wsgi()
     #deploy_webservers(webserver='apache2')
     #deploy_webservers(webserver='nginx')
@@ -113,7 +114,7 @@ def setup_environ(settings=None, setup_dir=''):
     env.MEDIA_ROOT = project_settings.MEDIA_ROOT
     env.ADMIN_MEDIA_PREFIX = project_settings.ADMIN_MEDIA_PREFIX
     #static_root is from static_builder
-    if not env.get('STATIC_ROOT'): env.STATIC_ROOT = env.MEDIA_ROOT
+    
     #If sqlite is used we can manage the database on deployment
     env.DEFAULT_DATABASE_ENGINE = project_settings.DATABASES['default']['ENGINE']
     #Set the server /etc/timezone
@@ -122,9 +123,7 @@ def setup_environ(settings=None, setup_dir=''):
     env.INSTALLED_APPS = project_settings.INSTALLED_APPS
     #noinput
     if not hasattr(env,'INTERACTIVE'): env.INTERACTIVE=True
-    
-    #Finally pip reqs - for deployment
-    if not env.get('PIP_REQUIREMENTS'): env.PIP_REQUIREMENTS = ''
+
 
 
 def setupnode(rollback=False):
