@@ -10,7 +10,7 @@ from woven.ubuntu import install_packages, upgrade_ubuntu, setup_ufw, disable_ro
 from woven.ubuntu import uncomment_sources, restrict_ssh, upload_ssh_key, change_ssh_port, set_timezone
 from woven.utils import project_name, project_version, root_domain
 from woven.virtualenv import mkvirtualenv, pip_install_requirements
-from woven.virtualenv import deploy_static_media, deploy_project
+from woven.virtualenv import deploy_static_media, deploy_public, deploy_project
 from woven.global_settings import woven_env
 
 def deploy():
@@ -21,6 +21,7 @@ def deploy():
     pip_install_requirements()
     deploy_project()
     deploy_static_media()
+    deploy_public()
     #deploy_wsgi()
     #deploy_webservers(webserver='apache2')
     #deploy_webservers(webserver='nginx')
@@ -112,6 +113,7 @@ def setup_environ(settings=None, setup_dir=''):
     #Now update the env with any settings that are not woven specific
     #but may be used by woven or fabric
     env.MEDIA_ROOT = project_settings.MEDIA_ROOT
+    env.MEDIA_URL = project_settings.MEDIA_URL
     env.ADMIN_MEDIA_PREFIX = project_settings.ADMIN_MEDIA_PREFIX
     #static_root is from static_builder
     
