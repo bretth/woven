@@ -10,7 +10,7 @@ from woven.ubuntu import install_packages, upgrade_ubuntu, setup_ufw, disable_ro
 from woven.ubuntu import uncomment_sources, restrict_ssh, upload_ssh_key, change_ssh_port, set_timezone
 from woven.utils import project_name, project_version, root_domain
 from woven.virtualenv import mkvirtualenv, pip_install_requirements
-from woven.virtualenv import deploy_static_media, deploy_public, deploy_project
+from woven.project import deploy_static, deploy_public, deploy_project
 from woven.global_settings import woven_env
 
 def deploy():
@@ -20,7 +20,7 @@ def deploy():
     mkvirtualenv()
     pip_install_requirements()
     deploy_project()
-    deploy_static_media()
+    deploy_static()
     deploy_public()
     #deploy_wsgi()
     #deploy_webservers(webserver='apache2')
