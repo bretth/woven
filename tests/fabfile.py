@@ -21,6 +21,7 @@ from woven.utils import server_state, set_server_state, root_domain
 from woven.virtualenv import mkvirtualenv, rmvirtualenv, pip_install_requirements
 from woven.project import Project, Static, Public
 from woven.project import deploy_project, deploy_static, deploy_public
+from woven.webservers import deploy_wsgi
 from woven.management.base import WovenCommand
 from woven.main import setup_environ, setupnode
 
@@ -345,6 +346,11 @@ def test_deploy_public():
     p.delete()
     assert not server_state('deployed_public_example_project-0.1') 
     local('rm -f dist/django-pony1.jpg')
+    
+def test_deploy_wsgi():
+    run('rm -rf /home/woven/example.com')
+    set_server_state('deployed_wsgi_project-0.1',delete=True)
+    deploy_wsgi()
     
     
     
