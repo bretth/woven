@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+Anything related to deploying your project modules, media, and data
+"""
 import os
 import tempfile
 
