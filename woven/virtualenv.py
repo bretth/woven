@@ -230,16 +230,22 @@ class Project(Virtualenv):
             if env.verbosity:
                 print "Warning: No %s set in project settings. Skipping %s..."% (self.setting,self.deploy_type)
                 return False
-        if self.installed and not patch:
+        if self.installed and not patch and self.versioned:
             if env.verbosity:
                 print env.host,"Warning: %s version %s already deployed. Skipping..."% (self.deploy_type,self.fullname)
             return False
         elif not self.installed and not patch:
             run('mkdir -p '+self.deploy_root)
-        elif not self.installed and patch:
+        elif not self.installed and patch and self.versioned:
             if env.verbosity:
                 print env.host,"Warning: Cannot patch %s. This version %s does not exist. Skipping.."% (self.deploy_type,self.fullname)
             return False
+        l = local('ls '+self.local_path).rstrip()
+        if not l:
+            if env.verbosity:
+                print "Warning: Theres are no files to deploy for %s. Skipping.."% self.deploy_type
+            return False
+       
         #bug in fabric 0.9 on rsync on alternate port fixed in 1.0
         fab_vers = int(get_version(form='short')[0])
         if fab_vers < 1:
@@ -359,9 +365,15 @@ class Public(StaticMedia):
         super(Public,self).__init__(version)
         self.deploy_root = env.deployment_root+'/'.join([self.deploy_type,''])
         self.setting = 'MEDIA_ROOT'
-        self.local_path = env.MEDIA_ROOT
+        self.local_path = env.MEDIA_ROOT[:-1]
         self.dest_path_postfix = env.MEDIA_URL.replace('http:/','')
         self.versioned = False
+
+    def delete(self):
+        #if no envs
+        if not exists(self.root):
+            run('rm -rf '+ env.deployment_root)
+            set_server_state(self.state+self.fullname,delete=True)
        
 def deploy_public(version='',patch=False):
     """
