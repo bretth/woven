@@ -19,10 +19,13 @@ def active_version():
     
     Just examine the which environment is symlinked
     """
-    link = os.path.join(env.deployment_root,env.project_name)
+    link = env.deployment_root+'/'.join(['env',env.project_name])
+
     if not exists(link): return None
-    active = os.path.split(run('ls -al '+link).split(' -> ')[1])[1]
-    return active
+    active = run('ls -al '+link).split(' -> ')[1]
+    if active[-1] == '/': active = active[:-1]
+
+    return active.split('/')[-1]
 
 def backup_file(path):
     """
@@ -88,8 +91,7 @@ def interactive():
     return env.INTERACTIVE
 
 def project_version(version=''):
-    if not hasattr(env, 'project_version'):
-       env.project_version = parse_project_version(version)
+    env.project_version = parse_project_version(version)
     return env.project_version
     
 
@@ -99,12 +101,10 @@ def project_name():
     """
     if not hasattr(env,'project_name'):
         env.project_name = local('python setup.py --name').rstrip()
-        env.project_fullname = env.project_name + '-' + project_version()
     return env.project_name
 
-def project_fullname():
-    if not hasattr(env,'project_fullname'):
-        env.project_fullname = project_name() + '-' + project_version()
+def project_fullname(version=''):
+    env.project_fullname = project_name() + '-' + project_version(version)
     return env.project_fullname
         
 def parse_project_version(version=''):
@@ -200,8 +200,8 @@ def root_domain():
             domain = prompt('Enter the root domain for this project ie example.com',default='example.com')
         else:
             domain = 'example.com'
-        env.domain = domain
-    return env.domain
+        env.root_domain = domain
+    return env.root_domain
   
 def upload_template(filename,  destination,  context={},  use_sudo=False):
     """
