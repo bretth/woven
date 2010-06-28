@@ -19,7 +19,7 @@ from woven.ubuntu import disable_root, upload_ssh_key, change_ssh_port, restrict
 from woven.ubuntu import uncomment_sources, upgrade_ubuntu, setup_ufw, install_packages, set_timezone
 from woven.utils import server_state, set_server_state, root_domain
 from woven.virtualenv import mkvirtualenv, rmvirtualenv, pip_install_requirements
-from woven.virtualenv import Project, deploy_project
+from woven.virtualenv import Project, deploy_project, deploy_static_media
 from woven.management.base import WovenCommand
 from woven.main import setup_environ, setupnode
 
@@ -244,23 +244,65 @@ def test_pip_install_requirements():
     rmvirtualenv()
     local('rm -f dist/example_project-0.1.pybundle')
     set_server_state('pip_installed_example_project-0.1', delete=True)
-    
+
+def change_version(oldversion,newversion):
+    f = open('setup.py').readlines()
+    w = open('setup.py',"w")
+    for line in f:
+        line = line.replace(oldversion,newversion)
+        w.write(line)
+    w.close()   
 
 def test_deploy_project():
+    #setup to ensure nothing left from a previous run
+    change_version('0.2','0.1')
     run('rm -rf /home/woven/example.com')
     set_server_state('deployed_project_example_project-0.1',delete=True)
+    set_server_state('deployed_project_example_project-0.2',delete=True)
+    
+    #tests
     deploy_project()
     assert exists('/home/woven/example.com/env/example_project-0.1/project/requirements.txt')
     #make sure we can't overwrite an existing project
     p = deploy_project()
     assert not p
+    
+    #Test patch
+    
     #teardown
     p = Project()
     p.delete()
     
+    #Next test to ensure .pyc orphans are not left
+    deploy_project()
+    run('touch /home/woven/example.com/env/example_project-0.1/project/example_project/someorphan.pyc')
     set_server_state('deployed_project_example_project-0.1',delete=True)
+    deploy_project()
+    assert not exists('/home/woven/example.com/env/example_project-0.1/project/example_project/someorphan.pyc')
     
-  
+    #Test a 2nd version deployment
+    print "TEST 2ND DEPLOYMENT"
+    run('ln -s /home/woven/example.com/env/example_project-0.1/ /home/woven/example.com/env/example_project')   
+    change_version('0.1','0.2')
+
+    deploy_project(version='0.2')
+    assert exists('/home/woven/example.com/env/example_project-0.2/project/requirements.txt')
+    
+    #Teardown one project at a time
+    p = Project()
+    p.delete()    
+    assert exists('/home/woven/example.com/env/example_project-0.1/project/requirements.txt')
+    change_version('0.2','0.1')
+    p = Project(version='0.1')
+    p.delete()
+    
+def test_deploy_static_media():
+    change_version('0.2','0.1')
+    run('rm -rf /home/woven/example.com')
+    set_server_state('deployed_staticmedia_example_project-0.1',delete=True)
+    
+    deploy_static_media()
+    
 def test_project_version():
     """
     Test the project version
