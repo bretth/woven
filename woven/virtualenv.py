@@ -2,6 +2,8 @@
 """
 Anything related to deploying within a python virtual environment is in this module.
 
+This includes pip install, deploy project & deploy media
+
 """
 import os
 from fabric.state import env
@@ -27,7 +29,7 @@ class Virtualenv(object):
     state = 'created_virtualenv_'
     def __init__(self, version=''):
         if not version: self.fullname = project_fullname()
-        else: self.fullname = project_name()+'-'+version
+        else: self.fullname = env.fullname = project_name()+'-'+version
 
         env.deployment_root = '/home/%s/%s/'% (env.user,root_domain())
         self.root = env.deployment_root +'env' 
@@ -208,12 +210,21 @@ class Project(Virtualenv):
     def __init__(self,version=''):
         super(Project,self).__init__(version)
         self.deploy_type = self.__class__.__name__.lower()
-        self.deploy_root = '/'.join([env.deployment_root,'env',self.fullname,self.deploy_type,''])
+        self.deploy_root = env.deployment_root+'/'.join(['env',self.fullname,self.deploy_type,''])
+        #try to exclude a few common things in the project directory
+        self.rsync_exclude = ['*.pyc','*.log','.*','/build','/dist','/media','/app*','/www','/public']
+        self.local_path = './'
+        self.setting =''
+
     
-    def deploy(self,patch=''):
+    def deploy(self,patch=False):
         """
         Deploy your project
         """
+        if not self.local_path:
+            if env.verbosity:
+                print "Warning: No %s set in project settings. Skipping %s..."% (self.setting,self.deploy_type)
+                return False
         if self.installed and not patch:
             if env.verbosity:
                 print env.host,"Warning: %s version %s already deployed. Skipping..."% (self.deploy_type,self.fullname)
@@ -229,22 +240,30 @@ class Project(Virtualenv):
         if fab_vers < 1:
             extra_opts = '--rsh="ssh -p%s"'% env.port
 
-        exclude = ['*.pyc','.*','/build','/dist','/media','/appmedia','/www','/public']
-        #to save a bit of bandwidth if there is an existing version we will copy that first
-        current_version = active_version()
-        if current_version and not patch:
+        #to save a bit of network usage if there is an existing version we will copy that first
+        av = active_version()
+        if av and not patch:
             delete=True
-            existing_root = '/'.join([env.deployment_root+current_version,self.deploy_type])
-            run('cp -R %s %s'% (existing_root,self.deploy_root))
-        else:
+            av_root = self.deploy_root.replace(self.fullname,av)
+            dest_root = self.deploy_root.replace(self.deploy_type+'/','')
+            run('cp -R %s %s'% (av_root,dest_root))
+        elif patch:
             delete=False
-        rsync_project(local_dir='./',remote_dir=self.deploy_root,extra_opts=extra_opts,exclude=exclude,delete=delete)
-        set_server_state('deployed_project_'+self.fullname)
+        else:
+            delete=True
+        rsync_project(local_dir=self.local_path,remote_dir=self.deploy_root,
+                      extra_opts=extra_opts,exclude=self.rsync_exclude,delete=delete)
+        #delete orphaned .pyc - specific to projects
+        if self.deploy_type == 'project':
+            run("find %s -name '*.pyc' -delete"% self.deploy_root)
+
+        set_server_state(self.state+self.fullname)
         if env.verbosity:
-            print "DEPLOYED %s %s"% (self.deploy_type,self.fullname)
+            print env.host,"DEPLOYED %s %s"% (self.deploy_type,self.fullname)
         return True
     
     def delete(self):
+        #walk backwards up the tree
         if active_version <> self.fullname:
             run('rm -rf '+self.deploy_root)
         #if nothing left in the specific env
@@ -253,10 +272,15 @@ class Project(Virtualenv):
         #if no envs left
         ls = run('ls '+ self.root).rstrip().split('\n')
         if not ls[0]: run('rm -rf '+ env.deployment_root)
+        set_server_state(self.state+self.fullname,delete=True)
 
      
-def deploy_project(patch=''):
-    p = Project(patch)
+def deploy_project(version='',patch=False):
+    """
+    Wrapper function for Project that also splits out the functionality related but
+    not specific to projects, such as database.
+    """
+    p = Project(version)
     #Create an sqlite database directory if necessary
     if env.DEFAULT_DATABASE_ENGINE == 'django.db.backends.sqlite3' and not patch:
         db_dir = os.path.join(env.deployment_root,'database')
@@ -265,3 +289,37 @@ def deploy_project(patch=''):
             sudo("chown %s:www-data %s"% (env.user,db_dir))
             sudo("chmod ug+w %s"% db_dir)
     return p.deploy(patch)
+
+class StaticMedia(Project):
+    """
+    A media specific class for deploying versioned application/project media per site
+    
+    To use this class you need to have a STATIC_ROOT in your settings.
+    You would copy your admin files into a ADMIN_MEDIA_PREFIX folder in the STATIC_ROOT directory
+    
+    Best used with Django-staticmedia
+    
+    """
+    state = 'deployed_staticmedia_'
+    def __init__(self, version='', domain=''):
+        super(StaticMedia,self).__init__(version)
+        self.deploy_root = env.deployment_root+'/'.join(['env',self.fullname,self.deploy_type,domain,''])
+        self.setting = 'STATIC_ROOT'
+        self.local_path = env.STATIC_ROOT
+        
+def deploy_static_media(version='',patch=False):
+    """
+    Wrapper for StaticMedia class
+    """
+    #init the domains
+    if not env.get('DOMAINS'): env.DOMAINS = [root_domain()]
+    
+    for d in env.DOMAINS:
+        s = StaticMedia(version,d)
+        s.deploy(patch)
+        
+    
+    
+        
+        
+    
