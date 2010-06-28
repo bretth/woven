@@ -39,11 +39,10 @@ Within the root folder are the following::
                                 |--settings.py (default settings file)
                                 |--example_com.py (imports default settings and overrides)
                                 |--subdomain_example_com.py (imports default settings and overrides)
-                |--public 
-                    |--media (for single domain deployments, application media goes here)
-                        |--example.com (for multi-domain deployments, domain specific media can go under the media dir)
-                        |--subdomain.example.com
-                    |--bin (web server scripts go here including wsgi)
+                |--staticmedia 
+                    |--example.com (for multi-domain deployments, domain specific media can go under the media dir)
+                    |--subdomain.example.com
+                |--wsgi (web server scripts go here including wsgi)
     
            |--example_project-0.2 (next release version - as above)
         ...
