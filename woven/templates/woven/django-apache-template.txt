@@ -1,0 +1,26 @@
+<VirtualHost {{ host_ip }}:10080>
+    #First admin from settings.ADMIN
+    #ServerAdmin {{ first_admin }}
+
+    ServerName {{ domain }}
+
+
+    #TODO: Maybe insert per domain users - user={{ u_domain}} group={{ u_domain }}
+    #Stack size reduces the amount of virtual memory available per thread to a much more sensible limit than 8MB
+    #This setting is especially useful for small servers
+    WSGIDaemonProcess {{ domain }} processes=2 maximum-requests=1000 threads=15 stack-size=524288 
+    WSGIProcessGroup {{ domain }}
+    WSGIScriptAlias / /home/{{ user }}/{{ root_domain }}/{{ project_name }}/public/bin/{{ domain }}/{{ u_domain }}.wsgi
+    
+    
+    <Directory /home/{{ user }}/{{ root_domain }}/{{ project_name }}/public/bin/{{ domain }}>
+        Order deny,allow
+        Allow from all
+    </Directory>
+
+    #LogLevels: debug, info, notice, warn, error, crit, alert, emerg.
+    LogLevel warn
+    CustomLog /home/{{ user }}/{{ root_domain }}/log/{{ u_domain }}_apache_access.log combined
+    ErrorLog /home/{{ user }}/{{ root_domain }}/log/{{ u_domain }}_apache_error.log
+
+</VirtualHost>

@@ -1,0 +1,32 @@
+server {
+    listen   {{ host_ip }}:80;
+    server_name  {{ domain }};
+    
+    #rewrite ^/(.*) http:/{{ domain }}/$1 permanent;
+
+    
+    error_log /home/{{ user }}/{{ root_domain }}/log/{{ u_domain }}_nginx_error.log;
+    access_log off;
+    #access_log /home/{{ user }}/{{ root_domain }}/log/{{ u_domain }}_nginx_access.log;
+    
+    location / {
+        proxy_pass    http://{{ host_ip }}:10080/;
+        include       /etc/nginx/proxy.conf;
+    }
+    {% if media_url %}
+    location {{ media_url }} {
+            root  /home/{{ user }}/{{ root_domain }}/public{{ media_url }}; 
+            #expires 1d;
+    }
+    {% endif %}
+    
+    {% if static_url %}
+    location {{ static_url }} {
+            root  /home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/static{{ static_url }}; 
+            #expires 1d;
+    }    
+    {% endif %}
+    
+    
+
+}
