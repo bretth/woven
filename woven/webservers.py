@@ -186,34 +186,39 @@ class NginxWebserver(ApacheWebserver):
         self.enabled_path = "/etc/nginx/sites-enabled/"
         
 def deploy_webservers(version='',patch=False):
-    """ Deploy an apache & nginx conf to the host """
+    """ Deploy  apache & nginx site configurations to the host """
     if not env.DOMAINS: env.DOMAINS = [root_domain()]
+    #TODO - incorrect - check for actual package
     if exists('/etc/apache2/sites-enabled/') and exists('/etc/nginx/sites-enabled'):
 
-        sudo("/etc/init.d/nginx stop")
         for d in env.DOMAINS:
-            #TODO - distinguish between a warning and a error on apache
-            with settings(warn_only=True):
-                a = sudo("apache2ctl stop")
-                if a.failed and env.verbosity:
-                    print env.host, a            
             a = ApacheWebserver(d,version)
             a.deploy(patch)
             
-
-            a = sudo("apache2ctl start")
-            if a.failed and env.verbosity:
-                print env.host, a
-            
             n = NginxWebserver(d,version)
             n.deploy(patch)
-        
-        sudo("/etc/init.d/nginx start")
         set_server_state('deployed_webservers_' + project_fullname())
         return True
 
     else:
         print """WARNING: Apache or Nginx not installed"""
         return False
-    return False        
+    return False
+
+def stop_webservices():
+    #TODO - distinguish between a warning and a error on apache
+    sudo("/etc/init.d/nginx stop")
+    with settings(warn_only=True):
+        a = sudo("apache2ctl stop")
+    return True
+
+def start_webservices():
+    with settings(warn_only=True):
+        a = sudo("apache2ctl start")
+    if a.failed and env.verbosity:
+        print env.host, a
+        return False
+    sudo("/etc/init.d/nginx start")
+    return True
+
     
