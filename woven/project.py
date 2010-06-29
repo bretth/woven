@@ -55,6 +55,11 @@ class Project(Virtualenv):
             return False
         elif not self.installed and not patch:
             run('mkdir -p '+self.deploy_root)
+            #Webserver must be able to write into the public directory in the case of fileuploads
+            #TODO - Make this optional??
+            if self.deploy_type == 'public':
+                sudo("chown -R www-data:sudo %s" % self.deploy_root[:-1]) #strip trailing /
+                sudo("chmod -R ug+w %s"% self.deploy_root[:-1])
         elif not self.installed and patch and self.versioned:
             if env.verbosity:
                 print env.host,"Warning: Cannot patch %s. This version %s does not exist. Skipping.."% (self.deploy_type,self.fullname)
@@ -167,6 +172,10 @@ def deploy_static(version='',patch=False):
     """
     Wrapper for StaticMedia class
     """
+    if 'http' in env.STATIC_URL:
+        if env.verbosity:
+            print env.host,"Static media to be hosted externally at %s Skipping..."% env.STATIC_URL
+        return
 
     s = Static(version)
     s.deploy(patch)
@@ -198,7 +207,12 @@ def deploy_public(version='',patch=False):
     """
     Wrapper for Public class
     """
+    if 'http' in env.MEDIA_URL:
+        if env.verbosity:
+            print env.host,"Public media to be hosted externally at %s Skipping..."% env.MEDIA_URL
+        return
     s = Public(version)
     s.deploy(patch)
+    return
         
    
