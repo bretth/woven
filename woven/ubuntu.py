@@ -196,6 +196,9 @@ def install_packages(rollback = False,overwrite=False):
         if env.verbosity:
             print env.host, "INSTALLING & CONFIGURING PACKAGES:"
             print ','.join(u)
+        #Remove apparmor - TODO we may enable this later
+        sudo('/etc/init.d/apparmor stop')
+        sudo('update-rc.d -f apparmor remove')
         #Get a list of installed packages
         p = run("dpkg -l | awk '/ii/ {print $2}'").split('\n')
     
@@ -217,10 +220,12 @@ def install_packages(rollback = False,overwrite=False):
             if package == 'apache2' and (overwrite or not preinstalled):
                 if env.verbosity:
                     print "Uploading Apache2 template /etc/apache2/ports.conf"
-                upload_template('woven/apache2/ports.conf','/etc/apache2/ports.conf',use_sudo=True)
+                context = {'host_ip':env.host}
+                upload_template('woven/apache2/ports.conf','/etc/apache2/ports.conf',context=context, use_sudo=True)
                 #Turn keep alive off on apache
                 sed('/etc/apache2/apache2.conf',before='KeepAlive On',after='KeepAlive Off',use_sudo=True)
-                sudo("apache2ctl graceful")
+                with settings(warn_only=True):
+                    sudo("apache2ctl graceful")
             elif package == 'nginx' and (overwrite or not preinstalled):
                 if env.verbosity:
                     print "Uploading Nginx templates /etc/nginx/nginx.conf /etc/nginx/proxy.conf"
