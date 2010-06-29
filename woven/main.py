@@ -11,6 +11,7 @@ from woven.ubuntu import uncomment_sources, restrict_ssh, upload_ssh_key, change
 from woven.utils import project_name, project_version, root_domain
 from woven.virtualenv import mkvirtualenv, pip_install_requirements
 from woven.project import deploy_static, deploy_public, deploy_project
+from woven.webservers import deploy_wsgi, deploy_webservers
 from woven.global_settings import woven_env
 
 def deploy():
@@ -22,9 +23,8 @@ def deploy():
     deploy_project()
     deploy_static()
     deploy_public()
-    #deploy_wsgi()
-    #deploy_webservers(webserver='apache2')
-    #deploy_webservers(webserver='nginx')
+    deploy_wsgi()
+    deploy_webservers()
     #syncdb()
     #activate()
     
