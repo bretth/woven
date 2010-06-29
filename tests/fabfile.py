@@ -12,7 +12,7 @@ import time
 
 from fabric.api import env, run, local, sudo, put
 from fabric.state import output
-from fabric.contrib.files import exists
+from fabric.contrib.files import exists, sed
 from fabric.context_managers import settings
 
 from woven.ubuntu import disable_root, upload_ssh_key, change_ssh_port, restrict_ssh
@@ -21,7 +21,7 @@ from woven.utils import server_state, set_server_state, root_domain
 from woven.virtualenv import mkvirtualenv, rmvirtualenv, pip_install_requirements
 from woven.project import Project, Static, Public
 from woven.project import deploy_project, deploy_static, deploy_public
-from woven.webservers import deploy_wsgi
+from woven.webservers import deploy_wsgi, deploy_webservers
 from woven.management.base import WovenCommand
 from woven.main import setup_environ, setupnode
 
@@ -327,9 +327,9 @@ def test_deploy_public():
     #Test with a real media directory
     env.MEDIA_ROOT = os.path.join(setup_dir,'media_root','')
     print env.MEDIA_ROOT
-    env.MEDIA_URL = 'http://media.example.com/media/'
+    env.MEDIA_URL = '/media/'
     deploy_public()
-    assert exists('/home/woven/example.com/public/media.example.com/media/django-pony.jpg')
+    assert exists('/home/woven/example.com/public/media/django-pony.jpg')
     
     #Test with no files - skips
     deploy_public()
@@ -338,8 +338,8 @@ def test_deploy_public():
     env.MEDIA_ROOT = os.path.join(setup_dir,'dist','')
     local('cp -f media_root/django-pony.jpg dist/django-pony1.jpg')
     deploy_public()
-    assert exists('/home/woven/example.com/public/media.example.com/media/django-pony1.jpg')
-    assert exists('/home/woven/example.com/public/media.example.com/media/django-pony.jpg')
+    assert exists('/home/woven/example.com/public/media/django-pony1.jpg')
+    assert exists('/home/woven/example.com/public/media/django-pony.jpg')
     
     #Teardown
     p = Public()
@@ -349,10 +349,42 @@ def test_deploy_public():
     
 def test_deploy_wsgi():
     run('rm -rf /home/woven/example.com')
-    set_server_state('deployed_wsgi_project-0.1',delete=True)
+    set_server_state('deployed_wsgi_example_project-0.1',delete=True)
     deploy_wsgi()
+    assert exists('/home/woven/example.com/env/example_project-0.1/wsgi/example_com.wsgi')
     
+def test_deploy_webservers():
+    #setup for test
+    change_version('0.2','0.1')
+    sudo('rm -rf /home/woven/example.com')
+    sudo('rm -f /etc/nginx/sites-enabled/*')
+    sudo('rm -f /etc/nginx/sites-available/*')
+    sudo('rm -f /etc/apache2/sites-enabled/*')
+    sudo('rm -f /etc/apache2/sites-available/*')
+    set_server_state('deployed_apache_webserver_example_project-0.1',delete=True)
+    set_server_state('deployed_nginx_webserver_example_project-0.1',delete=True)
+    set_server_state('deployed_apache_webserver_example_project-0.2',delete=True)
+    set_server_state('deployed_nginx_webserver_example_project-0.2',delete=True)
     
+    #Initial test
+    print "SIMPLE TEST"
+    deploy_webservers()
+    assert exists('/etc/apache2/sites-enabled/example_com-0.1.conf')
+    assert exists('/etc/nginx/sites-enabled/example_com-0.1.conf')
+    
+    #test bump to 0.2 and make sure foreign site doesn't get deleted
+    change_version('0.1','0.2')
+
+    sudo('cp /etc/nginx/sites-available/example_com-0.1.conf /etc/nginx/sites-enabled/someother_com-0.1.conf')
+    sed(filename='/etc/nginx/sites-enabled/someother_com-0.1.conf',before='example.com',after='someexample.com', limit=2,use_sudo=True)
+    sudo('rm -f /etc/nginx/sites-enabled/someother_com-0.1.conf.bak')
+    print "BUMPED VERSION TO 0.2"
+
+    deploy_webservers()
+    assert not exists('/etc/apache2/sites-enabled/example_com-0.1.conf')
+    assert not exists('/etc/nginx/sites-enabled/example_com-0.1.conf')
+    change_version('0.2','0.1')
+    assert exists('/etc/nginx/sites-enabled/someother_com-0.1.conf')
     
     
 def test_project_version():
