@@ -6,14 +6,15 @@
 
 
     #TODO: Maybe insert per domain users - user={{ u_domain}} group={{ u_domain }}
+    
     #Stack size reduces the amount of virtual memory available per thread to a much more sensible limit than 8MB
     #This setting is especially useful for small servers
     WSGIDaemonProcess {{ domain }} processes=2 maximum-requests=1000 threads=15 stack-size=524288 
     WSGIProcessGroup {{ domain }}
-    WSGIScriptAlias / /home/{{ user }}/{{ root_domain }}/{{ project_name }}/public/bin/{{ domain }}/{{ u_domain }}.wsgi
+    WSGIScriptAlias / /home/{{ user }}/{{ root_domain }}/{{ project_name }}/wsgi/{{ u_domain }}.wsgi
     
     
-    <Directory /home/{{ user }}/{{ root_domain }}/{{ project_name }}/public/bin/{{ domain }}>
+    <Directory /home/{{ user }}/{{ root_domain }}/{{ project_name }}/wsgi>
         Order deny,allow
         Allow from all
     </Directory>

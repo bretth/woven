@@ -53,21 +53,22 @@ class WSGI(Project):
     """
     
     state = 'deployed_wsgi_'
-    def __init__(self,version=''):
+    def __init__(self,domain, version=''):
         super(WSGI,self).__init__(version)
+        self.domain = domain
         self.template = 'django-wsgi-template.txt'
         
     
-    def deploy(self, patch=False,domain=''):
-        deploy_root = self.deploy_root + domain
+    def deploy(self, patch=False):
+        
         if not exists(self.deploy_root):
             run("mkdir -p %s" % self.deploy_root)
         with cd(self.deploy_root):
-            u_domain = domain.replace('.','_')
+            u_domain = self.domain.replace('.','_')
             filename = "%s.wsgi"% u_domain
             context = {"user": env.user,
                        "project_name": env.project_name,
-                       "u_domain":domain,
+                       "u_domain":self.domain,
                        "root_domain":env.root_domain,
                        }
             wsgi_exists = exists(filename)
@@ -101,16 +102,17 @@ def deploy_wsgi(version='',patch=False):
     """
     if not env.DOMAINS: env.DOMAINS = [root_domain()]
     for domain in env.DOMAINS:
-        w = WSGI(version)
-        w.deploy(patch,domain)
+        w = WSGI(domain,version)
+        w.deploy(patch)
 
 class ApacheWebserver(Project):
     """
     Deploy Apache webserver configuration
     """
     state = 'deployed_apache_webserver_'
-    def __init__(self,version=''):
+    def __init__(self,domain,version=''):
         super(ApacheWebserver,self).__init__(version)
+        self.domain = domain
         self.template = 'django-apache-template.txt'
         self.deploy_root = "/etc/apache2/sites-available/"
         self.enabled_path = "/etc/apache2/sites-enabled/"
@@ -121,24 +123,21 @@ class ApacheWebserver(Project):
         else: self.static_url = ''            
 
     
-    def deploy(self,domain,patch=False):
+    def deploy(self,patch=False):
         with cd(self.deploy_root):
             log_dir = env.deployment_root+'log'
             if not exists(log_dir):
                 run("mkdir -p %s"% log_dir)
                 sudo("chown -R www-data:sudo %s" % log_dir)
                 sudo("chmod -R ug+w %s"% log_dir)
-            #doc_root = os.path.join(project_env,'public',domain)
-            #if not exists(doc_root):
-            #    run("mkdir -p %s" % doc_root)
-            u_domain = domain.replace('.','_')
+            u_domain = self.domain.replace('.','_')
             if patch:
                 filename = u_domain+'-'+patch + '.conf'
             else:
                 filename = u_domain + '-'+self.version+'.conf'
             context = {"project_name": env.project_name,
                         "u_domain":u_domain,
-                        "domain":domain,
+                        "domain":self.domain,
                         "root_domain":env.root_domain,
                         "user":env.user,
                         "host_ip":env.host,
@@ -174,11 +173,14 @@ class ApacheWebserver(Project):
                     if not exists(self.enabled_path+ filename):
                         sudo("ln -s %s%s %s%s"% (self.deploy_root,filename,self.enabled_path,filename))
         set_server_state(self.state + self.fullname)
+        
+    def delete(self):
+        pass
 
 class NginxWebserver(ApacheWebserver):
     state = 'deployed_nginx_webserver_'
-    def __init__(self,version=''):
-        super(NginxWebserver,self).__init__(version)
+    def __init__(self,domain, version=''):
+        super(NginxWebserver,self).__init__(domain,version)
         self.template = 'nginx-template.txt'
         self.deploy_root = "/etc/nginx/sites-available/"
         self.enabled_path = "/etc/nginx/sites-enabled/"
@@ -187,7 +189,7 @@ def deploy_webservers(version='',patch=False):
     """ Deploy an apache & nginx conf to the host """
     if not env.DOMAINS: env.DOMAINS = [root_domain()]
     if exists('/etc/apache2/sites-enabled/') and exists('/etc/nginx/sites-enabled'):
-        #TODO - INSERT MAINTENANCE PAGE IN HERE AND RELOAD NGINX
+
         sudo("/etc/init.d/nginx stop")
         for d in env.DOMAINS:
             #TODO - distinguish between a warning and a error on apache
@@ -195,16 +197,16 @@ def deploy_webservers(version='',patch=False):
                 a = sudo("apache2ctl stop")
                 if a.failed and env.verbosity:
                     print env.host, a            
-            a = ApacheWebserver(version)
-            a.deploy(d,patch)
+            a = ApacheWebserver(d,version)
+            a.deploy(patch)
             
 
             a = sudo("apache2ctl start")
             if a.failed and env.verbosity:
                 print env.host, a
             
-            n = NginxWebserver(version)
-            n.deploy(d,patch)
+            n = NginxWebserver(d,version)
+            n.deploy(patch)
         
         sudo("/etc/init.d/nginx start")
         set_server_state('deployed_webservers_' + project_fullname())
