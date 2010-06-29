@@ -15,7 +15,7 @@ class Command(WovenCommand):
     
     def handle_host(self,*args, **options):
         # Log to stdout
-        setupnode()
+        setupnode(overwrite=options.get('overwrite'))
 
 
         

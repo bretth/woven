@@ -9,7 +9,7 @@ from django.core.management.color import no_style
 from fabric import state 
 from fabric.main import _merge
 from fabric.network import normalize
-from fabric.context_managers import hide
+from fabric.context_managers import hide,show
 
 from woven.main import setup_environ
 
@@ -69,6 +69,7 @@ class WovenCommand(BaseCommand):
         #manage.py execution specific variables
         #verbosity 0 = No output at all, 1 = woven output only, 2 = Fabric outputlevel = everything except debug
         state.env.verbosity = int(options.get('verbosity', 1))
+
         #show_traceback = options.get('traceback', False)
         state.env.INTERACTIVE = options.get('interactive')
         
@@ -76,7 +77,7 @@ class WovenCommand(BaseCommand):
         #Django passes in a dictionary instead of the optparse options objects
         for option in options:
             state.env[option] = options[option]
-        
+
         #Hosts can be args or options
         #args will be tuple, --host option will be same as Fabric
         if args: state.env.hosts = ','.join(args)
@@ -92,7 +93,7 @@ class WovenCommand(BaseCommand):
         #We now need to load django project woven settings into env
         #This is the equivalent to module level execution of the fabfile.py.
         #If we were using a fabfile.py then we would include setup_environ()
-        if state.env.verbosity > 1:
+        if int(state.env.verbosity) < 2:
             with hide('warnings', 'running', 'stdout', 'stderr'):
                 setup_environ(settings,state.env.setup)
         else: setup_environ(settings,state.env.setup)
@@ -115,7 +116,7 @@ class WovenCommand(BaseCommand):
             state.env.port = port
 
             # Actually run command
-            if state.env.verbosity > 1:
+            if int(state.env.verbosity) < 2:
                 with hide('warnings', 'running', 'stdout', 'stderr'):
                     self.handle_host(*args, **options)
             else:

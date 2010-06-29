@@ -128,7 +128,7 @@ def setup_environ(settings=None, setup_dir=''):
 
 
 
-def setupnode(rollback=False):
+def setupnode(rollback=False, overwrite=False):
     """
     Install a baseline host. Can be run multiple times
     
@@ -149,7 +149,7 @@ def setupnode(rollback=False):
         uncomment_sources()
         upgrade_ubuntu()
         setup_ufw()
-        install_packages()
+        install_packages(overwrite=overwrite)
         set_timezone()
         if env.verbosity:
             print env.host,"SETUPNODE complete"
