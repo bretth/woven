@@ -225,13 +225,15 @@ def install_packages(rollback = False,overwrite=False):
                 #Turn keep alive off on apache
                 sed('/etc/apache2/apache2.conf',before='KeepAlive On',after='KeepAlive Off',use_sudo=True)
                 with settings(warn_only=True):
-                    sudo("apache2ctl graceful")
+                    sudo("apache2ctl stop")
             elif package == 'nginx' and (overwrite or not preinstalled):
                 if env.verbosity:
                     print "Uploading Nginx templates /etc/nginx/nginx.conf /etc/nginx/proxy.conf"
                 upload_template('woven/nginx/nginx.conf','/etc/nginx/nginx.conf',use_sudo=True)
                 #Upload a default proxy
                 upload_template('woven/nginx/proxy.conf','/etc/nginx/proxy.conf',use_sudo=True)
+                with settings(warn_only=True):
+                    sudo("/etc/init.d/nginx stop")
 
         #Set unattended-updates configuration
         unattended_config = '/etc/apt/apt.conf.d/10periodic'
