@@ -195,7 +195,7 @@ def install_packages(rollback = False,overwrite=False):
     if not rollback:
         if env.verbosity:
             print env.host, "INSTALLING & CONFIGURING PACKAGES:"
-            print ','.join(u)
+            #print ','.join(u)
         #Remove apparmor - TODO we may enable this later
         sudo('/etc/init.d/apparmor stop')
         sudo('update-rc.d -f apparmor remove')
@@ -214,6 +214,8 @@ def install_packages(rollback = False,overwrite=False):
                     sudo("a2dissite 000-default")
                 elif package == 'nginx':
                     sudo('rm -f /etc/nginx/sites-enabled/default')
+                if env.verbosity:
+                    print ' * installed '+package
             else:
                 preinstalled = True
 
