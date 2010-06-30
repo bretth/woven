@@ -11,18 +11,14 @@ os.environ['PYTHON_EGG_CACHE'] = '/home/{{ user }}/{{ root_domain }}/env/{{ proj
 # Add the project to the sys.path
 sys.path.insert(0, "/home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/project")
 
-activate_this = '/home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/bin/activate_this.py')
+activate_this = '/home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/bin/activate_this.py'
 execfile(activate_this, dict(__file__=activate_this))
 
 # Uncomment to switch to the directory of your project (optional).
 # os.chdir("{{ project_env }}/project")
 
 # Set the DJANGO_SETTINGS_MODULE environment variable.
-# Single domain 
-os.environ['DJANGO_SETTINGS_MODULE'] = "{{ project_name }}.settings"
-
-# Multi-domain (Not Yet Implemented)
-# os.environ['DJANGO_SETTINGS_MODULE'] = "{{ project_name }}.settings.{{ u_domain }}"
+os.environ['DJANGO_SETTINGS_MODULE'] = "{{ project_name }}.sitesettings.{{ u_domain }}"
 
 import django.core.handlers.wsgi
 application = django.core.handlers.wsgi.WSGIHandler()

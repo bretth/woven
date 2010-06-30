@@ -8,27 +8,33 @@ from fabric.main import find_fabfile
 
 from woven.ubuntu import install_packages, upgrade_ubuntu, setup_ufw, disable_root
 from woven.ubuntu import uncomment_sources, restrict_ssh, upload_ssh_key, change_ssh_port, set_timezone
-from woven.utils import project_name, project_version, root_domain
+from woven.utils import project_name, project_version, root_domain, rmtmpdirs
 from woven.virtualenv import mkvirtualenv, pip_install_requirements
-from woven.project import deploy_static, deploy_public, deploy_project
-from woven.webservers import deploy_wsgi, deploy_webservers
+from woven.project import deploy_static, deploy_public, deploy_project, deploy_db, deploy_templates
+from woven.webservers import deploy_wsgi, deploy_webservers, start_webservices, stop_webservices
 from woven.global_settings import woven_env
 
 def deploy():
     """
     deploy a versioned project on the host
     """
+    stop_webservices()
     mkvirtualenv()
     pip_install_requirements()
     deploy_project()
+    deploy_db()
+    deploy_templates()
     deploy_static()
     deploy_public()
     deploy_wsgi()
     deploy_webservers()
-    #syncdb()
-    #activate()
     
-   
+    #activate()
+    start_webservices()
+    
+    #cleanup
+    rmtmpdirs()
+  
 
 def setup_environ(settings=None, setup_dir=''):
     """
@@ -115,16 +121,20 @@ def setup_environ(settings=None, setup_dir=''):
     env.MEDIA_ROOT = project_settings.MEDIA_ROOT
     env.MEDIA_URL = project_settings.MEDIA_URL
     env.ADMIN_MEDIA_PREFIX = project_settings.ADMIN_MEDIA_PREFIX
+    env.TEMPLATE_DIRS = project_settings.TEMPLATE_DIRS
     #static_root is from static_builder
     
     #If sqlite is used we can manage the database on deployment
     env.DEFAULT_DATABASE_ENGINE = project_settings.DATABASES['default']['ENGINE']
+    env.DEFAULT_DATABASE_NAME = project_settings.DATABASES['default']['NAME']
+    
     #Set the server /etc/timezone
     env.TIME_ZONE = project_settings.TIME_ZONE
     #Used to detect certain apps eg South, static_builder
     env.INSTALLED_APPS = project_settings.INSTALLED_APPS
     #noinput
     if not hasattr(env,'INTERACTIVE'): env.INTERACTIVE=True
+    
 
 
 
@@ -151,6 +161,7 @@ def setupnode(rollback=False, overwrite=False):
         setup_ufw()
         install_packages(overwrite=overwrite)
         set_timezone()
+        
         if env.verbosity:
             print env.host,"SETUPNODE complete"
         
