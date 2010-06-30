@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import with_statement
 
-import os, sys, tempfile
+import os, shutil, sys, tempfile
 from functools import wraps
 from pkg_resources import parse_version
 
@@ -184,6 +184,10 @@ def parse_project_version(version=''):
         project_version = finalvers
    
     return project_version
+
+def rmtmpdirs():
+    for path in env.woventempdirs:
+        shutil.rmtree(path,ignore_errors=True)
 
 def root_domain():
     """
