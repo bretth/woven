@@ -45,10 +45,10 @@ Django settings.py. They are all optional.
     HOST_EXTRA_PACKAGES = [] 
         
     #Virtualenv/Pip (Not Yet Implemented)
-    NO_SITE_PACKAGES = False 
+    DJANGO_REQUIREMENT = 'Django' # Defaults to django. A pip requirements string for the version of Django to install
     
     #Application media - as per build_static app
-    STATIC_URL = '' #optional (Not Yet Implemented)
-    STATIC_ROOT = '' #optional (Not Yet Implemented)
+    STATIC_URL = '' #optional - by default this is set to the ADMIN_MEDIA_PREFIX
+    STATIC_ROOT = '' #optional - by default this gets set to the admin media directory if admin is used
 
 
