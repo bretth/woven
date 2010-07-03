@@ -24,14 +24,17 @@ woven_env = _AttributeDict({
         'subversion','git-core','mercurial','bzr', #version control
         'gcc','build-essential', 'python-dev', 'python-setuptools', #build
         'apache2','libapache2-mod-wsgi','nginx', #webservers
+        'python-paramiko','fabric',
         'python-imaging', #pil
         'python-psycopg2','python-mysqldb','python-pysqlite2'], #default database drivers
 
 #Put any additional packages here 
 'HOST_EXTRA_PACKAGES':[], #optional - additional ubuntu packages as required
+
     
 #Virtualenv/Pip
-'NO_SITE_PACKAGES':False, #optional - stop system packages from using the virtualenv
+'PIP_REQUIREMENTS':[], # a list of pip requirement and or pybundle files to use for installation
+'DJANGO_REQUIREMENT':'Django',#A pip requirements string for the version of Django to install
 
 #Application media
 'STATIC_URL':'', #optional
