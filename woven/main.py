@@ -3,8 +3,9 @@ import os,sys
 
 from django.utils.importlib import import_module
 
-from fabric.api import env, local
+from fabric.api import env, local, run
 from fabric.main import find_fabfile
+from fabric.contrib.files import append, exists
 
 from woven.ubuntu import install_packages, upgrade_ubuntu, setup_ufw, disable_root
 from woven.ubuntu import uncomment_sources, restrict_ssh, upload_ssh_key, change_ssh_port, set_timezone
@@ -14,27 +15,83 @@ from woven.project import deploy_static, deploy_public, deploy_project, deploy_d
 from woven.webservers import deploy_wsgi, deploy_webservers, start_webservices, stop_webservices
 from woven.global_settings import woven_env
 
-def deploy():
+def active_version():
+    """
+    Determine the current active version on the server
+    
+    Just examine the which environment is symlinked
+    """
+    link = env.deployment_root+project_name()
+    if not exists(link): return None
+    active = os.path.split(run('ls -al '+link).split(' -> ')[1])[1]
+    return active
+
+def activate(version=''):
+    """
+    Activates the version or the current version if criteria is met
+    """
+    #TODO fill this out with success checking
+
+    if not version: version = env.project_fullname
+    
+    active = active_version()
+
+    if not active == version: 
+        #if active: #delete existing active symlink
+        run('rm -f '+os.path.join(env.deployment_root,'env',env.project_name))
+        run('ln -s %s %s'% (os.path.join(env.deployment_root,'env',version),
+                            os.path.join(env.deployment_root,'env',env.project_name))
+           )
+        #create shortcuts for virtualenv activation in the home directory
+        activate_env = '/'.join(['/home',env.user,'workon-'+env.project_name])
+        if not exists(activate_env):
+            run("touch "+activate_env)
+            append('#!/bin/bash',activate_env)
+            append("source "+ os.path.join(env.deployment_root,'env',env.project_name,'bin','activate'),
+                   activate_env)
+            append("cd "+ os.path.join(env.deployment_root,'env',env.project_name,'project',env.project_name),
+                   activate_env)
+            run("chmod +x "+activate_env)
+        
+        print env.host,env.project_fullname, "ACTIVATED"
+
+    else:
+        print env.project_fullname,"is already the active version"
+
+def deploy(patch=False):
     """
     deploy a versioned project on the host
     """
+    
+    if not patch:
+        deploy_db()
+        mkvirtualenv()
+        pip_install_requirements()
+    deploy_project(patch=patch)
+    deploy_templates(patch=patch)
+    deploy_static(patch=patch)
+    deploy_public(patch=patch)
+    deploy_wsgi(patch=patch)
+    #TODO - make stop start dependant on success of previous parts
     stop_webservices()
-    mkvirtualenv()
-    pip_install_requirements()
-    deploy_project()
-    deploy_db()
-    deploy_templates()
-    deploy_static()
-    deploy_public()
-    deploy_wsgi()
-    deploy_webservers()
     
-    #activate()
+    deploy_webservers(patch=patch)
+    
+    if not patch:
+        #migratedata here
+        activate()
+    
     start_webservices()
-    
+
     #cleanup
     rmtmpdirs()
-  
+    #if env.verbosity:
+    #    print "You can login to your host with ssh %s@%s -p%s"% (env.user,env.host,env.port)
+    #    print "and 'source workon-%s to activate the environment and change into the project directory"% project_name()
+
+def patch():
+    deploy(patch=True)
+    
 
 def setup_environ(settings=None, setup_dir=''):
     """
@@ -58,7 +115,7 @@ def setup_environ(settings=None, setup_dir=''):
     else:
         fabfile_path = find_fabfile()
     if not fabfile_path:
-        print 'Error: You must have a simple setup.py above your project directory'
+        print 'Error: You must have a setup.py file above your project directory'
         sys.exit(1)
         
     local_working_dir = os.path.split(fabfile_path)[0]
@@ -122,7 +179,8 @@ def setup_environ(settings=None, setup_dir=''):
     env.MEDIA_URL = project_settings.MEDIA_URL
     env.ADMIN_MEDIA_PREFIX = project_settings.ADMIN_MEDIA_PREFIX
     env.TEMPLATE_DIRS = project_settings.TEMPLATE_DIRS
-    #static_root is from static_builder
+
+
     
     #If sqlite is used we can manage the database on deployment
     env.DEFAULT_DATABASE_ENGINE = project_settings.DATABASES['default']['ENGINE']
@@ -135,7 +193,9 @@ def setup_environ(settings=None, setup_dir=''):
     #noinput
     if not hasattr(env,'INTERACTIVE'): env.INTERACTIVE=True
     
-
+    #placeholder for staging directories to cleanup after deployment
+    env.woventempdirs = []
+    env.project_version = ''
 
 
 def setupnode(rollback=False, overwrite=False):
@@ -164,6 +224,8 @@ def setupnode(rollback=False, overwrite=False):
         
         if env.verbosity:
             print env.host,"SETUPNODE complete"
+            print "Note: setupnode can be re-run at anytime."
+            print "You can now ssh %s@%s -p%s into your host"% (env.user,env.host,env.port)
         
     else:
         #rollback in reverse order of installation

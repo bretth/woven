@@ -15,14 +15,14 @@ server {
     }
     {% if media_url %}
     location {{ media_url }} {
-            root  /home/{{ user }}/{{ root_domain }}/public{{ media_url }}; 
+            root  /home/{{ user }}/{{ root_domain }}/public/; 
             #expires 1d;
     }
     {% endif %}
     
     {% if static_url %}
     location {{ static_url }} {
-            root  /home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/static{{ static_url }}; 
+            root  /home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/static/; 
             #expires 1d;
     }    
     {% endif %}

@@ -2,7 +2,7 @@
 """
 Anything related to deploying your project modules, media, and data
 """
-import os, shutil
+import os, shutil, sys
 import tempfile
 
 from django.core.servers.basehttp import AdminMediaHandler
@@ -14,7 +14,7 @@ from fabric.state import env
 from fabric.api import env, local, run, prompt, get, put, sudo
 from fabric.context_managers import cd, hide, settings
 from fabric.decorators import runs_once
-from fabric.contrib.files import exists
+from fabric.contrib.files import exists, comment
 from fabric.contrib.project import rsync_project, upload_project
 from fabric.contrib.console import confirm
 
@@ -103,14 +103,16 @@ TEMPLATE_DIRS = ('/home/{{ user }}/{{ root_domain }}/env/{{ project_fullname }}/
         #a dest_path_postfix is a /url/postfix/ from a django media setting
         #we need to create the full postfix directory on top of the deploy_root (eg STATIC_ROOT+ADMIN_MEDIA_PREFIX)
         #so locally we create a tmp staging directory to rsync from
-        if hasattr(env,'staging_dir'):
-            return env.staging_dir
+        staging_dir = '%s_staging_dir'% self.deploy_type
+        #ensure this is run only once per deploy_type
+        if hasattr(env,staging_dir):
+            return env[staging_dir]
 
-        env.staging_dir = self.tdir = tempfile.mkdtemp()
-        if not hasattr(env,'woventempdirs'): env.woventempdirs = []
-        env.woventempdirs = env.woventempdirs.append(self.tdir)
+        env[staging_dir] = s = tempfile.mkdtemp()
 
-        shutil.copytree(self.local_path,os.path.join(self.tdir,self.last_postfix))
+        #for cleanup later
+        env.woventempdirs = env.woventempdirs + [s]
+        shutil.copytree(self.local_path,os.path.join(s,self.last_postfix))
         #render settings files and replace
         if self.deploy_type == 'project':
             context = {
@@ -123,7 +125,7 @@ TEMPLATE_DIRS = ('/home/{{ user }}/{{ root_domain }}/env/{{ project_fullname }}/
             for d in env.DOMAINS:
                 context['domain']=d
                 template_file = d.replace('.','_') + '.py'
-                template_path = os.path.join(self.tdir,'project',project_name(),'sitesettings',template_file)
+                template_path = os.path.join(s,'project',project_name(),'sitesettings',template_file)
                 f = open(template_path,"r")
                 t = f.read()
                 f.close()
@@ -132,7 +134,7 @@ TEMPLATE_DIRS = ('/home/{{ user }}/{{ root_domain }}/env/{{ project_fullname }}/
                 f = open(template_path,"w+")
                 f.write(rendered)
                 f.close()
-        return env.staging_dir
+        return s
 
     
     def deploy(self,patch=False):
@@ -186,7 +188,7 @@ TEMPLATE_DIRS = ('/home/{{ user }}/{{ root_domain }}/env/{{ project_fullname }}/
         
         if self.dest_path_postfix:
             self.last_postfix = self.dest_path_postfix.split('/')[-2] #since -1 will be trailing slash and thus empty
-            postfix = self.dest_path_postfix.replace(last_postfix+'/','')
+            postfix = self.dest_path_postfix.replace(self.last_postfix+'/','')
             remote_dir = self.deploy_root[:-1]+postfix
             run('mkdir -p '+remote_dir)
 
@@ -200,13 +202,17 @@ TEMPLATE_DIRS = ('/home/{{ user }}/{{ root_domain }}/env/{{ project_fullname }}/
                       extra_opts=extra_opts,exclude=self.rsync_exclude,delete=delete)
 
         
-        #delete orphaned .pyc - specific to projects
+        #delete orphaned .pyc - specific to projects & remove 'woven' from installed apps
         if self.deploy_type == 'project':
             run("find %s -name '*.pyc' -delete"% self.deploy_root)
+            
+            
 
         set_server_state(self.state+self.fullname)
         if env.verbosity:
-            print env.host,"DEPLOYED %s %s"% (self.deploy_type,self.fullname)
+            if patch: print env.host,"PATCHED %s "% (self.deploy_type)
+            else: print env.host,"DEPLOYED %s "% (self.deploy_type)
+            
         return True
     
     def delete(self):
@@ -230,13 +236,6 @@ def deploy_project(version='',patch=False, overwrite=False):
     p = Project(version)
     #all domains on all hosts
     p.make_local_sitesettings(overwrite)
-    #Create an sqlite database directory if necessary
-    if env.DEFAULT_DATABASE_ENGINE == 'django.db.backends.sqlite3' and not patch:
-        db_dir = os.path.join(env.deployment_root,'database')
-        if not exists(db_dir):
-            run("mkdir -p %s"% db_dir)
-            sudo("chown %s:www-data %s"% (env.user,db_dir))
-            sudo("chmod ug+w %s"% db_dir)
     return p.deploy(patch)
 
 class Templates(Project):
@@ -261,14 +260,16 @@ def deploy_templates(version='',patch=False):
         #its probably the last listed
         length = 1000   
         
-        print env.TEMPLATE_DIRS
         for dir in env.TEMPLATE_DIRS:
-            len_dir = len(dir)
-            if len_dir < length:
-                length = len_dir
-                env.project_template_dir = dir
+            if dir:
+                len_dir = len(dir)
+                if len_dir < length:
+                    length = len_dir
+                    env.project_template_dir = dir
+    
     if hasattr(env,'project_template_dir'):
         s = Templates(env.project_template_dir,version)
+
         s.deploy(patch)
     return
     
@@ -289,14 +290,21 @@ class Static(Project):
         self.rsync_exclude = ['*.pyc','*.log','.*']
         self.setting = 'STATIC_ROOT'
         
+        #if app media is not handled by django-staticfiles we can install admin media by default
         if 'django.contrib.admin' in env.INSTALLED_APPS and not env.STATIC_ROOT:
-
+            if env.MEDIA_URL in env.ADMIN_MEDIA_PREFIX:
+                print "ERROR: Your ADMIN_MEDIA_PREFIX must not be on the same path as your MEDIA_URL"
+                print "for example you cannot use MEDIA_URL = /media/ and ADMIN_MEDIA_PREFIX = /media/admin/"
+                sys.exit(1)
+            env.STATIC_URL = env.ADMIN_MEDIA_PREFIX    
             admin = AdminMediaHandler('DummyApp')
             self.local_path = admin.media_dir
             self.dest_path_postfix = env.ADMIN_MEDIA_PREFIX
         else:
-            self.local_path = env.STATIC_ROOT
-           
+            if env.MEDIA_URL in env.STATIC_URL:
+                print "ERROR: Your STATIC_URL must not be on the same path as your MEDIA_URL"
+                print "for example you cannot use MEDIA_URL = /media/ and STATIC_URL = /media/static/"
+                sys.exit(1)        
         
 def deploy_static(version='',patch=False):
     """
@@ -356,8 +364,12 @@ def deploy_db(rollback=False):
     if not rollback:
         db_dir = env.deployment_root+'database'
         if env.DEFAULT_DATABASE_ENGINE=='django.db.backends.sqlite3' and not exists(db_name):
+
             if env.verbosity:
-                print "DEPLOYING DEFAULT SQLITE DATABASE to",db_name
+                print env.host,"DEPLOYING DEFAULT SQLITE DATABASE to",db_name
+            if not os.path.exists(env.DEFAULT_DATABASE_NAME) or not env.DEFAULT_DATABASE_NAME:
+                print "ERROR: the database does not exist. Run python manage.py syncdb to create your database first."
+                sys.exit(1)
             run('mkdir -p '+db_dir)
             put(env.DEFAULT_DATABASE_NAME,db_name)
             sudo("chown -R %s:www-data %s"% (env.user,db_dir))

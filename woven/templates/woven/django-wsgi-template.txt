@@ -1,6 +1,6 @@
 #!/home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/bin/python
 import site
-site.addsitedir('/home/{{ user }}/{{ root_domain }}/{{ project_name }}/lib/python2.6/site-packages')
+site.addsitedir('/home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/lib/python2.6/site-packages')
 
 import sys, os
 

@@ -68,7 +68,7 @@ class WSGI(Project):
             filename = "%s.wsgi"% u_domain
             context = {"user": env.user,
                        "project_name": env.project_name,
-                       "u_domain":self.domain,
+                       "u_domain":u_domain,
                        "root_domain":env.root_domain,
                        }
             wsgi_exists = exists(filename)
@@ -76,7 +76,7 @@ class WSGI(Project):
                 print env.host,"%s already exists on the host %s. Skipping..."% (self.deploy_type,filename)
                 return False
             elif not wsgi_exists and patch:
-                print env.host,"Error: Cannot patch %s %s. This version does not exist"% (project_fullname, self.deploy_type)
+                print env.host,"Error: Cannot patch %s %s. This version does not exist"% (project_fullname(), self.deploy_type)
                 return False
             current_version = active_version()
             if current_version == env.project_fullname and not patch:
@@ -125,16 +125,15 @@ class ApacheWebserver(Project):
     
     def deploy(self,patch=False):
         with cd(self.deploy_root):
+
             log_dir = env.deployment_root+'log'
             if not exists(log_dir):
                 run("mkdir -p %s"% log_dir)
                 sudo("chown -R www-data:sudo %s" % log_dir)
                 sudo("chmod -R ug+w %s"% log_dir)
             u_domain = self.domain.replace('.','_')
-            if patch:
-                filename = u_domain+'-'+patch + '.conf'
-            else:
-                filename = u_domain + '-'+self.version+'.conf'
+
+            filename = u_domain + '-'+self.version+'.conf'
             context = {"project_name": env.project_name,
                         "u_domain":u_domain,
                         "domain":self.domain,
@@ -162,7 +161,7 @@ class ApacheWebserver(Project):
                         if env.verbosity:
                             print env.host,'Disabling', site, filename
                         sudo("rm %s%s"% (self.enabled_path,site))
-                print 'Uploading template'
+
                 upload_template('woven/'+self.template,
                                 filename,
                                 context,
@@ -173,6 +172,8 @@ class ApacheWebserver(Project):
                     if not exists(self.enabled_path+ filename):
                         sudo("ln -s %s%s %s%s"% (self.deploy_root,filename,self.enabled_path,filename))
         set_server_state(self.state + self.fullname)
+        if env.verbosity:
+            print env.host,'DEPLOYED',self.deploy_type
         
     def delete(self):
         pass
@@ -201,23 +202,33 @@ def deploy_webservers(version='',patch=False):
         return True
 
     else:
-        print """WARNING: Apache or Nginx not installed"""
+        print env.host,"""WARNING: Apache or Nginx not installed"""
         return False
     return False
 
 def stop_webservices():
     #TODO - distinguish between a warning and a error on apache
+    if env.verbosity:
+        print env.host,"STOPPING nginx"
     sudo("/etc/init.d/nginx stop")
+
     with settings(warn_only=True):
+        if env.verbosity:
+            print env.host,"STOPPING apache2"
         a = sudo("apache2ctl stop")
+        
     return True
 
 def start_webservices():
     with settings(warn_only=True):
+        if env.verbosity:
+            print env.host,"STARTING apache2"
         a = sudo("apache2ctl start")
     if a.failed and env.verbosity:
         print env.host, a
         return False
+    if env.verbosity:
+        print env.host,"STARTING nginx"
     sudo("/etc/init.d/nginx start")
     return True
 

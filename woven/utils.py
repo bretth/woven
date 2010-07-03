@@ -91,7 +91,8 @@ def interactive():
     return env.INTERACTIVE
 
 def project_version(version=''):
-    env.project_version = parse_project_version(version)
+    if not env.project_version or version:
+        env.project_version = parse_project_version(version)
     return env.project_version
     
 

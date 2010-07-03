@@ -11,10 +11,10 @@
     #This setting is especially useful for small servers
     WSGIDaemonProcess {{ domain }} processes=2 maximum-requests=1000 threads=15 stack-size=524288 
     WSGIProcessGroup {{ domain }}
-    WSGIScriptAlias / /home/{{ user }}/{{ root_domain }}/{{ project_name }}/wsgi/{{ u_domain }}.wsgi
+    WSGIScriptAlias / /home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/wsgi/{{ u_domain }}.wsgi
     
     
-    <Directory /home/{{ user }}/{{ root_domain }}/{{ project_name }}/wsgi>
+    <Directory /home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/wsgi>
         Order deny,allow
         Allow from all
     </Directory>
