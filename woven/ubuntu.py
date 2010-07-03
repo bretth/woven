@@ -71,7 +71,7 @@ def change_ssh_port(rollback=False):
                         print >> sys.stderr, "\nStopped."
                     sys.exit(1)
                 except: #No way to catch the failing connection without catchall? 
-                    print env.host, "Warning: Default port not responding. It may have already been changed, or the host is down. Skipping.."
+                    print env.host, "Warning: Default port not responding. Setupnode may alredy have been run or the host is down. Skipping.."
                     return False
                 sed('/etc/ssh/sshd_config','Port '+ str(before),'Port '+str(after),use_sudo=True)
                 if env.verbosity:
@@ -194,7 +194,7 @@ def install_packages(rollback = False,overwrite=False):
     u = env.HOST_BASE_PACKAGES + env.HOST_EXTRA_PACKAGES
     if not rollback:
         if env.verbosity:
-            print env.host, "INSTALLING & CONFIGURING PACKAGES:"
+            print env.host, "INSTALLING & CONFIGURING HOST PACKAGES:"
             #print ','.join(u)
         #Remove apparmor - TODO we may enable this later
         sudo('/etc/init.d/apparmor stop')
@@ -262,6 +262,7 @@ def install_packages(rollback = False,overwrite=False):
 
         sudo("easy_install -U virtualenv")
         sudo("easy_install -U pip")
+
     
         #cleanup after easy_install
         sudo("rm -rf build")
@@ -317,8 +318,8 @@ def restrict_ssh(rollback=False):
         # The user can modify the sshd_config file directly but we save
         if env.INTERACTIVE and contains('#PasswordAuthentication no','/etc/ssh/sshd_config',use_sudo=True):
             c_text = 'Woven will now remove password login from ssh, and use only your ssh key. \n'
-            c_text = c_text + 'CAUTION: please confirm that you can login to %s:%s as user %s from terminal without a password before continuing.\n'% (env.host, env.port, env.user)
-            c_text += 'If you cannot login, accept default to rollback your sshd_config file:'
+            c_text = c_text + 'CAUTION: please confirm that you can ssh %s@%s -p%s from a terminal without requiring a password before continuing.\n'% (env.user, env.host, env.port)
+            c_text += 'If you cannot login, press enter to rollback your sshd_config file'
             proceed = confirm(c_text,default=False)
     
         if not env.INTERACTIVE or proceed:
@@ -326,8 +327,9 @@ def restrict_ssh(rollback=False):
             uncomment(sshd_config,'#(\s?)PasswordAuthentication(\s*)no',use_sudo=True)
             sudo('/etc/init.d/ssh restart')
         else: #rollback
-            print env.host, 'Rolling back sshd_config'
-            restore_file('/etc/ssh/sshd_config')
+            print env.host, 'Rolling back sshd_config to default and proceeding without passwordless login'
+            restore_file('/etc/ssh/sshd_config', delete_backup=False)
+            sed('/etc/ssh/sshd_config','Port '+ str(env.DEFAULT_SSH_PORT),'Port '+str(env.HOST_SSH_PORT),use_sudo=True)
             
             sudo('/etc/init.d/ssh restart')
             return False
@@ -386,6 +388,8 @@ def setup_ufw(rollback=False):
         sudo('ufw allow %s/tcp'% env.port) #ssh port
         for rule in env.UFW_RULES:
             if rule:
+                if env.verbosity:
+                    print ' *',rule
                 sudo('ufw '+rule)
         backup_file('/etc/ufw/ufw.conf')
         sed('/etc/ufw/ufw.conf','ENABLED=no','ENABLED=yes',use_sudo=True)
@@ -418,7 +422,10 @@ def upgrade_ubuntu():
     """
     if env.verbosity:
         print env.host, "apt-get UPDATING and UPGRADING SERVER PACKAGES"
+        print " * running apt-get update "
     sudo('apt-get -qqy update')
+    if env.verbosity:
+        print " * running apt-get upgrade (note: this may take sometime to complete if the host has not been upgraded recently)"
     sudo('apt-get -qqy upgrade')
 
 def upload_ssh_key(rollback=False):
