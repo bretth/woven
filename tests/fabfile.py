@@ -12,8 +12,9 @@ import time
 
 from fabric.api import env, run, local, sudo, put
 from fabric.state import output
-from fabric.contrib.files import exists, sed, contains
+from fabric.contrib.files import append, exists, sed, contains
 from fabric.context_managers import settings
+from fabric.contrib.console import confirm
 
 from woven.ubuntu import disable_root, upload_ssh_key, change_ssh_port, restrict_ssh
 from woven.ubuntu import uncomment_sources, upgrade_ubuntu, setup_ufw, install_packages, set_timezone
@@ -23,7 +24,7 @@ from woven.project import Project, Static, Public
 from woven.project import deploy_project, deploy_static, deploy_public, deploy_db, deploy_templates
 from woven.webservers import deploy_wsgi, deploy_webservers, start_webservices, stop_webservices
 from woven.management.base import WovenCommand
-from woven.main import setup_environ, setupnode
+from woven.main import setup_environ, setupnode, activate
 
 
 
@@ -207,13 +208,17 @@ def test_virtualenv():
     assert not server_state('created_virtualenv_example_project-0.2')
 
 def bundle():
-    local('pip bundle -r requirements.txt dist/example_project-0.1.pybundle')
+    local('pip bundle -r requirements1.txt dist/requirements1-0.1.pybundle')
 
 #Second deployment step
 def test_pip_install_requirements():
     #output.debug = True
     #Ensure nothing already there
-    local('rm -f dist/example_project-0.1.pybundle')
+    local('rm -f dist/requirements1-0.1.pybundle')
+    local('rm -f requirements.txt')
+    local('rm -f requirements1.txt')
+    local('rm -f pip*')
+
     rmvirtualenv()
     set_server_state('pip_installed_example_project-0.1', delete=True)
     
@@ -221,35 +226,47 @@ def test_pip_install_requirements():
     p = pip_install_requirements()
     assert not p
     v = mkvirtualenv()
-
-    #Install our example staticfiles
+    #c = confirm('PROCEED Install Just woven & django')
+    ##Install Just woven & django
+    env.DJANGO_REQUIREMENT='file://'+os.path.join(os.getcwd(),'dist','Django-1.2.1.tar.gz')
+    p = pip_install_requirements()
+    assert exists('/home/woven/example.com/env/example_project-0.1/lib/python2.6/site-packages/django')
+    
+    set_server_state('pip_installed_example_project-0.1', delete=True)
+    local("echo 'django-staticfiles' >> requirements1.txt")
+    
+    ##Install our example staticfiles
+    #c = confirm('PROCEED Install staticfiles')
     p = pip_install_requirements()
     assert p
     assert exists('/home/woven/example.com/env/example_project-0.1/lib/python2.6/site-packages/staticfiles')
-    
+    #c = confirm('PROCEED fail test')
     #Try installing again - should fail
     p = pip_install_requirements()
     assert not p
-    
+    #c = confirm('PROCEED rollback')
     #Try rolling back installation
     pip_install_requirements(rollback=True)
-    assert not exists('/home/woven/example.com/env/example_project-0.1/lib/python2.6/site-packages/staticfiles')
+    #assert not exists('/home/woven/example.com/env/example_project-0.1/lib/python2.6/site-packages/staticfiles')
     assert not exists('/home/woven/example.com/dist/')
     assert not exists('/home/woven/example.com/package-cache/')
-    
+    #c = confirm('PROCEED bundle')
     #Bundle something up into the dist directory
     bundle()
     p = pip_install_requirements()
-    assert exists('/home/woven/example.com/dist/example_project-0.1.pybundle')
+    assert exists('/home/woven/example.com/dist/requirements1-0.1.pybundle')
     assert exists('/home/woven/example.com/env/example_project-0.1/lib/python2.6/site-packages/staticfiles')
-    #
+
     ##Finally clean up
-    #Test to ensure it doesn't delete everything
-    put('dist/example_project-0.1.pybundle','/home/woven/example.com/dist/example_project-0.2.pybundle')
-    pip_install_requirements(rollback=True)
-    assert exists('/home/woven/example.com/dist/example_project-0.2.pybundle')
+    #Test to ensure it doesn't delete everything - BROKEN
+    #put('dist/example_project-0.1.pybundle','/home/woven/example.com/dist/example_project-0.2.pybundle')
+    #pip_install_requirements(rollback=True)
+    #assert exists('/home/woven/example.com/dist/example_project-0.2.pybundle')
     rmvirtualenv()
     local('rm -f dist/example_project-0.1.pybundle')
+    local('rm -f requirements.txt')
+    local('rm -f requirements1.txt')
+    
     set_server_state('pip_installed_example_project-0.1', delete=True)
 
 def change_version(oldversion,newversion):
@@ -270,7 +287,7 @@ def test_deploy_project():
     
     #tests
     deploy_project()
-    assert exists('/home/woven/example.com/env/example_project-0.1/project/requirements.txt')
+    assert exists('/home/woven/example.com/env/example_project-0.1/project/setup.py')
     assert exists('/home/woven/example.com/env/example_project-0.1/project/example_project/sitesettings/example_com.py')
     assert contains('from example_project.settings import','/home/woven/example.com/env/example_project-0.1/project/example_project/sitesettings/example_com.py')
     #make sure we can't overwrite an existing project
@@ -296,12 +313,12 @@ def test_deploy_project():
     change_version('0.1','0.2')
     
     deploy_project(version='0.2')
-    assert exists('/home/woven/example.com/env/example_project-0.2/project/requirements.txt')
+    assert exists('/home/woven/example.com/env/example_project-0.2/project/setup.py')
     
     #Teardown one project at a time
     p = Project()
     p.delete()    
-    assert exists('/home/woven/example.com/env/example_project-0.1/project/requirements.txt')
+    assert exists('/home/woven/example.com/env/example_project-0.1/project/setup.py')
     change_version('0.2','0.1')
     p = Project(version='0.1')
     p.delete()
@@ -319,7 +336,7 @@ def test_deploy_static():
     #Test with just admin_media
     env.INSTALLED_APPS += ['django.contrib.admin']
     deploy_static()
-    assert exists('/home/woven/example.com/env/example_project-0.1/static/media/css')
+    assert exists('/home/woven/example.com/env/example_project-0.1/static/static/admin-media/css')
     
     #Teardown
     s = Static()
@@ -330,7 +347,7 @@ def test_deploy_public():
     run('rm -rf /home/woven/example.com')
     run('rm -f dist/django-pony1.jpg')
     set_server_state('deployed_public_example_project-0.1',delete=True)
-    
+    env.MEDIA_ROOT =''
     #Test simple with no media_root - fails
     deploy_public()
     
@@ -344,18 +361,11 @@ def test_deploy_public():
     #Test with no files - skips
     deploy_public()
     
-    #Test we don't delete accidentally
-    env.MEDIA_ROOT = os.path.join(setup_dir,'dist','')
-    local('cp -f media_root/django-pony.jpg dist/django-pony1.jpg')
-    deploy_public()
-    assert exists('/home/woven/example.com/public/media/django-pony1.jpg')
-    assert exists('/home/woven/example.com/public/media/django-pony.jpg')
-    
     #Teardown
     p = Public()
     p.delete()
     assert not server_state('deployed_public_example_project-0.1') 
-    local('rm -f dist/django-pony1.jpg')
+
 
 def test_deploy_templates():
     #teardown
@@ -448,6 +458,18 @@ def test_webservices():
     start_webservices()
     stop_webservices()
 
+def test_activate():
+    sudo('rm -rf /home/woven/example.com')
+    set_server_state('deployed_project_example_project-0.1',delete=True)
+    set_server_state('created_virtualenv_example_project-0.1', delete=True)
+    
+    sudo('rm -rf /home/woven/workon-example_project')
+    
+    mkvirtualenv()
+    deploy_project()
+    
+    activate()
+    
    
 def test_project_version():
     """

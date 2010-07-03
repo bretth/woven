@@ -11,6 +11,7 @@ MANAGERS = ADMINS
 
 
 PROJECT_ROOT = os.path.split(os.path.realpath(__file__))[0]
+DISTRIBUTION_ROOT = os.path.split(PROJECT_ROOT)[0]
 
 DATABASES = {
     'default': {
@@ -30,7 +31,7 @@ DATABASES = {
 # timezone as the operating system.
 # If running in a Windows environment this must be set to the same as your
 # system time zone.
-TIME_ZONE = 'America/Chicago'
+TIME_ZONE = 'Australia/Sydney'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
@@ -48,17 +49,17 @@ USE_L10N = True
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = ''
+MEDIA_ROOT = DISTRIBUTION_ROOT + '/media_root/'
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash if there is a path component (optional in other cases).
 # Examples: "http://media.lawrence.com", "http://example.com/media/"
-MEDIA_URL = ''
+MEDIA_URL = '/media/'
 
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
 # Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = '/media/'
+ADMIN_MEDIA_PREFIX = '/static/admin-media/'
 
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = 'w!q4q1rns(@o*)u-7z#v=_bte#372ukhn6%)6i9(qo_wmd*g%8'
@@ -84,6 +85,7 @@ TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
+    DISTRIBUTION_ROOT+'/templates',
 )
 
 INSTALLED_APPS = (
@@ -92,7 +94,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.messages',
-    'woven',
+
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
+    'woven',
 )

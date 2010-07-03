@@ -1,1 +1,8 @@
-django-staticfiles
+#Set your project requirements here
+#By default the current release of Django is installed automatically before any requirements
+
+#A specific version of Django (as a pip install argument) can be set in settings DJANGO_REQUIREMENT
+#For example to install the development version: DJANGO_REQUIREMENT='-e svn+http://code.djangoproject.com/svn/django/trunk/#egg=Django'#To install your own local version: DJANGO_REQUIREMENT='file:///path/to/Django-1.2.1.tar.gz'#Requirements files can be named in order of installation. Anything with req*.txt will be treated as a requirement file
+#eg req1.txt requirements2.txt ...
+
+woven
