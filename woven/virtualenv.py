@@ -126,8 +126,7 @@ class Pip(Virtualenv):
                     self.pip_files.remove(req)
                     self.pip_files.append(bundle)
                     self.pybundles.append(bundle)
-                    print self.pybundles
-                    print self.pip_files
+
 
             
 def pip_install_requirements(rollback=False):
