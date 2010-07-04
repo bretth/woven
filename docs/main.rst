@@ -12,7 +12,7 @@ Woven currently provides three management commands for your Django project:
 
 ``setupnode``, ``deploy`` and ``patch``
 
-Others may be added in the future. They're pretty simple but Lets walk through how they are used to deploy your project.
+Others may be added in the future, but for now that's it. They're pretty simple but Lets walk through how they are used to deploy your project.
 
 Setupnode
 ----------
@@ -135,12 +135,17 @@ Of course mistakes are made, and you cannot re-deploy the same significant versi
     
 This will update existing files in your project, media and webserver configurations. It won't delete any files or update any dependencies. To update dependencies to a new library version you would need to increase your setup.py version and re-run deploy.
 
-Finally, ssh into your host and type::
+Where to now
+------------
+
+SSH into your host and type::
 
     source workon-[projectname]
     
-This will activate your current virtualenv and drop you into the project manage.py directory
-   
+This will activate your current virtualenv and drop you into the project manage.py directory.
+
+Of course installing packages from a requirements file each version can be slow, especially if you are
+downloading the same django version each time. To get around this first set your DJANGO_REQUIREMENT setting to file:///path/to/Django-x.x.x.tar.gz to rsync against a local copy. Next make use of pip ``bundle`` command. ``pip bundle dist/requirements-0.1.pybundle -r requirements.txt`` to bundle all the requirements into a dist directory in project. Woven will look in the dist directory first and install from a bundle with the same name as the requirements file with the current significant version on the end.
 
 Development
 ===========
@@ -151,9 +156,11 @@ though the core highlevel functions setupnode, deploy, and patch will not change
 The main feature goals of this project are to:
 
 * allow deployment of Django projects with minimal configuration and using just a minimal setup.py file, your existing project settings.py, and a pip requirements file
-* take advantage of a proper setup.py sdist (not yet implemented).
+* take advantage of a proper setup.py sdist with a ``package`` command that creates bundles and source distributions. (not yet implemented)
+* issue arbitrary management commands to hosts ``python manage.py node [command] --host=[user@ipaddress] (not yet implemented)
 * deploy each significant version of your project and dependencies into a separate virtualenv virtual python environment to allow simple switching/rollback between versions
 * integration with Django South for database & data migration (not yet implemented)
+* maintainance pages for downtime (not yet implemented)
 * allow simple deployment of multi-site projects (not yet implemented)
 * allow command usage within a standard Fabric fabfile.py if complex configuration is required
 * provide standard django templates for all configuration files such as apache, nginx, mod-wsgi 
@@ -161,7 +168,6 @@ The main feature goals of this project are to:
 * configure postgresql (not yet implemented)
 * setup option for GeoDjango (not yet implemented)
 * install any configuraton templates for ubuntu packages in /etc/[package] (not yet implemented).
-* issue arbitrary management commands to hosts ``python manage.py node [command] --host=[user@ipaddress]
 
 The woven project is hosted on github at http://github.com/bretth/woven. Feature requests and bug reports are welcome.
 

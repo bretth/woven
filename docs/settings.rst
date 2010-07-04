@@ -44,7 +44,7 @@ Django settings.py. They are all optional.
     #Put any additional packages here to save overwriting the base_packages
     HOST_EXTRA_PACKAGES = [] 
         
-    #Virtualenv/Pip (Not Yet Implemented)
+    #Virtualenv/Pip
     DJANGO_REQUIREMENT = 'Django' # Defaults to django. A pip requirements string for the version of Django to install
     
     #Application media - as per build_static app
