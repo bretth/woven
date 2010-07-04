@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from distribute_setup import use_setuptools
-use_setuptools()
-
 from setuptools import setup, find_packages
 from woven import get_version
 
@@ -15,7 +12,10 @@ setup(name='woven',
       package_dir={'woven': 'woven'},
       packages=find_packages(),
       include_package_data = True,
-      package_data={'woven': ['templates/*.txt']},
+      package_data={'woven': ['templates/woven/*.txt',
+                              'templates/woven/nginx/*.conf',
+                              'templates/woven/apache2/*.conf',
+                              'templates/woven/ssh/sshd_config']},
       classifiers=['Development Status :: 3 - Alpha',
                    'Environment :: Web Environment',
                    'Framework :: Django',
@@ -25,5 +25,6 @@ setup(name='woven',
                    'Programming Language :: Python',
                    'Topic :: Software Development :: Libraries :: Python Modules',
                    'Topic :: Utilities'],
+      long_description="See http://packages.python.org/woven/ for documentation",
       install_requires=['Fabric','Paramiko'],
       )
