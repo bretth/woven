@@ -15,3 +15,4 @@ tests/example.com/*
 *.egg-info/*
 docs/Makefile
 *.zip
+_build/*
