@@ -90,6 +90,9 @@ def deploy(patch=False):
     #    print "and 'source workon-%s to activate the environment and change into the project directory"% project_name()
 
 def patch():
+    """
+    Patch the current version. Does not install packages or delete files
+    """
     deploy(patch=True)
     
 
