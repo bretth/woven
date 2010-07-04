@@ -182,9 +182,7 @@ def setup_environ(settings=None, setup_dir=''):
     env.MEDIA_URL = project_settings.MEDIA_URL
     env.ADMIN_MEDIA_PREFIX = project_settings.ADMIN_MEDIA_PREFIX
     env.TEMPLATE_DIRS = project_settings.TEMPLATE_DIRS
-
-
-    
+   
     #If sqlite is used we can manage the database on deployment
     env.DEFAULT_DATABASE_ENGINE = project_settings.DATABASES['default']['ENGINE']
     env.DEFAULT_DATABASE_NAME = project_settings.DATABASES['default']['NAME']

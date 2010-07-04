@@ -60,7 +60,12 @@ class WovenCommand(BaseCommand):
         """
         This will be executed per host - override in subclass
         """
-    
+    def parse_host_args(self, *args):
+        """
+        Returns a comma separated string of hosts
+        """
+        return ','.join(args)
+        
     def handle(self, *args, **options):
         """
         Initializes the fabric environment
@@ -80,7 +85,7 @@ class WovenCommand(BaseCommand):
 
         #Hosts can be args or options
         #args will be tuple, --host option will be same as Fabric
-        if args: state.env.hosts = ','.join(args)
+        if args: state.env.hosts = self.parse_host_args(*args)
 
         #This next section is taken pretty much verbatim from fabric.main
         #so we follow an almost identical but more limited execution strategy
@@ -123,10 +128,4 @@ class WovenCommand(BaseCommand):
                 self.handle_host(*args, **options)
             # Put old user back
             state.env.user = prev_user
-
-
-
-
-  
-
 

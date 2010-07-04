@@ -10,6 +10,6 @@ class Command(WovenCommand):
     requires_model_validation = False
     
     def handle_host(self,*args, **options):
-        # Log to stdout
+
         deploy()
 
