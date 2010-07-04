@@ -157,7 +157,7 @@ The main feature goals of this project are to:
 
 * allow deployment of Django projects with minimal configuration and using just a minimal setup.py file, your existing project settings.py, and a pip requirements file
 * take advantage of a proper setup.py sdist with a ``package`` command that creates bundles and source distributions. (not yet implemented)
-* issue arbitrary management commands to hosts ``python manage.py node [command] --host=[user@ipaddress] (not yet implemented)
+* issue arbitrary management commands to hosts ``python manage.py node [command] --host=[user@ipaddress]`` (not yet implemented)
 * deploy each significant version of your project and dependencies into a separate virtualenv virtual python environment to allow simple switching/rollback between versions
 * integration with Django South for database & data migration (not yet implemented)
 * maintainance pages for downtime (not yet implemented)
