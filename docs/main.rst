@@ -70,7 +70,7 @@ Deploy
 
 Deploy early. Deploy often.
 
-First configure the usual necessary project settings if they're not already done:: 
+First configure the usual necessary project settings.py if they're not already done. Here are some notes about the main ones:: 
 
     # Woven will deploy your default development sqlite3 database onto the host,
     # otherwise it assumes you manage the db externally.
