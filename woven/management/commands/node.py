@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+"""
+Node command to execute arbitrary commands on a host.
+
+"""
 from optparse import make_option
 from fabric.state import env
 from fabric.context_managers import cd
@@ -11,7 +15,7 @@ from woven.utils import root_domain, project_fullname, project_name
 class Command(WovenCommand):
     option_list = WovenCommand.option_list + (
         make_option('--options',
-            help='Store all command options in a string. ie --options="--[opt]=[value] ..."'),
+            help='Store all the management command options in a string. ie --options="--[opt]=[value] ..."'),
     )
     help = """Execute a management command on one or more hosts"""\
     """ Must not require user input"""
