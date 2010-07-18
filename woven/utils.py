@@ -2,16 +2,53 @@
 from __future__ import with_statement
 
 import os, shutil, sys, tempfile
+import json
 from functools import wraps
 from pkg_resources import parse_version
+from contextlib import contextmanager
 
 from django.template.loader import render_to_string
 
-from fabric.api import env,  local, put, run, sudo, prompt
+from fabric.api import env,  local, put, prompt
 from fabric.contrib.files import append, exists, contains
-from fabric.context_managers import cd, hide, settings
+from fabric.context_managers import cd, hide, settings, _setenv
+from fabric.decorators import runs_once
+from fabric.operations import _AttributeString, run, sudo
 
 from woven.global_settings import woven_env
+
+class State(str):
+    """
+    State class - similar in principle and use to the _AttributeString in Fabric.
+    
+    It may be used to store stdout stderr etc.
+
+    State has an object attribute to store objects that can be converted to json strings
+    for storage on the host using the set_server_state function and
+    retrieve it using server_state.
+
+    """
+    def __init__(self,name,object=None):
+        self.name = name
+        self.object = object
+        self.failed = False
+        self.stderr = ''
+        self.stdout = ''
+    def __repr__(self):
+        return str(self.name)
+    def __str__(self):
+        return str(self.name)
+    def __bool__(self):
+        return not self.failed
+    def __len__(self):
+        if self.failed: return 0
+        else: return 1
+    def __eq__(self, other):
+        return self.name == other
+    def __cmp__(self,other):
+        return self.name == other
+    def __ne__(self,other):
+        return str(self.name) <> other
 
 def active_version():
     """
@@ -44,69 +81,102 @@ def restore_file(path, delete_backup=True):
         else:
             sudo('cp -f '+path+'.wovenbak '+path)
    
-def set_server_state(name,content='',delete=False):
+def set_server_state(name,object=None,delete=False):
     """
     Sets a simple 'state' on the server by creating a file
-    with the desired state's name and echoing content if supplied
+    with the desired state's name and storing ``content`` as json strings if supplied
+    
+    returns the filename used to store state   
     """
+    if not hasattr(env,'project_name'): env.project_name = ''
+    if not hasattr(env,'project_version'): env.project_version = ''
+    state_name = '-'.join([name,env.project_name,env.project_version])
     with settings(warn_only=True):
         #Test for os state
         if not exists('/var/local/woven', use_sudo=True):
             sudo('mkdir /var/local/woven')
     if not delete:
-        sudo('touch /var/local/woven/%s'% name)
-        if content:
-            sudo("echo '%s' > /var/local/woven/%s"% (content,name))
+        sudo('touch /var/local/woven/%s'% state_name)
+        if object:
+            sudo("echo '%s' > /var/local/woven/%s"% (json.dumps(object),state_name))
     else:
-        sudo('rm -f /var/local/woven/%s'% name)
+        sudo('rm -f /var/local/woven/%s'% state_name)
+    return state_name
 
 def server_state(name, prefix=False):
     """
-    If the server state exists return the file as a string or True if
+    If the server state exists return parsed json as a python object or True if
     no content exists.
     
     If prefix returns True if any files exist with ls name*
     """
-    
-    if not prefix and exists('/var/local/woven/%s'% name, use_sudo=True):
-        content = sudo('cat /var/local/woven/%s'% name).strip()
+    if not hasattr(env,'project_name'): env.project_name = ''
+    if not hasattr(env,'project_version'): env.project_version = ''
+    full_name = '-'.join([name,env.project_name,env.project_version])
+    state = State(full_name)
+    state.content = None
+    state.failed = True
+    if not prefix and exists('/var/local/woven/%s'% full_name, use_sudo=True):
+        content = sudo('cat /var/local/woven/%s'% full_name).strip()
+        state.name = full_name
+        state.failed = False
         if content:
-            return content
-        else:
-            return True
+            state.object = json.loads(content)
     elif prefix:
         with settings(warn_only=True):
-            state = sudo('ls /var/local/woven/%s*'% name)
-        if state.failed:
-            return False
-        else:
-            return True
-        
-    else:
-        return False
+            current_state = sudo('ls /var/local/woven/%s*'% name)
+        if not current_state.failed:
+            state.name = name
+            state.failed = False
+    return state
 
 def interactive():
     if not hasattr(env, 'INTERACTIVE'):
         env.INTERACTIVE = False
     return env.INTERACTIVE
 
-def project_version(version=''):
-    if not env.project_version or version:
-        env.project_version = parse_project_version(version)
-    return env.project_version
+def mkdirs(remote_dir, use_sudo=False):
+    """
+    Wrapper around mkdir -pv
     
+    Returns a list of directories created
+    """
+    func = use_sudo and sudo or run
+    result = func(' '.join(['mkdir -pv',remote_dir])).split('\n')
+    #extract dir list from ["mkdir: created directory `example.com/some/dir'"]
+    if result[0]: result = [dir.split(' ')[3][1:-1] for dir in result if dir]
+    return result
+    
+
+#def project_version(version=''):
+#    """
+#    Gets the projects significant version (major.minor.maintainance-stage)
+#    """
+#    if not version: version = local('python setup.py --version').rstrip()
+#    project_version = parse_project_version(version)
+#
+#    return project_version
 
 def project_name():
     """
     Get the project name from the setup.py
     """
-    if not hasattr(env,'project_name'):
-        env.project_name = local('python setup.py --name').rstrip()
-    return env.project_name
+    project_name = local('python setup.py --name').rstrip()
+    return project_name
 
 def project_fullname(version=''):
-    env.project_fullname = project_name() + '-' + project_version(version)
-    return env.project_fullname
+    project_fullname = project_name() + '-' + project_version(version)
+    return project_fullname
+
+@runs_once
+def set_project_env(version=''):
+    env.project_name = project_name()
+    if not version: env.project_full_version = local('python setup.py --version').rstrip()
+    else: env.project_full_version = version
+    env.project_version = parse_project_version(env.project_full_version)
+    env.project_fullname = '-'.join([env.project_name,env.project_version])
+    env.deployment_root = '/'.join(['/home',env.user,root_domain()])
+
         
 def parse_project_version(version=''):
     """
@@ -152,8 +222,6 @@ def parse_project_version(version=''):
             stage = stage.split('-')[0]
         return (finalvers,stage,stage_sep)
         
-    if not version:
-        version = local('python setup.py --version').rstrip()
     v = version.split('.')
     major = v[0]
     minor = v[1]
@@ -256,4 +324,13 @@ def upload_template(filename,  destination,  context={},  use_sudo=False):
     # Actually move uploaded template to destination
     func("mv %s %s" % (temp_destination, destination))
 
+def project_version(full_version):
+    """
+    project_version context manager
+    """
+    project_full_version=full_version,
+    v = parse_project_version(full_version)
+    name = project_name()
+    project_fullname = '-'.join([name,v])
+    return _setenv(project_full_version=project_full_version, project_version=v,project_name=name,project_fullname=project_fullname)
     
