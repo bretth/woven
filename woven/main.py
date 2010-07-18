@@ -196,7 +196,7 @@ def setup_environ(settings=None, setup_dir=''):
     
     #placeholder for staging directories to cleanup after deployment
     env.woventempdirs = []
-    env.project_version = ''
+    
 
 
 def setupnode(rollback=False, overwrite=False):
