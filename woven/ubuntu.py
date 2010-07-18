@@ -71,7 +71,7 @@ def change_ssh_port(rollback=False):
                         print >> sys.stderr, "\nStopped."
                     sys.exit(1)
                 except: #No way to catch the failing connection without catchall? 
-                    print env.host, "Warning: Default port not responding. Setupnode may alredy have been run or the host is down. Skipping.."
+                    print env.host, "Warning: Default port not responding. Setupnode may already have been run or the host is down. Skipping.."
                     return False
                 sed('/etc/ssh/sshd_config','Port '+ str(before),'Port '+str(after),use_sudo=True)
                 if env.verbosity:
@@ -195,7 +195,6 @@ def install_packages(rollback = False,overwrite=False):
     if not rollback:
         if env.verbosity:
             print env.host, "INSTALLING & CONFIGURING HOST PACKAGES:"
-            #print ','.join(u)
         #Remove apparmor - TODO we may enable this later
         sudo('/etc/init.d/apparmor stop')
         sudo('update-rc.d -f apparmor remove')
@@ -203,7 +202,7 @@ def install_packages(rollback = False,overwrite=False):
         p = run("dpkg -l | awk '/ii/ {print $2}'").split('\n')
     
         #The principle we will use is to only install configurations and packages
-        #if they do not already exist (ie manually installed or other method)
+        #if they do not already exist (ie not manually installed or other method)
         
         for package in u:
             if not package in p:
