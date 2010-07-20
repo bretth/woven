@@ -73,7 +73,7 @@ def activate():
                     sudo("chmod 644 %s" % '/'.join([path,'sites-available',site]))
                     sudo("ln -s %s/sites-available/%s %s/sites-enabled/%s"% (path,site,path,site))
                     if env.verbosity:
-                        print env.host," * enabled", site
+                        print env.host," * enabled", "%s/sites-enabled/%s"% (path,site)
   
         if env.verbosity:
             print env.host,env.project_fullname, "ACTIVATED"
