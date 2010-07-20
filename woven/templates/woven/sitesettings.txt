@@ -1,0 +1,29 @@
+#Import global project settings
+from {{ project_name }}.settings import *
+
+#Override global settings with site/host local settings
+#template tags will be substituted on project deployment
+#Customize and add any other local site settings as required
+
+DEBUG = False
+TEMPLATE_DEBUG = DEBUG
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': '/home/{{ user }}/{{ root_domain }}/database/{{ project_name }}.db', # Or path to database file if using sqlite3.
+        'USER': '', # Not used with sqlite3.
+        'PASSWORD': '', # Not used with sqlite3.
+        'HOST': '',  # Set to empty string for localhost. Not used with sqlite3.
+        'PORT': '',  # Set to empty string for default. Not used with sqlite3.
+    }
+}
+
+#Amend this if required
+SITE_ID = {{ site_id }}
+
+#Normally you won't need to amend these settings
+MEDIA_ROOT = '/home/{{ user }}/{{ root_domain }}/public/'
+STATIC_ROOT = '/home/{{ user }}/{{ root_domain }}/env/{{ project_fullname }}/static/'
+TEMPLATE_DIRS = ('/home/{{ user }}/{{ root_domain }}/env/{{ project_fullname }}/templates/',
+                '/home/{{ user }}/{{ root_domain }}/env/{{ project_fullname }}/templates/{{ domain }}',)
