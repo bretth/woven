@@ -55,13 +55,14 @@ def deploy_project():
     """
     Deploy to the project directory in the virtualenv
     """
+    #TODO - deploy packaged dist if exists
     project_root = '/'.join([env.deployment_root,'env',env.project_fullname,'project'])
     local_dir = os.getcwd()
     
     if env.verbosity:
         print env.host,"DEPLOYING project", env.project_fullname
     #Exclude a few things that we don't want deployed as part of the project folder
-    rsync_exclude = ['*.pyc','*.log','.*','/build','/dist','/media*','/www','/public','/templates']
+    rsync_exclude = ['*.pyc','*.log','.*','/build','/dist','/media*','/static*','/www','/public','/templates']
 
     #make site local settings if they don't already exist
     _make_local_sitesettings()
