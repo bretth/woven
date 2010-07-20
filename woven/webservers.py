@@ -18,193 +18,84 @@ from fabric.version import get_version
 
 from woven.utils import root_domain, server_state, set_server_state
 from woven.utils import project_fullname, project_name, project_version, active_version
-from woven.utils import upload_template
+from woven.utils import upload_template, mkdirs
 
-from woven.project import Project
-
-def _ls_sites(path):
-    """
-    List only sites in the env.DOMAINS to ensure we co-exist with other projects
-    
-    """
-    
-    sites = run('ls %s'% path).split('\n')
-    doms = env.DOMAINS
-    dom_sites = []
-    for s in sites:
-        ds = s.split('-')[0]
-        ds = ds.replace('_','.')
-        if ds in doms and s not in dom_sites:
-            dom_sites.append(s)
-    return dom_sites
-
-def sites_enabled():
-    """
-    Get a list of apache sites enabled
-    """
-    path = "/etc/apache2/sites-enabled/"
-    if exists(path, use_sudo=True):
-        sites_enabled = _ls_sites(path)
-    return sites_enabled
-
-class WSGI(Project):
-    """
-    Deploy a modwsgi file per domain and base class for webserver classes
-    """
-    
-    state = 'deployed_wsgi_'
-    def __init__(self,domain, version=''):
-        super(WSGI,self).__init__(version)
-        self.domain = domain
-        self.template = 'django-wsgi-template.txt'
+from woven.deployment import run_once_per_host_version, deploy_files
         
-    
-    def deploy(self, patch=False):
-        
-        if not exists(self.deploy_root):
-            run("mkdir -p %s" % self.deploy_root)
-        with cd(self.deploy_root):
-            u_domain = self.domain.replace('.','_')
+@run_once_per_host_version
+def deploy_wsgi():
+    """
+    wrapper around WSGI
+    """
+    remote_dir = '/'.join([env.deployment_root,'env',env.project_fullname,'wsgi'])
+    if not env.DOMAINS: env.DOMAINS = [root_domain()]
+    for domain in env.DOMAINS:
+        deployed = mkdirs(remote_dir)
+        with cd(remote_dir):
+            u_domain = domain.replace('.','_')
             filename = "%s.wsgi"% u_domain
             context = {"user": env.user,
                        "project_name": env.project_name,
                        "u_domain":u_domain,
                        "root_domain":env.root_domain,
                        }
-            wsgi_exists = exists(filename)
-            if wsgi_exists and not patch: 
-                print env.host,"%s already exists on the host %s. Skipping..."% (self.deploy_type,filename)
-                return False
-            elif not wsgi_exists and patch:
-                print env.host,"Error: Cannot patch %s %s. This version does not exist"% (project_fullname(), self.deploy_type)
-                return False
-            current_version = active_version()
-            if current_version == env.project_fullname and not patch:
-                print env.host,"Warning: Cannot deploy %s, version %s already active. Increase the version and re-deploy. Skipping.."% (self.deploy_type,env.project_fullname)
-                return False
-            else: #not exists
-                upload_template('woven/'+self.template,
-                                    filename,
-                                    context,
-                                )
-                
-                #finally set the ownership/permissions
-                #We'll use the group to allow www-data execute
-                if self.deploy_type == 'wsgi':
-                    sudo("chown %s:www-data %s"% (env.user,filename))
-                    run("chmod ug+xr %s"% filename)
-        set_server_state(self.state+env.project_fullname)        
-        
-
-def deploy_wsgi(version='',patch=False):
-    """
-    wrapper around WSGI
-    """
-    if not env.DOMAINS: env.DOMAINS = [root_domain()]
-    for domain in env.DOMAINS:
-        w = WSGI(domain,version)
-        w.deploy(patch)
-
-class ApacheWebserver(Project):
-    """
-    Deploy Apache webserver configuration
-    """
-    state = 'deployed_apache_webserver_'
-    def __init__(self,domain,version=''):
-        super(ApacheWebserver,self).__init__(version)
-        self.domain = domain
-        self.template = 'django-apache-template.txt'
-        self.deploy_root = "/etc/apache2/sites-available/"
-        self.enabled_path = "/etc/apache2/sites-enabled/"
-        self.version = project_version(version)
-        if not 'http:' in env.MEDIA_URL: self.media_url = env.MEDIA_URL
-        else: self.media_url = ''
-        if not 'http:' in env.STATIC_URL: self.static_url = env.STATIC_URL
-        else: self.static_url = ''            
-
-    
-    def deploy(self,patch=False):
-        with cd(self.deploy_root):
-
-            log_dir = env.deployment_root+'log'
-            if not exists(log_dir):
-                run("mkdir -p %s"% log_dir)
-                sudo("chown -R www-data:sudo %s" % log_dir)
-                sudo("chmod -R ug+w %s"% log_dir)
-            u_domain = self.domain.replace('.','_')
-
-            filename = u_domain + '-'+self.version+'.conf'
-            context = {"project_name": env.project_name,
-                        "u_domain":u_domain,
-                        "domain":self.domain,
-                        "root_domain":env.root_domain,
-                        "user":env.user,
-                        "host_ip":env.host,
-                        "media_url":self.media_url,
-                        "static_url":self.static_url,
-                        }
-                
-            conf_exists = exists(os.path.join(self.enabled_path,filename), use_sudo=True)
-            state = server_state(self.state+env.project_fullname)
-
-            if not conf_exists and patch:
-                if env.verbosity:
-                    print env.host,"Cannot patch %s conf %s. This version does not exist on %s. Skipping"% (self.deploy_type, filename, env.host)
-                return False
-            elif state and not patch: #active version
-                print "%s conf %s already exists on the host %s. Skipping"% (self.deploy_type, filename, env.host)
-                return False
-            else:
-                enabled_sites = _ls_sites(self.enabled_path)
-                if not patch:
-                    for site in enabled_sites:
-                        if env.verbosity:
-                            print env.host,'Disabling', site, filename
-                        sudo("rm %s%s"% (self.enabled_path,site))
-
-                upload_template('woven/'+self.template,
+            upload_template('/'.join(['woven','django-wsgi-template.txt']),
                                 filename,
                                 context,
-                                use_sudo=True)
-                if not patch:
-                    #enable this site
-                    sudo("chmod 644 %s" % filename)
-                    if not exists(self.enabled_path+ filename):
-                        sudo("ln -s %s%s %s%s"% (self.deploy_root,filename,self.enabled_path,filename))
-        set_server_state(self.state + self.fullname)
-        if env.verbosity:
-            print env.host,'DEPLOYED',self.deploy_type
-        
-    def delete(self):
-        pass
+                            )
+            #finally set the ownership/permissions
+            #We'll use the group to allow www-data execute
+            sudo("chown %s:www-data %s"% (env.user,filename))
+            run("chmod ug+xr %s"% filename)
 
-class NginxWebserver(ApacheWebserver):
-    state = 'deployed_nginx_webserver_'
-    def __init__(self,domain, version=''):
-        super(NginxWebserver,self).__init__(domain,version)
-        self.template = 'nginx-template.txt'
-        self.deploy_root = "/etc/nginx/sites-available/"
-        self.enabled_path = "/etc/nginx/sites-enabled/"
-        
-def deploy_webservers(version='',patch=False):
-    """ Deploy  apache & nginx site configurations to the host """
-    if not env.DOMAINS: env.DOMAINS = [root_domain()]
-    #TODO - incorrect - check for actual package
+def _deploy_webserver(remote_dir,template):
+    
+    if not 'http:' in env.MEDIA_URL: media_url = env.MEDIA_URL
+    else: media_url = ''
+    if not 'http:' in env.STATIC_URL: static_url = env.STATIC_URL
+    else: static_url = ''    
+    log_dir = '/'.join([env.deployment_root,'log'])
+    deployed = []
+    for d in env.DOMAINS:
+
+        u_domain = d.replace('.','_')
+
+        filename = ''.join([remote_dir,'/',u_domain,'-',env.project_version,'.conf'])
+        context = {"project_name": env.project_name,
+                    "u_domain":u_domain,
+                    "domain":d,
+                    "root_domain":env.root_domain,
+                    "user":env.user,
+                    "host_ip":env.host,
+                    "media_url":media_url,
+                    "static_url":static_url,
+                    }
+
+        upload_template('/'.join(['woven',template]),
+                        filename,
+                        context,
+                        use_sudo=True)
+
+    return deployed
+
+
+@run_once_per_host_version
+def deploy_webservers():
+    """ Deploy apache & nginx site configurations to the host """
+    deployed = []
+    log_dir = '/'.join([env.deployment_root,'log'])
+    #TODO - incorrect - check for actual package to confirm installation
     if exists('/etc/apache2/sites-enabled/') and exists('/etc/nginx/sites-enabled'):
-
-        for d in env.DOMAINS:
-            a = ApacheWebserver(d,version)
-            a.deploy(patch)
-            
-            n = NginxWebserver(d,version)
-            n.deploy(patch)
-        set_server_state('deployed_webservers_' + project_fullname())
-        return True
-
+        if not exists(log_dir):
+            deployed += mkdirs(log_dir)
+            sudo("chown -R www-data:sudo %s" % log_dir)
+            sudo("chmod -R ug+w %s"% log_dir)
+        deployed += _deploy_webserver('/etc/apache2/sites-available','django-apache-template.txt')
+        deployed += _deploy_webserver('/etc/nginx/sites-available','nginx-template.txt')
     else:
         print env.host,"""WARNING: Apache or Nginx not installed"""
-        return False
-    return False
+        
+    return deployed
 
 def stop_webservices():
     #TODO - distinguish between a warning and a error on apache
