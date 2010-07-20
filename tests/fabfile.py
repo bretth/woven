@@ -11,21 +11,10 @@ import sys
 import time
 
 from fabric.operations import _AttributeString
-from fabric.api import env, run, local, sudo, put
-from fabric.state import output
-from fabric.contrib.files import append, exists, sed, contains
-from fabric.context_managers import settings
-from fabric.contrib.console import confirm
+from fabric.api import *
 
-from woven.ubuntu import disable_root, upload_ssh_key, change_ssh_port, restrict_ssh
-from woven.ubuntu import uncomment_sources, upgrade_ubuntu, setup_ufw, install_packages, set_timezone
-from woven.utils import server_state, set_server_state, root_domain, set_project_env, project_version, project_fullname, project_name, State
-from woven.virtualenv import mkvirtualenv, rmvirtualenv, pip_install_requirements
-from woven.project import deploy_project, deploy_static, deploy_public, deploy_db, deploy_templates
-from woven.webservers import deploy_wsgi, deploy_webservers, start_webservices, stop_webservices
 from woven.management.base import WovenCommand
-from woven.main import setup_environ, setupnode, activate
-from woven.deployment import _get_local_files, _stage_local_files, deploy_files, run_once_per_host_version
+from woven.api import *
 
 
 #Test the setup_environ indirectly by calling the management command 
