@@ -175,7 +175,10 @@ def set_project_env(version=''):
     else: env.project_full_version = version
     env.project_version = parse_project_version(env.project_full_version)
     env.project_fullname = '-'.join([env.project_name,env.project_version])
-    env.deployment_root = '/'.join(['/home',env.user,root_domain()])
+    if not env.DOMAINS: env.DOMAINS = [root_domain()]
+    env.deployment_root = '/'.join(['/home',env.user,env.root_domain])
+    env.patch = False
+    
 
         
 def parse_project_version(version=''):
