@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from glob import glob
-import os
+import os, sys
 
 from django import get_version
 from django.template.loader import render_to_string
@@ -9,11 +9,11 @@ from fabric.api import env, run, sudo, get
 from fabric.context_managers import cd, hide, settings
 from fabric.contrib.files import exists
 
-from woven.deployment import run_once_per_version, deploy_files
+from woven.deployment import run_once_per_host_version, deploy_files
 from woven.utils import mkdirs, project_fullname, set_server_state, server_state, State
 
 
-@run_once_per_version
+@run_once_per_host_version
 def mkvirtualenv():
     root = '/'.join([env.deployment_root,'env'])
     path = '/'.join([root,env.project_fullname])
@@ -46,7 +46,7 @@ def rmvirtualenv():
     if not server_state('mkvirtualenv',prefix=True):
         sudo('rm -rf '+env.deployment_root)        
 
-@run_once_per_version    
+@run_once_per_host_version    
 def pip_install_requirements():
     """
     Install on current installed virtualenv version from a [dist/project name-version].pybundles or pip ``req.txt``|``requirements.txt``
@@ -131,7 +131,7 @@ def pip_install_requirements():
                 if bundle: req=bundle
                 if env.verbosity:
                     print env.host, ' * installing',req
-                if '.pybundle' or 'django'in req.lower():
+                if '.pybundle' in req.lower() or 'django' in req.lower():
                     install = run('pip install %s -q --environment=%s --log=/home/%s/.pip/%s_pip_log.txt'%
                                   (req, python_path, env.user, req.replace('.','_')))
                 else:
@@ -140,7 +140,7 @@ def pip_install_requirements():
 
                 if install.failed:
                     out.failed =True
-                    out.stderr += ' '.join([env.host, "ERROR INSTALLING",req])
+                    out.stderr += ' '.join([env.host, "ERROR INSTALLING",req,'\n'])
                     
                     #fabric 1.0
                     if hasattr(install,'stderr'):
@@ -149,8 +149,8 @@ def pip_install_requirements():
     out.object = deployed
               
     if install.failed:
-        msg = ' '.join([env.host, 'ERROR: PIP errors please review the pip logs at', pip_log_dir])
-        out.stderr = '\n'.join([msg,out.stderr])
+        print out.stderr
+        sys.exit(1)
     return out
     
     
