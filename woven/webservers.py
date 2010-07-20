@@ -29,8 +29,11 @@ def deploy_wsgi():
     """
     remote_dir = '/'.join([env.deployment_root,'env',env.project_fullname,'wsgi'])
     if not env.DOMAINS: env.DOMAINS = [root_domain()]
+    deployed = []
+    if env.verbosity:
+        print env.host,"DEPLOYING WSGI"
     for domain in env.DOMAINS:
-        deployed = mkdirs(remote_dir)
+        deployed += mkdirs(remote_dir)
         with cd(remote_dir):
             u_domain = domain.replace('.','_')
             filename = "%s.wsgi"% u_domain
@@ -47,6 +50,7 @@ def deploy_wsgi():
             #We'll use the group to allow www-data execute
             sudo("chown %s:www-data %s"% (env.user,filename))
             run("chmod ug+xr %s"% filename)
+    return deployed
 
 def _deploy_webserver(remote_dir,template):
     

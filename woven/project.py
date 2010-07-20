@@ -73,8 +73,7 @@ def deploy_project():
 
     #make site local settings if they don't already exist
     _make_local_sitesettings()
-    deployed = deploy_files(local_dir, project_root, rsync_exclude=rsync_exclude)
-    return 
+    return deploy_files(local_dir, project_root, rsync_exclude=rsync_exclude)
     
 
 @run_once_per_host_version
