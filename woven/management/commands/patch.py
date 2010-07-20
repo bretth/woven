@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from optparse import make_option
 
+from fabric.context_managers import settings
 
 from woven.api import deploy, activate
 from woven.management.base import WovenCommand
