@@ -3,7 +3,7 @@ import os,sys
 
 from django.utils.importlib import import_module
 
-from fabric.api import env, local, run
+from fabric.api import env, local, run, cd, sudo
 from fabric.main import find_fabfile
 from fabric.contrib.files import append, exists
 
@@ -15,31 +15,58 @@ from woven.project import deploy_static, deploy_public, deploy_project, deploy_d
 from woven.webservers import deploy_wsgi, deploy_webservers, start_webservices, stop_webservices
 from woven.global_settings import woven_env
 
+def _ls_sites(path):
+    """
+    List only sites in the env.DOMAINS to ensure we co-exist with other projects
+    """
+    with cd(path):
+        sites = run('ls').split('\n')
+        doms = env.DOMAINS
+        dom_sites = []
+        for s in sites:
+            ds = s.split('-')[0]
+            ds = ds.replace('_','.')
+            if ds in doms and s not in dom_sites:
+                dom_sites.append(s)
+    return dom_sites
+
+def _activate_sites(path, filenames):
+    enabled_sites = _ls_sites(path)            
+    for site in enabled_sites:
+        if env.verbosity:
+            print env.host,'Disabling', site
+        if site not in filenames:
+            sudo("rm %s/%s"% (path,site))
+        
+        sudo("chmod 644 %s" % site)
+        if not exists('/etc/apache2/sites-enabled'+ filename):
+            sudo("ln -s %s%s %s%s"% (self.deploy_root,filename,self.enabled_path,filename))
+
 def active_version():
     """
     Determine the current active version on the server
     
     Just examine the which environment is symlinked
     """
-    link = env.deployment_root+project_name()
+    link = '/'.join([env.deployment_root,env.project_name])
     if not exists(link): return None
     active = os.path.split(run('ls -al '+link).split(' -> ')[1])[1]
     return active
 
-def activate(version=''):
+def activate():
     """
     Activates the version or the current version if criteria is met
     """
-    #TODO fill this out with success checking
-
-    if not version: version = env.project_fullname
-    
     active = active_version()
 
-    if not active == version: 
-        #if active: #delete existing active symlink
+    if not active == env.project_version:
+        stop_webservices()
+        if not env.patch:
+            #TODO - DATA MIGRATION HERE
+            pass
+        #delete existing symlink
         run('rm -f '+os.path.join(env.deployment_root,'env',env.project_name))
-        run('ln -s %s %s'% (os.path.join(env.deployment_root,'env',version),
+        run('ln -s %s %s'% (os.path.join(env.deployment_root,'env',env.project_fullname),
                             os.path.join(env.deployment_root,'env',env.project_name))
            )
         #create shortcuts for virtualenv activation in the home directory
@@ -53,47 +80,46 @@ def activate(version=''):
                    activate_env)
             run("chmod +x "+activate_env)
         
+        #activate sites
+        #enabled_sites = _ls_sites('/etc/apache2/sites-enabled') + _ls_sites('/etc/nginx/sites-enabled')
+        activate_sites = [''.join([d.replace('.','_'),'-',env.project_version,'.conf']) for d in env.DOMAINS]
+        site_paths = ['/etc/apache2','/etc/nginx']
+        
+        #disable existing sites
+        for path in site_paths:
+            for site in _ls_sites('/'.join([path,'sites-enabled'])):
+                if site not in activate_sites:
+                    sudo("rm %s/sites-enabled/%s"% (path,site))
+        
+        #activate new sites
+        for path in site_paths:
+            for site in activate_sites:
+                if not exists('/'.join([path,'sites-enabled',site])):
+                    sudo("chmod 644 %s" % '/'.join([path,'sites-available',site]))
+                    sudo("ln -s %s/sites-available/%s %s/sites-enabled/%s"% (path,site,path,site))
+      
+        start_webservices()
         print env.host,env.project_fullname, "ACTIVATED"
-
     else:
         print env.project_fullname,"is already the active version"
+    
 
-def deploy(patch=False):
+def deploy():
     """
     deploy a versioned project on the host
+
     """
-    
-    if not patch:
-        deploy_db()
-        mkvirtualenv()
-        pip_install_requirements()
-    deploy_project(patch=patch)
-    deploy_templates(patch=patch)
-    deploy_static(patch=patch)
-    deploy_public(patch=patch)
-    deploy_wsgi(patch=patch)
-    #TODO - make stop start dependant on success of previous parts
-    stop_webservices()
-    
-    deploy_webservers(patch=patch)
-    
-    if not patch:
-        #migratedata here
-        activate()
-    
-    start_webservices()
-
-    #cleanup
-    rmtmpdirs()
-    #if env.verbosity:
-    #    print "You can login to your host with ssh %s@%s -p%s"% (env.user,env.host,env.port)
-    #    print "and 'source workon-%s to activate the environment and change into the project directory"% project_name()
-
+    deploy_funcs = [deploy_project,deploy_templates, deploy_static, deploy_public,  deploy_webservers, deploy_wsgi]
+    if not env.patch:
+        deploy_funcs = [deploy_db,mkvirtualenv,pip_install_requirements] + deploy_funcs
+    for func in deploy_funcs: func()
+ 
 def patch():
     """
     Patch the current version. Does not install packages or delete files
     """
-    deploy(patch=True)
+    with setting(patch=True):
+        deploy()
     
 
 def setup_environ(settings=None, setup_dir=''):
