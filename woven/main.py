@@ -58,50 +58,51 @@ def activate():
     Activates the version or the current version if criteria is met
     """
     active = active_version()
-
+    stop_webservices()
     if not active == env.project_version:
-        stop_webservices()
+        
         if not env.patch:
             #TODO - DATA MIGRATION HERE
-            pass
-        #delete existing symlink
-        run('rm -f '+os.path.join(env.deployment_root,'env',env.project_name))
-        run('ln -s %s %s'% (os.path.join(env.deployment_root,'env',env.project_fullname),
-                            os.path.join(env.deployment_root,'env',env.project_name))
-           )
-        #create shortcuts for virtualenv activation in the home directory
-        activate_env = '/'.join(['/home',env.user,'workon-'+env.project_name])
-        if not exists(activate_env):
-            run("touch "+activate_env)
-            append('#!/bin/bash',activate_env)
-            append("source "+ os.path.join(env.deployment_root,'env',env.project_name,'bin','activate'),
-                   activate_env)
-            append("cd "+ os.path.join(env.deployment_root,'env',env.project_name,'project',env.project_name),
-                   activate_env)
-            run("chmod +x "+activate_env)
-        
-        #activate sites
-        #enabled_sites = _ls_sites('/etc/apache2/sites-enabled') + _ls_sites('/etc/nginx/sites-enabled')
-        activate_sites = [''.join([d.replace('.','_'),'-',env.project_version,'.conf']) for d in env.DOMAINS]
-        site_paths = ['/etc/apache2','/etc/nginx']
-        
-        #disable existing sites
-        for path in site_paths:
-            for site in _ls_sites('/'.join([path,'sites-enabled'])):
-                if site not in activate_sites:
-                    sudo("rm %s/sites-enabled/%s"% (path,site))
-        
-        #activate new sites
-        for path in site_paths:
-            for site in activate_sites:
-                if not exists('/'.join([path,'sites-enabled',site])):
-                    sudo("chmod 644 %s" % '/'.join([path,'sites-available',site]))
-                    sudo("ln -s %s/sites-available/%s %s/sites-enabled/%s"% (path,site,path,site))
+    
+            #delete existing symlink
+            run('rm -f '+os.path.join(env.deployment_root,'env',env.project_name))
+            run('ln -s %s %s'% (os.path.join(env.deployment_root,'env',env.project_fullname),
+                                os.path.join(env.deployment_root,'env',env.project_name))
+               )
+            #create shortcuts for virtualenv activation in the home directory
+            activate_env = '/'.join(['/home',env.user,'workon-'+env.project_name])
+            if not exists(activate_env):
+                run("touch "+activate_env)
+                append('#!/bin/bash',activate_env)
+                append("source "+ os.path.join(env.deployment_root,'env',env.project_name,'bin','activate'),
+                       activate_env)
+                append("cd "+ os.path.join(env.deployment_root,'env',env.project_name,'project',env.project_name),
+                       activate_env)
+                run("chmod +x "+activate_env)
+            
+            #activate sites
+            #enabled_sites = _ls_sites('/etc/apache2/sites-enabled') + _ls_sites('/etc/nginx/sites-enabled')
+            activate_sites = [''.join([d.replace('.','_'),'-',env.project_version,'.conf']) for d in env.DOMAINS]
+            site_paths = ['/etc/apache2','/etc/nginx']
+            
+            #disable existing sites
+            for path in site_paths:
+                for site in _ls_sites('/'.join([path,'sites-enabled'])):
+                    if site not in activate_sites:
+                        sudo("rm %s/sites-enabled/%s"% (path,site))
+            
+            #activate new sites
+            for path in site_paths:
+                for site in activate_sites:
+                    if not exists('/'.join([path,'sites-enabled',site])):
+                        sudo("chmod 644 %s" % '/'.join([path,'sites-available',site]))
+                        sudo("ln -s %s/sites-available/%s %s/sites-enabled/%s"% (path,site,path,site))
       
-        start_webservices()
+        
         print env.host,env.project_fullname, "ACTIVATED"
     else:
-        print env.project_fullname,"is already the active version"
+        print env.project_fullname,"is the active version"
+    start_webservices()
     
 
 def deploy():
