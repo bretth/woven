@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 from optparse import make_option
 
-from woven.main import deploy, activate
+from woven.api import deploy
+from woven.virtualenv import activate
 from woven.management.base import WovenCommand
-from woven.utils import set_project_env
+from woven.environment import set_project_env
 
 class Command(WovenCommand):
 

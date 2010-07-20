@@ -3,28 +3,20 @@
 Anything related to deploying your project modules, media, and data
 """
 import os, shutil, sys
-import tempfile
 
 from django.core.servers.basehttp import AdminMediaHandler
-from django.template import Context, Template
 from django.template.loader import render_to_string
 
 from fabric.state import env
-
-#TODO check these
-from fabric.api import env, local, run, prompt, get, put, sudo
-from fabric.context_managers import cd, hide, settings
+from fabric.operations import local, run, put, sudo
 from fabric.decorators import runs_once
-from fabric.contrib.files import exists, comment
-from fabric.contrib.project import rsync_project, upload_project
+from fabric.contrib.files import exists
 from fabric.contrib.console import confirm
-
 #Required for a bug in 0.9
 from fabric.version import get_version
 
-from woven.utils import root_domain, server_state, set_server_state
-from woven.utils import project_fullname, project_name, active_version, upload_template
 from woven.deployment import deploy_files, run_once_per_host_version
+
 
 @runs_once
 def _make_local_sitesettings(overwrite=False):
@@ -95,6 +87,8 @@ def deploy_templates():
     
     if hasattr(env,'project_template_dir'):
         remote_dir = '/'.join([env.deployment_root,'env',env.project_fullname,'templates'])
+        if env.verbosity:
+            print env.host,"DEPLOYING TEMPLATES", remote_dir
         deployed = deploy_files(env.project_template_dir,remote_dir)
     return deployed
     
@@ -134,6 +128,8 @@ def deploy_static():
             if static_url:
                 remote_dir = '/'.join([remote_dir,static_url])
         else: return
+    if env.verbosity:
+        print env.host,"DEPLOYING STATIC_ROOT",remote_dir
     return deploy_files(local_dir,remote_dir)
     
 
@@ -153,7 +149,8 @@ def deploy_public():
         media_url = env.MEDIA_URL[1:]
     if media_url:
         remote_dir = '/'.join([remote_dir,media_url])
-    
+    if env.verbosity:
+        print env.host,"DEPLOYING MEDIA_ROOT",remote_dir    
     deployed = deploy_files(local_dir,remote_dir)
     
     #make writable for www-data for file uploads
@@ -172,7 +169,7 @@ def deploy_db(rollback=False):
     if not rollback:
         if env.DEFAULT_DATABASE_ENGINE=='django.db.backends.sqlite3' and not exists(db_path):
             if env.verbosity:
-                print env.host,"DEPLOYING DEFAULT SQLITE DATABASE to",db_path
+                print env.host,"DEPLOYING DEFAULT SQLITE DATABASE",db_path
             if not os.path.exists(env.DEFAULT_DATABASE_NAME) or not env.DEFAULT_DATABASE_NAME:
                 print "ERROR: the database does not exist. Run python manage.py syncdb to create your database first."
                 sys.exit(1)
@@ -187,7 +184,3 @@ def deploy_db(rollback=False):
             if delete:
                 run('rm -f '+db_name)
     return
-
-   
-        
-   

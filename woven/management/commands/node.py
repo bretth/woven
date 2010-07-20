@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """
 Node command to execute arbitrary commands on a host.
-
 """
 from optparse import make_option
 from fabric.state import env
@@ -9,8 +8,7 @@ from fabric.context_managers import cd
 from fabric.operations import run
 
 from woven.management.base import WovenCommand
-from woven.utils import root_domain, set_project_env
- 
+from woven.environment import set_project_env
 
 class Command(WovenCommand):
     option_list = WovenCommand.option_list + (
@@ -36,7 +34,7 @@ class Command(WovenCommand):
         command = args[0]
         path = '/home/%s/%s/env/%s/project/%s/'% (env.user,root_domain(),env.project_fullname,env.project_name)
         print path
-        pythonpath = '/home/%s/%s/env/%s/bin/python'% (env.user,root_domain(),env.project_fullname)
+        pythonpath = '/home/%s/%s/env/%s/bin/python'% (env.user,env.root_domain,env.project_fullname)
         with cd(path):     
             result = run(' '.join([pythonpath,'manage.py',command,opts]))
         if env.verbosity:

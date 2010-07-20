@@ -11,7 +11,7 @@ from fabric.main import _merge
 from fabric.network import normalize
 from fabric.context_managers import hide,show
 
-from woven.main import setup_environ
+from woven.environment import set_env
 
 class WovenCommand(BaseCommand):
     option_list = BaseCommand.option_list + (
@@ -97,11 +97,11 @@ class WovenCommand(BaseCommand):
         
         #We now need to load django project woven settings into env
         #This is the equivalent to module level execution of the fabfile.py.
-        #If we were using a fabfile.py then we would include setup_environ()
+        #If we were using a fabfile.py then we would include set_env()
         if int(state.env.verbosity) < 2:
             with hide('warnings', 'running', 'stdout', 'stderr'):
-                setup_environ(settings,state.env.setup)
-        else: setup_environ(settings,state.env.setup)
+                set_env(settings,state.env.setup)
+        else: set_env(settings,state.env.setup)
         
         #Back to the standard execution strategy
         # Set current command name (used for some error messages)

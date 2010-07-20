@@ -2,7 +2,7 @@
 from optparse import make_option
 
 from fabric import state
-from woven.main import setupnode
+from woven.api import setupnode
 from woven.management.base import WovenCommand
 
 class Command(WovenCommand):

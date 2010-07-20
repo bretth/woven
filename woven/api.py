@@ -5,6 +5,9 @@ Exposes the full public woven api
 from woven.deployment import deploy_files, mkdirs
 from woven.deployment import upload_template, run_once_per_host_version
 
+from woven.environment import set_env, set_project_env, patch_project, server_state, set_server_state, verbosity
+from woven.environment import project_name, project_fullname, project_version
+
 from woven.ubuntu import add_user, apt_get_install, apt_get_purge
 from woven.ubuntu import install_packages, upgrade_ubuntu, setup_ufw, disable_root
 from woven.ubuntu import uncomment_sources, restrict_ssh, upload_ssh_key
@@ -14,10 +17,7 @@ from woven.virtualenv import activate, active_version
 from woven.virtualenv import mkvirtualenv, rmvirtualenv, pip_install_requirements
 
 from woven.project import deploy_static, deploy_public, deploy_project, deploy_db, deploy_templates
-from woven.project import project_name, project_fullname, project_version
-
 from woven.webservers import deploy_wsgi, deploy_webservers, start_webservices, stop_webservices
-from woven.environment import set_env, set_project_env, patch_project, server_state, set_server_state, verbosity
 
 
 def deploy():
@@ -25,7 +25,7 @@ def deploy():
     deploy a versioned project on the host
     """
     deploy_funcs = [deploy_project,deploy_templates, deploy_static, deploy_public,  deploy_webservers, deploy_wsgi]
-    if not patch_project:
+    if not patch_project():
         deploy_funcs = [deploy_db,mkvirtualenv,pip_install_requirements] + deploy_funcs
     for func in deploy_funcs: func()
 

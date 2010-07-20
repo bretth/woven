@@ -7,14 +7,13 @@ from django.template.loader import render_to_string
 
 from fabric.state import env
 from fabric.operations import run, sudo, put
-from fabric.context_managers import cd, settings
+from fabric.context_managers import cd, settings, hide
 from fabric.contrib.files import exists
 from fabric.contrib.project import rsync_project
-
 #Required for a bug in 0.9
 from fabric.version import get_version
 
-from woven.utils import server_state, set_server_state
+from woven.environment import server_state, set_server_state
 
 def _backup_file(path):
     """

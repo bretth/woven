@@ -2,9 +2,9 @@
 from optparse import make_option
 
 
-from woven.main import patch, activate
+from woven.api import deploy, activate
 from woven.management.base import WovenCommand
-from woven.utils import set_project_env
+from woven.environment import set_project_env
 
 
 class Command(WovenCommand):
@@ -16,6 +16,8 @@ class Command(WovenCommand):
     
     def handle_host(self,*args, **options):
         set_project_env()
-        patch()
+        with settings(patch=True):
+            deploy()
+            activate
 
 

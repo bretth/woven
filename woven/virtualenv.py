@@ -5,13 +5,84 @@ import os, sys
 from django import get_version
 from django.template.loader import render_to_string
 
-from fabric.api import env, run, sudo, get
-from fabric.context_managers import cd, hide, settings
+from fabric.state import env 
+from fabric.operations import run, sudo
+from fabric.context_managers import cd, settings
 from fabric.contrib.files import exists
 
-from woven.deployment import run_once_per_host_version, deploy_files
-from woven.utils import mkdirs, project_fullname, set_server_state, server_state, State
+from woven.deployment import mkdirs, run_once_per_host_version, deploy_files
+from woven.environment import set_server_state, server_state, State
+from woven.webservers import _ls_sites, stop_webservices, start_webservices
+from fabric.contrib.files import append
 
+def active_version():
+    """
+    Determine the current active version on the server
+    
+    Just examine the which environment is symlinked
+    """
+    link = '/'.join([env.deployment_root,'env',env.project_name])
+    if not exists(link): return None
+    active = os.path.split(run('ls -al '+link).split(' -> ')[1])[1]
+    return active
+
+def activate():
+    """
+    Activates the version or the current version if criteria is met
+    """
+    active = active_version()
+
+    if env.patch or active <> env.project_fullname:
+        stop_webservices()
+        
+    if not env.patch and active <> env.project_fullname:
+        #TODO - DATA MIGRATION HERE
+        if env.verbosity:
+            print env.host, "ACTIVATING version", os.path.join(env.deployment_root,'env',env.project_fullname)
+        #delete existing symlink
+        run('rm -f '+os.path.join(env.deployment_root,'env',env.project_name))
+        run('ln -s %s %s'% (os.path.join(env.deployment_root,'env',env.project_fullname),
+                            os.path.join(env.deployment_root,'env',env.project_name))
+           )
+        #create shortcuts for virtualenv activation in the home directory
+        activate_env = '/'.join(['/home',env.user,'workon-'+env.project_name])
+        if not exists(activate_env):
+            run("touch "+activate_env)
+            append('#!/bin/bash',activate_env)
+            append("source "+ os.path.join(env.deployment_root,'env',env.project_name,'bin','activate'),
+                   activate_env)
+            append("cd "+ os.path.join(env.deployment_root,'env',env.project_name,'project',env.project_name),
+                   activate_env)
+            run("chmod +x "+activate_env)
+        
+        #activate sites
+        #enabled_sites = _ls_sites('/etc/apache2/sites-enabled') + _ls_sites('/etc/nginx/sites-enabled')
+        activate_sites = [''.join([d.replace('.','_'),'-',env.project_version,'.conf']) for d in env.DOMAINS]
+        site_paths = ['/etc/apache2','/etc/nginx']
+        
+        #disable existing sites
+        for path in site_paths:
+            for site in _ls_sites('/'.join([path,'sites-enabled'])):
+                if site not in activate_sites:
+                    sudo("rm %s/sites-enabled/%s"% (path,site))
+        
+        #activate new sites
+        for path in site_paths:
+            for site in activate_sites:
+                if not exists('/'.join([path,'sites-enabled',site])):
+                    sudo("chmod 644 %s" % '/'.join([path,'sites-available',site]))
+                    sudo("ln -s %s/sites-available/%s %s/sites-enabled/%s"% (path,site,path,site))
+                    if env.verbosity:
+                        print env.host," * enabled", site
+  
+        if env.verbosity:
+            print env.host,env.project_fullname, "ACTIVATED"
+    else:
+        if env.verbosity and not env.patch:
+            print env.project_fullname,"is the active version"
+    if env.patch or active <> env.project_fullname:
+        start_webservices()
+        print
 
 @run_once_per_host_version
 def mkvirtualenv():
@@ -152,12 +223,3 @@ def pip_install_requirements():
         print out.stderr
         sys.exit(1)
     return out
-    
-    
-    
-    
-    
-                           
-    
-    
-

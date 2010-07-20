@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 import os,sys
 
-from fabric.api import env, run, sudo, get, put
-from fabric.state import connections
+from fabric.state import env, connections
 from fabric.context_managers import settings
-from fabric.operations import prompt
+from fabric.operations import prompt, run, sudo, get, put
 from fabric.contrib.files import comment, uncomment, contains, exists, append, sed
 from fabric.contrib.console import confirm
 from fabric.network import join_host_strings, normalize
 
-from woven.utils import backup_file, restore_file
-from woven.utils import server_state, set_server_state, upload_template
+from woven.deployment import _backup_file, _restore_file, upload_template
+from woven.environment import server_state, set_server_state
     
 def add_user(username='',password='',group=''):
     """
@@ -45,7 +44,7 @@ def change_ssh_port(rollback=False):
     
     Returns success or failure
     """
-
+    if env.ROOT_DISABLED: return
     if not rollback:
         after = env.port
         before = str(env.DEFAULT_SSH_PORT)
@@ -77,7 +76,7 @@ def change_ssh_port(rollback=False):
                 if env.verbosity:
                     print env.host, "RESTARTING SSH on",after
                 sudo('/etc/init.d/ssh restart')
-                set_server_state('ssh_port_changed',content=str(before))
+                set_server_state('ssh_port_changed',object=str(before))
                 return True
         else:
             port = server_state('ssh_port_changed')
@@ -100,6 +99,7 @@ def disable_root(rollback=False):
     
     returns True on success
     """
+    if env.ROOT_DISABLED: return
     def enter_password():
         password1 = prompt('Enter the password for %s:'% original_username)
         password2 = prompt('Re-enter the password:')
@@ -307,7 +307,7 @@ def restrict_ssh(rollback=False):
         if not exists('/home/%s/.ssh/authorized_keys'% env.user): #do not pass go do not collect $200
             print env.host, 'You need to upload_ssh_key first.'
             return False
-        backup_file(sshd_config)
+        _backup_file(sshd_config)
         context = {"HOST_SSH_PORT": env.HOST_SSH_PORT}
         
         upload_template('woven/ssh/sshd_config','/etc/ssh/sshd_config',context=context,use_sudo=True)
@@ -327,7 +327,7 @@ def restrict_ssh(rollback=False):
             sudo('/etc/init.d/ssh restart')
         else: #rollback
             print env.host, 'Rolling back sshd_config to default and proceeding without passwordless login'
-            restore_file('/etc/ssh/sshd_config', delete_backup=False)
+            _restore_fie('/etc/ssh/sshd_config', delete_backup=False)
             sed('/etc/ssh/sshd_config','Port '+ str(env.DEFAULT_SSH_PORT),'Port '+str(env.HOST_SSH_PORT),use_sudo=True)
             
             sudo('/etc/init.d/ssh restart')
@@ -335,7 +335,7 @@ def restrict_ssh(rollback=False):
         set_server_state('ssh_restricted')
         return True
     else: #Full rollback
-        restore_file('/etc/ssh/sshd_config')
+        _restore_fie('/etc/ssh/sshd_config')
         if server_state('ssh_port_changed'):
             sed('/etc/ssh/sshd_config','Port '+ str(env.DEFAULT_SSH_PORT),'Port '+str(env.HOST_SSH_PORT),use_sudo=True)
             sudo('/etc/init.d/ssh restart')
@@ -354,12 +354,12 @@ def set_timezone(rollback=False):
             return False
         if env.verbosity:
             print env.host, "CHANGING TIMEZONE /etc/timezone to "+env.TIME_ZONE
-        backup_file('/etc/timezone')
+        _backup_file('/etc/timezone')
         sudo('echo %s > /tmp/timezone'% env.TIME_ZONE)
         sudo('cp -f /tmp/timezone /etc/timezone')
         sudo('dpkg-reconfigure --frontend noninteractive tzdata')
     else:
-        restore_file('/etc/timezone')
+        _restore_fie('/etc/timezone')
         sudo('dpkg-reconfigure --frontend noninteractive tzdata')
     return True
     
@@ -390,7 +390,7 @@ def setup_ufw(rollback=False):
                 if env.verbosity:
                     print ' *',rule
                 sudo('ufw '+rule)
-        backup_file('/etc/ufw/ufw.conf')
+        _backup_file('/etc/ufw/ufw.conf')
         sed('/etc/ufw/ufw.conf','ENABLED=no','ENABLED=yes',use_sudo=True)
         sudo('ufw reload')
     else:
@@ -410,10 +410,10 @@ def uncomment_sources(rollback=False):
         if contains(filename='/etc/apt/sources.list',text='#(.?)deb(.*)http:(.*)universe'):
             if env.verbosity:
                 print env.host, "UNCOMMENTING universe SOURCES in /etc/apt/sources.list"
-            backup_file('/etc/apt/sources.list')
+            _backup_file('/etc/apt/sources.list')
             uncomment('/etc/apt/sources.list','#(.?)deb(.*)http:(.*)universe',use_sudo=True)
     else:
-        restore_file('/etc/apt/sources.list')
+        _restore_fie('/etc/apt/sources.list')
 
 def upgrade_ubuntu():
     """
@@ -452,14 +452,14 @@ def upload_ssh_key(rollback=False):
             ssh_file = open(ssh_key,'r').read()
             
             if exists(auth_keys):
-                backup_file(auth_keys)
+                _backup_file(auth_keys)
             if env.verbosity:
                 print env.host, "UPLOADING SSH KEY if it doesn't already exist on host"
             append(ssh_file,auth_keys) #append prevents uploading twice
         return
     else:
         if exists(auth_keys+'.wovenbak'):
-            restore_file('/home/%s/.ssh/authorized_keys'% env.user)
+            _restore_fie('/home/%s/.ssh/authorized_keys'% env.user)
         else: #no pre-existing keys remove the .ssh directory
             sudo('rm -rf /home/%s/.ssh')
         return

@@ -1,56 +1,25 @@
 #!/usr/bin/env python
 
-import os
-import tempfile
-
-from django.core.servers.basehttp import AdminMediaHandler
 from fabric.state import env
-
-#TODO check these
-from fabric.api import env, local, run, prompt, get, put, sudo
-from fabric.context_managers import cd, hide, settings
+from fabric.operations import run, sudo
+from fabric.context_managers import cd, settings
 from fabric.contrib.files import exists
-from fabric.contrib.project import rsync_project, upload_project
-from fabric.contrib.console import confirm
-
 #Required for a bug in 0.9
 from fabric.version import get_version
 
-from woven.utils import root_domain, server_state, set_server_state
-from woven.utils import project_fullname, project_name, project_version, active_version
-from woven.utils import upload_template, mkdirs
+from woven.deployment import deploy_files, mkdirs, run_once_per_host_version, upload_template
 
-from woven.deployment import run_once_per_host_version, deploy_files
+def _activate_sites(path, filenames):
+    enabled_sites = _ls_sites(path)            
+    for site in enabled_sites:
+        if env.verbosity:
+            print env.host,'Disabling', site
+        if site not in filenames:
+            sudo("rm %s/%s"% (path,site))
         
-@run_once_per_host_version
-def deploy_wsgi():
-    """
-    wrapper around WSGI
-    """
-    remote_dir = '/'.join([env.deployment_root,'env',env.project_fullname,'wsgi'])
-    if not env.DOMAINS: env.DOMAINS = [root_domain()]
-    deployed = []
-    if env.verbosity:
-        print env.host,"DEPLOYING WSGI"
-    for domain in env.DOMAINS:
-        deployed += mkdirs(remote_dir)
-        with cd(remote_dir):
-            u_domain = domain.replace('.','_')
-            filename = "%s.wsgi"% u_domain
-            context = {"user": env.user,
-                       "project_name": env.project_name,
-                       "u_domain":u_domain,
-                       "root_domain":env.root_domain,
-                       }
-            upload_template('/'.join(['woven','django-wsgi-template.txt']),
-                                filename,
-                                context,
-                            )
-            #finally set the ownership/permissions
-            #We'll use the group to allow www-data execute
-            sudo("chown %s:www-data %s"% (env.user,filename))
-            run("chmod ug+xr %s"% filename)
-    return deployed
+        sudo("chmod 644 %s" % site)
+        if not exists('/etc/apache2/sites-enabled'+ filename):
+            sudo("ln -s %s%s %s%s"% (self.deploy_root,filename,self.enabled_path,filename))
 
 def _deploy_webserver(remote_dir,template):
     
@@ -60,6 +29,7 @@ def _deploy_webserver(remote_dir,template):
     else: static_url = ''    
     log_dir = '/'.join([env.deployment_root,'log'])
     deployed = []
+
     for d in env.DOMAINS:
 
         u_domain = d.replace('.','_')
@@ -79,9 +49,25 @@ def _deploy_webserver(remote_dir,template):
                         filename,
                         context,
                         use_sudo=True)
+        if env.verbosity:
+            print env.host," * uploaded", filename
 
     return deployed
 
+def _ls_sites(path):
+    """
+    List only sites in the env.DOMAINS to ensure we co-exist with other projects
+    """
+    with cd(path):
+        sites = run('ls').split('\n')
+        doms = env.DOMAINS
+        dom_sites = []
+        for s in sites:
+            ds = s.split('-')[0]
+            ds = ds.replace('_','.')
+            if ds in doms and s not in dom_sites:
+                dom_sites.append(s)
+    return dom_sites
 
 @run_once_per_host_version
 def deploy_webservers():
@@ -90,6 +76,8 @@ def deploy_webservers():
     log_dir = '/'.join([env.deployment_root,'log'])
     #TODO - incorrect - check for actual package to confirm installation
     if exists('/etc/apache2/sites-enabled/') and exists('/etc/nginx/sites-enabled'):
+        if env.verbosity:
+            print env.host,"DEPLOYING webserver configuration:"
         if not exists(log_dir):
             deployed += mkdirs(log_dir)
             sudo("chown -R www-data:sudo %s" % log_dir)
@@ -99,6 +87,37 @@ def deploy_webservers():
     else:
         print env.host,"""WARNING: Apache or Nginx not installed"""
         
+    return deployed
+
+@run_once_per_host_version
+def deploy_wsgi():
+    """
+    deploy python wsgi file(s)
+    """
+    remote_dir = '/'.join([env.deployment_root,'env',env.project_fullname,'wsgi'])
+    deployed = []
+    if env.verbosity:
+        print env.host,"DEPLOYING wsgi", remote_dir
+    for domain in env.DOMAINS:
+        deployed += mkdirs(remote_dir)
+        with cd(remote_dir):
+            u_domain = domain.replace('.','_')
+            filename = "%s.wsgi"% u_domain
+            context = {"user": env.user,
+                       "project_name": env.project_name,
+                       "u_domain":u_domain,
+                       "root_domain":env.root_domain,
+                       }
+            upload_template('/'.join(['woven','django-wsgi-template.txt']),
+                                filename,
+                                context,
+                            )
+            if env.verbosity:
+                print env.host," * uploaded", filename
+            #finally set the ownership/permissions
+            #We'll use the group to allow www-data execute
+            sudo("chown %s:www-data %s"% (env.user,filename))
+            run("chmod ug+xr %s"% filename)
     return deployed
 
 def stop_webservices():
