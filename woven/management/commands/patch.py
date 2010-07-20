@@ -2,8 +2,10 @@
 from optparse import make_option
 
 
-from woven.main import patch
+from woven.main import patch, activate
 from woven.management.base import WovenCommand
+from woven.utils import set_project_env
+
 
 class Command(WovenCommand):
     option_list = WovenCommand.option_list + (
@@ -13,6 +15,7 @@ class Command(WovenCommand):
     requires_model_validation = False
     
     def handle_host(self,*args, **options):
-        # Log to stdout
+        set_project_env()
         patch()
+
 

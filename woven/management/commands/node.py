@@ -9,7 +9,7 @@ from fabric.context_managers import cd
 from fabric.operations import run
 
 from woven.management.base import WovenCommand
-from woven.utils import root_domain, project_fullname, project_name
+from woven.utils import root_domain, set_project_env
  
 
 class Command(WovenCommand):
@@ -31,11 +31,12 @@ class Command(WovenCommand):
         return ','.join(args[1:])
         
     def handle_host(self,*args, **options):
+        set_project_env()
         opts = options.get('options')
         command = args[0]
-        path = '/home/%s/%s/env/%s/project/%s/'% (env.user,root_domain(),project_fullname(),project_name())
+        path = '/home/%s/%s/env/%s/project/%s/'% (env.user,root_domain(),env.project_fullname,env.project_name)
         print path
-        pythonpath = '/home/%s/%s/env/%s/bin/python'% (env.user,root_domain(),project_fullname())
+        pythonpath = '/home/%s/%s/env/%s/bin/python'% (env.user,root_domain(),env.project_fullname)
         with cd(path):     
             result = run(' '.join([pythonpath,'manage.py',command,opts]))
         if env.verbosity:
