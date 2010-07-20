@@ -21,12 +21,11 @@ from woven.ubuntu import disable_root, upload_ssh_key, change_ssh_port, restrict
 from woven.ubuntu import uncomment_sources, upgrade_ubuntu, setup_ufw, install_packages, set_timezone
 from woven.utils import server_state, set_server_state, root_domain, set_project_env, project_version, project_fullname, project_name, State
 from woven.virtualenv import mkvirtualenv, rmvirtualenv, pip_install_requirements
-from woven.project import Project, Static, Public
 from woven.project import deploy_project, deploy_static, deploy_public, deploy_db, deploy_templates
 from woven.webservers import deploy_wsgi, deploy_webservers, start_webservices, stop_webservices
 from woven.management.base import WovenCommand
 from woven.main import setup_environ, setupnode, activate
-from woven.deployment import _get_local_files, _stage_local_files, deploy_files, run_once_per_version
+from woven.deployment import _get_local_files, _stage_local_files, deploy_files, run_once_per_host_version
 
 
 #Test the setup_environ indirectly by calling the management command 
@@ -270,15 +269,23 @@ def test_setupnode_rollback():
 
 ### DEPLOYMENT TESTS
 
+def deploy_teardown():
+    sudo('rm -rf /var/local/woven')
+    sudo('rm -rf /home/woven/example.com')
+    local('rm -rf example_project/sitesettings')
+    sudo('rm -f /etc/nginx/sites-enabled/*')
+    sudo('rm -f /etc/nginx/sites-available/*')
+    sudo('rm -f /etc/apache2/sites-enabled/*')
+    sudo('rm -f /etc/apache2/sites-available/*')
+    sudo('rm -rf /home/woven/workon-example_project')
+    sudo('rm -f /etc/nginx/sites-enabled/someother_com-0.1.conf')
+    sudo('rm -rf /home/woven/*')
+
 # Test related util functions
 def test_root_domain():
     #In the event of noinput, the domain will default to example.com
     domain = root_domain()
     assert domain == 'example.com'
-
-def setup_deploy_environ():
-    env.deployment_root = '/home/woven/example.com'
-    project_fullname()
 
 # First Deployment step
 def test_virtualenv():
@@ -381,20 +388,13 @@ def test_pip_install_fail():
     
     
 
-def change_version(oldversion,newversion):
-    f = open('setup.py').readlines()
-    w = open('setup.py',"w")
-    for line in f:
-        line = line.replace(oldversion,newversion)
-        w.write(line)
-    w.close()   
 
 def test_deploy_project():
     #setup to ensure nothing left from a previous run
-    change_version('0.2','0.1')
-    run('rm -rf /home/woven/example.com')
-    set_server_state('deployed_project_example_project-0.1',delete=True)
-    set_server_state('deployed_project_example_project-0.2',delete=True)
+    #change_version('0.2','0.1')
+    sudo('rm -rf /var/local/woven')
+    sudo('rm -rf /home/woven/example.com')
+    sudo('rm -rf /home/woven/.staging')
     local('rm -rf example_project/sitesettings')
     
     #tests
@@ -402,154 +402,100 @@ def test_deploy_project():
     assert exists('/home/woven/example.com/env/example_project-0.1/project/setup.py')
     assert exists('/home/woven/example.com/env/example_project-0.1/project/example_project/sitesettings/example_com.py')
     assert contains('from example_project.settings import','/home/woven/example.com/env/example_project-0.1/project/example_project/sitesettings/example_com.py')
-    #make sure we can't overwrite an existing project
-    p = deploy_project()
-    assert not p
     
-    #Test patch
-    
-    #teardown
-    p = Project()
-    p.delete()
-    
-    #Next test to ensure .pyc orphans are not left
-    deploy_project()
-    run('touch /home/woven/example.com/env/example_project-0.1/project/example_project/someorphan.pyc')
-    set_server_state('deployed_project_example_project-0.1',delete=True)
-    deploy_project()
-    assert not exists('/home/woven/example.com/env/example_project-0.1/project/example_project/someorphan.pyc')
-    
-    #Test a 2nd version deployment
-    print "TEST 2ND DEPLOYMENT"
-    run('ln -s /home/woven/example.com/env/example_project-0.1/ /home/woven/example.com/env/example_project')   
-    change_version('0.1','0.2')
-    
-    deploy_project(version='0.2')
-    assert exists('/home/woven/example.com/env/example_project-0.2/project/setup.py')
-    
-    #Teardown one project at a time
-    p = Project()
-    p.delete()    
-    assert exists('/home/woven/example.com/env/example_project-0.1/project/setup.py')
-    change_version('0.2','0.1')
-    p = Project(version='0.1')
-    p.delete()
-    
-    local('rm -rf example_project/sitesettings')
+    #Test deploy version '0.2'
+    with project_version('0.2'):
+        deploy_project()
+        assert exists('/home/woven/example.com/env/example_project-0.2/project/setup.py')
+
     
 def test_deploy_static():
-    change_version('0.2','0.1')
+    sudo('rm -rf /var/local/woven')
+    sudo('rm -rf /home/woven/example.com')
+    sudo('rm -rf /home/woven/.staging')
+    local('rm -rf example_project/sitesettings')
     run('rm -rf /home/woven/example.com')
-    set_server_state('deployed_static_example_project-0.1',delete=True)
+
     
     #Test simple with no app media
-    deploy_static()
+    with settings(INSTALLED_APPS=[]):
+        deploy_static()
     
     #Test with just admin_media
     env.INSTALLED_APPS += ['django.contrib.admin']
     deploy_static()
     assert exists('/home/woven/example.com/env/example_project-0.1/static/static/admin-media/css')
-    
-    #Teardown
-    s = Static()
-    s.delete()
-    assert not server_state('deployed_static_example_project-0.1')    
+ 
 
 def test_deploy_public():
-    run('rm -rf /home/woven/example.com')
-    run('rm -f dist/django-pony1.jpg')
-    set_server_state('deployed_public_example_project-0.1',delete=True)
-    env.MEDIA_ROOT =''
+    sudo('rm -rf /var/local/woven')
+    sudo('rm -rf /home/woven/example.com')
+    sudo('rm -rf /home/woven/.staging')
+    local('rm -rf example_project/sitesettings')
+    local('rm -f dist/django-pony1.jpg')
+
+    with settings(MEDIA_ROOT=''):
     #Test simple with no media_root - fails
-    deploy_public()
+        deploy_public()
     
     #Test with a real media directory
-    env.MEDIA_ROOT = os.path.join(setup_dir,'media_root','')
-    print env.MEDIA_ROOT
-    env.MEDIA_URL = '/media/'
+    
+    print 'MEDIA_ROOT', env.MEDIA_ROOT
+
     deploy_public()
     assert exists('/home/woven/example.com/public/media/django-pony.jpg')
-    
-    #Test with no files - skips
-    deploy_public()
-    
-    #Teardown
-    p = Public()
-    p.delete()
-    assert not server_state('deployed_public_example_project-0.1') 
-
 
 def test_deploy_templates():
     #teardown
-    run('rm -rf /home/woven/example.com')
-    set_server_state('deployed_templates_example_project-0.1',delete=True)
+    sudo('rm -rf /var/local/woven')
+    sudo('rm -rf /home/woven/example.com')
+    sudo('rm -rf /home/woven/.staging')
+    local('rm -rf example_project/sitesettings')
     
     #simple deploy with no templates defined
-    deploy_templates()
-    template_dir = os.path.join(os.getcwd(),'templates','example.com')
-    template_dir1 = os.path.join(os.getcwd(),'templates')
-    
-    #Add in some templates
-    env.TEMPLATE_DIRS = (
-        template_dir,
-        template_dir1,
-    )
+    with settings(TEMPLATE_DIRS=()):
+        deploy_templates()
+   
+
     deploy_templates()
     assert exists('/home/woven/example.com/env/example_project-0.1/templates/index.html')
-    
-    run('rm -rf /home/woven/example.com')
+
     
     
 def test_deploy_wsgi():
-    run('rm -rf /home/woven/example.com')
-    set_server_state('deployed_wsgi_example_project-0.1',delete=True)
+    sudo('rm -rf /var/local/woven')
+    sudo('rm -rf /home/woven/example.com')
+    sudo('rm -rf /home/woven/.staging')
+    local('rm -rf example_project/sitesettings')
+
     deploy_wsgi()
     assert exists('/home/woven/example.com/env/example_project-0.1/wsgi/example_com.wsgi')
     
 def test_deploy_webservers():
     #setup for test
-    change_version('0.2','0.1')
+    sudo('rm -rf /var/local/woven')
     sudo('rm -rf /home/woven/example.com')
+    sudo('rm -rf /home/woven/.staging')
+    local('rm -rf example_project/sitesettings')
+
     sudo('rm -f /etc/nginx/sites-enabled/*')
     sudo('rm -f /etc/nginx/sites-available/*')
     sudo('rm -f /etc/apache2/sites-enabled/*')
     sudo('rm -f /etc/apache2/sites-available/*')
-    set_server_state('deployed_apache_webserver_example_project-0.1',delete=True)
-    set_server_state('deployed_nginx_webserver_example_project-0.1',delete=True)
-    set_server_state('deployed_apache_webserver_example_project-0.2',delete=True)
-    set_server_state('deployed_nginx_webserver_example_project-0.2',delete=True)
+
     
     #Initial test
     print "SIMPLE TEST"
     deploy_webservers()
-    assert exists('/etc/apache2/sites-enabled/example_com-0.1.conf')
-    assert exists('/etc/nginx/sites-enabled/example_com-0.1.conf')
-    
-    #test bump to 0.2 and make sure foreign site doesn't get deleted
-    change_version('0.1','0.2')
+    assert exists('/etc/apache2/sites-available/example_com-0.1.conf')
+    assert exists('/etc/nginx/sites-available/example_com-0.1.conf',)
 
-    sudo('cp /etc/nginx/sites-available/example_com-0.1.conf /etc/nginx/sites-enabled/someother_com-0.1.conf')
-    sed(filename='/etc/nginx/sites-enabled/someother_com-0.1.conf',before='example.com',after='someexample.com', limit=2,use_sudo=True)
-    sudo('rm -f /etc/nginx/sites-enabled/someother_com-0.1.conf.bak')
-    print "BUMPED VERSION TO 0.2"
 
-    deploy_webservers()
-    assert not exists('/etc/apache2/sites-enabled/example_com-0.1.conf')
-    assert not exists('/etc/nginx/sites-enabled/example_com-0.1.conf')
-    change_version('0.2','0.1')
-    assert exists('/etc/nginx/sites-enabled/someother_com-0.1.conf')
+    print "BUMP VERSION TO 0.2"
     
-    #Teardown
-    change_version('0.2','0.1')
-    sudo('rm -rf /home/woven/example.com')
-    sudo('rm -f /etc/nginx/sites-enabled/*')
-    sudo('rm -f /etc/nginx/sites-available/*')
-    sudo('rm -f /etc/apache2/sites-enabled/*')
-    sudo('rm -f /etc/apache2/sites-available/*')
-    set_server_state('deployed_apache_webserver_example_project-0.1',delete=True)
-    set_server_state('deployed_nginx_webserver_example_project-0.1',delete=True)
-    set_server_state('deployed_apache_webserver_example_project-0.2',delete=True)
-    set_server_state('deployed_nginx_webserver_example_project-0.2',delete=True)
+    with project_version('0.2'):
+        deploy_webservers()
+    assert exists('/etc/apache2/sites-available/example_com-0.2.conf')
 
 def test_webservices():
     #Test start and stop webservices
@@ -571,16 +517,38 @@ def test_webservices():
     stop_webservices()
 
 def test_activate():
+    sudo('rm -rf /var/local/woven')
     sudo('rm -rf /home/woven/example.com')
-    set_server_state('deployed_project_example_project-0.1',delete=True)
-    set_server_state('created_virtualenv_example_project-0.1', delete=True)
-    
+    local('rm -rf example_project/sitesettings')
+    sudo('rm -f /etc/nginx/sites-enabled/*')
+    sudo('rm -f /etc/nginx/sites-available/*')
+    sudo('rm -f /etc/apache2/sites-enabled/*')
+    sudo('rm -f /etc/apache2/sites-available/*')
     sudo('rm -rf /home/woven/workon-example_project')
+    sudo('rm -f /etc/nginx/sites-enabled/someother_com-0.1.conf')
     
     mkvirtualenv()
+    #deploy_db()
     deploy_project()
-    
+    deploy_wsgi()
+    deploy_public()
+    deploy_static()
+    deploy_webservers()
+   
     activate()
+    
+    #try with version 0.2
+    with project_version('0.2'):
+        deploy_project()
+        deploy_wsgi()
+        deploy_public()
+        deploy_static()
+        deploy_webservers()
+        sudo('cp /etc/nginx/sites-available/example_com-0.1.conf /etc/nginx/sites-enabled/someother_com-0.1.conf')
+        sed(filename='/etc/nginx/sites-enabled/someother_com-0.1.conf',before='example.com',after='someexample.com', limit=2,use_sudo=True)
+        sudo('rm -f /etc/nginx/sites-enabled/someother_com-0.1.conf.bak')
+        activate()
+        assert exists('/etc/nginx/sites-enabled/someother_com-0.1.conf')
     
    
 def test_project_version():
