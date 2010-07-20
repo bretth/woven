@@ -16,7 +16,7 @@ from fabric.version import get_version
 from woven.utils import project_name, mkdirs
 from woven.utils import server_state, set_server_state, State
 
-def run_once_per_version(func):
+def run_once_per_host_version(func):
     """
     Decorator preventing wrapped function from running more than
     once per host and env.project_version not just interpreter session.
@@ -26,7 +26,7 @@ def run_once_per_version(func):
     
     Stores the result of a function as server state for rollback
     
-    Returns an attribute string
+    Returns a state object
     """
     @wraps(func)
     def decorated(*args, **kwargs):
@@ -169,10 +169,7 @@ def deploy_files(local_dir, remote_dir, pattern = '', context={}, chown='', chmo
     remote_base_path = '/'.join([remote_staging_dir,os.path.basename(local_dir),'*'])
     copy_file_list = func(' '.join(['cp -Ruvp',remote_base_path,remote_dir])).split('\n')
     if copy_file_list[0]: created_list += [file.split(' ')[2][1:-1] for file in copy_file_list if file]
-    
-    #chmod
-    #chown
-    
+
     #cleanup any tmp staging dir
     if staging_dir <> local_dir:
         shutil.rmtree(staging_dir,ignore_errors=True)
