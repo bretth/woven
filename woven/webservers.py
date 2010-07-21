@@ -8,6 +8,7 @@ from fabric.contrib.files import exists
 from fabric.version import get_version
 
 from woven.deployment import deploy_files, mkdirs, run_once_per_host_version, upload_template
+from woven.environment import deployment_root
 
 def _activate_sites(path, filenames):
     enabled_sites = _ls_sites(path)            
@@ -27,7 +28,7 @@ def _deploy_webserver(remote_dir,template):
     else: media_url = ''
     if not 'http:' in env.STATIC_URL: static_url = env.STATIC_URL
     else: static_url = ''    
-    log_dir = '/'.join([env.deployment_root,'log'])
+    log_dir = '/'.join([deployment_root(),'log'])
     deployed = []
 
     for d in env.DOMAINS:
@@ -73,7 +74,7 @@ def _ls_sites(path):
 def deploy_webservers():
     """ Deploy apache & nginx site configurations to the host """
     deployed = []
-    log_dir = '/'.join([env.deployment_root,'log'])
+    log_dir = '/'.join([deployment_root(),'log'])
     #TODO - incorrect - check for actual package to confirm installation
     if exists('/etc/apache2/sites-enabled/') and exists('/etc/nginx/sites-enabled'):
         if env.verbosity:
@@ -94,7 +95,7 @@ def deploy_wsgi():
     """
     deploy python wsgi file(s)
     """
-    remote_dir = '/'.join([env.deployment_root,'env',env.project_fullname,'wsgi'])
+    remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'wsgi'])
     deployed = []
     if env.verbosity:
         print env.host,"DEPLOYING wsgi", remote_dir

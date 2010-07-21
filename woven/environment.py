@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-import json
-import os, sys
+import json, os, sys
 
 from django.utils.importlib import import_module
 
@@ -147,6 +146,12 @@ def _root_domain():
         env.root_domain = domain
     return env.root_domain
 
+def deployment_root():
+    if not env.deployment_root:
+        if env.root_domain: env.deployment_root = '/'.join(['/home',env.user,env.root_domain])
+        else: env.deployment_root = '/'.join(['/home',env.user])
+    return env.deployment_root
+
 def set_env(settings=None, setup_dir=''):
     """
     Used in management commands or at the module level of a fabfile to
@@ -176,15 +181,22 @@ def set_env(settings=None, setup_dir=''):
     env.fabfile = original_fabfile
     os.chdir(local_working_dir)
 
+    #project env variables for deployment
+    env.project_name = project_name()
+    env.project_full_version = local('python setup.py --version').rstrip()
+    env.project_version = _parse_project_version(env.project_full_version)
+    env.project_fullname = '-'.join([env.project_name,env.project_version])
+    env.patch = False
+
     #We'll assume that if the settings aren't passed in we're running from a fabfile
     if not settings:
         sys.path.insert(0,local_working_dir)
         #First try a multi-site configuration
         #TODO - import multiple settings files for per-site settings
         try:
-            project_settings = import_module(project_name()+'settings.settings')
+            project_settings = import_module(env.project_name+'settings.settings')
         except ImportError:
-            project_settings = import_module(project_name()+'.settings')
+            project_settings = import_module(env.project_name+'.settings')
     else:
         project_settings = settings
     
@@ -244,7 +256,15 @@ def set_env(settings=None, setup_dir=''):
     env.INSTALLED_APPS = project_settings.INSTALLED_APPS
     #noinput
     if not hasattr(env,'INTERACTIVE'): env.INTERACTIVE=True
- 
+    
+    #determine domain for deployment commands/funcs
+    if not env.DOMAINS:
+        if not hasattr(set_env,'no_domain') or not set_env.no_domain:
+            env.DOMAINS = [_root_domain()]
+        else: env.root_domain = ''
+    else: env.root_domain = env.DOMAINS[0]
+    env.deployment_root = ''
+
 
 def patch_project():
     return env.patch
@@ -277,7 +297,7 @@ class State(str):
     
     It may be used to store stdout stderr etc.
 
-    State has an object attribute to store objects that can be converted to json strings
+    State has an object attribute to store objects
     for storage on the host using the set_server_state function and
     retrieve it using server_state.
 
@@ -353,19 +373,3 @@ def server_state(name, prefix=False):
             state.failed = False
     return state
     
-@runs_once
-def set_project_env(version=''):
-    env.project_name = project_name()
-    if not version: env.project_full_version = local('python setup.py --version').rstrip()
-    else: env.project_full_version = version
-    env.project_version = _parse_project_version(env.project_full_version)
-    env.project_fullname = '-'.join([env.project_name,env.project_version])
-    if not env.DOMAINS: env.DOMAINS = [_root_domain()]
-    env.deployment_root = '/'.join(['/home',env.user,env.root_domain])
-    env.patch = False
-    
-def verbosity():
-    return env.verbosity
-
-
-

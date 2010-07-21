@@ -8,7 +8,6 @@ from fabric.context_managers import cd
 from fabric.operations import run
 
 from woven.management.base import WovenCommand
-from woven.environment import set_project_env
 
 class Command(WovenCommand):
     option_list = WovenCommand.option_list + (
@@ -29,7 +28,6 @@ class Command(WovenCommand):
         return ','.join(args[1:])
         
     def handle_host(self,*args, **options):
-        set_project_env()
         opts = options.get('options')
         command = args[0]
         path = '/home/%s/%s/env/%s/project/%s/'% (env.user,root_domain(),env.project_fullname,env.project_name)
@@ -39,6 +37,4 @@ class Command(WovenCommand):
             result = run(' '.join([pythonpath,'manage.py',command,opts]))
         if env.verbosity:
             print result
-        
-
-
+ 

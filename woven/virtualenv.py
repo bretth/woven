@@ -11,7 +11,7 @@ from fabric.context_managers import cd, settings
 from fabric.contrib.files import exists
 
 from woven.deployment import mkdirs, run_once_per_host_version, deploy_files
-from woven.environment import set_server_state, server_state, State
+from woven.environment import deployment_root,set_server_state, server_state, State
 from woven.webservers import _ls_sites, stop_webservices, start_webservices
 from fabric.contrib.files import append
 
@@ -21,7 +21,8 @@ def active_version():
     
     Just examine the which environment is symlinked
     """
-    link = '/'.join([env.deployment_root,'env',env.project_name])
+    
+    link = '/'.join([deployment_root(),'env',env.project_name])
     if not exists(link): return None
     active = os.path.split(run('ls -al '+link).split(' -> ')[1])[1]
     return active
@@ -38,7 +39,7 @@ def activate():
     if not env.patch and active <> env.project_fullname:
         #TODO - DATA MIGRATION HERE
         if env.verbosity:
-            print env.host, "ACTIVATING version", os.path.join(env.deployment_root,'env',env.project_fullname)
+            print env.host, "ACTIVATING version", os.path.join(deployment_root(),'env',env.project_fullname)
         #delete existing symlink
         run('rm -f '+os.path.join(env.deployment_root,'env',env.project_name))
         run('ln -s %s %s'% (os.path.join(env.deployment_root,'env',env.project_fullname),
@@ -86,7 +87,7 @@ def activate():
 
 @run_once_per_host_version
 def mkvirtualenv():
-    root = '/'.join([env.deployment_root,'env'])
+    root = '/'.join([deployment_root(),'env'])
     path = '/'.join([root,env.project_fullname])
     dirs_created = []
     if env.verbosity:
@@ -109,7 +110,7 @@ def rmvirtualenv():
     """
     Remove the current or ``env.project_version`` environment and all content in it
     """
-    path = '/'.join([env.deployment_root,'env',env.project_fullname])
+    path = '/'.join([deployment_root(),'env',env.project_fullname])
     if server_state('mkvirtualenv'):
         sudo(' '.join(['rm -rf',path]))
         set_server_state('mkvirtualenv',delete=True)
@@ -180,7 +181,7 @@ def pip_install_requirements():
     if req_files: file_patterns = '|'.join([file_patterns,'req*.pybundle'])
 
     #create a pip cache & src directory
-    cache = '/'.join([env.deployment_root,'package-cache'])
+    cache = '/'.join([deployment_root(),'package-cache'])
     src = '/'.join([env.deployment_root,'src'])
     deployed = mkdirs(cache)
     deployed += mkdirs(src)

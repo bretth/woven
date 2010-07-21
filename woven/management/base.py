@@ -55,6 +55,7 @@ class WovenCommand(BaseCommand):
     help = ""
     args = "host1 [host2 ...] or user@host1 ..."
     requires_model_validation = False
+    no_domain = False
   
     def handle_host(self, *args, **options):
         """
@@ -98,6 +99,8 @@ class WovenCommand(BaseCommand):
         #We now need to load django project woven settings into env
         #This is the equivalent to module level execution of the fabfile.py.
         #If we were using a fabfile.py then we would include set_env()
+        set_env.no_domain = self.no_domain
+
         if int(state.env.verbosity) < 2:
             with hide('warnings', 'running', 'stdout', 'stderr'):
                 set_env(settings,state.env.setup)

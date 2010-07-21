@@ -5,7 +5,7 @@ The full public woven api
 from woven.deployment import deploy_files, mkdirs
 from woven.deployment import upload_template, run_once_per_host_version
 
-from woven.environment import set_env, set_project_env, patch_project, server_state, set_server_state, verbosity
+from woven.environment import deployment_root, set_env, patch_project, server_state, set_server_state
 from woven.environment import project_name, project_fullname, project_version
 
 from woven.project import deploy_static, deploy_public, deploy_project, deploy_db, deploy_templates

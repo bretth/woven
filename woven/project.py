@@ -16,6 +16,7 @@ from fabric.contrib.console import confirm
 from fabric.version import get_version
 
 from woven.deployment import deploy_files, run_once_per_host_version
+from woven.environment import deployment_root
 
 
 @runs_once
@@ -55,8 +56,9 @@ def deploy_project():
     """
     Deploy to the project directory in the virtualenv
     """
+    
     #TODO - deploy packaged dist if exists
-    project_root = '/'.join([env.deployment_root,'env',env.project_fullname,'project'])
+    project_root = '/'.join([deployment_root(),'env',env.project_fullname,'project'])
     local_dir = os.getcwd()
     
     if env.verbosity:
@@ -74,6 +76,7 @@ def deploy_templates():
     """
     Deploy any templates from your shortest TEMPLATE_DIRS setting
     """
+    
     deployed = None
     if not hasattr(env, 'project_template_dir'):
         #the normal pattern would mean the shortest path is the main one.
@@ -87,7 +90,7 @@ def deploy_templates():
                     env.project_template_dir = dir
     
     if hasattr(env,'project_template_dir'):
-        remote_dir = '/'.join([env.deployment_root,'env',env.project_fullname,'templates'])
+        remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'templates'])
         if env.verbosity:
             print env.host,"DEPLOYING TEMPLATES", remote_dir
         deployed = deploy_files(env.project_template_dir,remote_dir)
@@ -100,8 +103,8 @@ def deploy_static():
     Deploy static (application) versioned media
     """
     if not env.STATIC_ROOT and not env.ADMIN_MEDIA_PREFIX: return
-        
-    remote_dir = '/'.join([env.deployment_root,'env',env.project_fullname,'static'])
+         
+    remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'static'])
     
     #if app media is not handled by django-staticfiles we can install admin media by default
     if 'django.contrib.admin' in env.INSTALLED_APPS and not env.STATIC_ROOT:
@@ -141,7 +144,8 @@ def deploy_public():
     """
     if not env.MEDIA_ROOT: return
     local_dir = env.MEDIA_ROOT
-    remote_dir = '/'.join([env.deployment_root,'public']) 
+    
+    remote_dir = '/'.join([deployment_root(),'public']) 
     if 'http://' in env.MEDIA_URL:
         media_url = env.MEDIA_URL.replace('http://','')
         media_url = media_url.split('/')
@@ -165,7 +169,7 @@ def deploy_db(rollback=False):
     Deploy a sqlite database from development
     """
     db_name = ''.join([env.project_name,'.db'])
-    db_dir = '/'.join([env.deployment_root,'database'])
+    db_dir = '/'.join([deployment_root(),'database'])
     db_path = '/'.join([db_dir,db_name])
     if not rollback:
         if env.DEFAULT_DATABASE_ENGINE=='django.db.backends.sqlite3' and not exists(db_path):
