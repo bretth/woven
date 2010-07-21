@@ -141,7 +141,10 @@ def pip_install_requirements():
     if exists(pip_log_dir): run(' '.join(['rm -rf' ,pip_log_dir]))
     
     #determine what req files or bundle files we need to deploy
-    req_files = {}.fromkeys(glob('req*'))
+    if not env.PIP_REQUIREMENTS:
+        req_files = {}.fromkeys(glob('req*'))
+    else:
+        req_files = {}.fromkeys(env.PIP_REQUIREMENTS)
     req_files_list = req_files.keys()
     req_files_list.sort()
     
