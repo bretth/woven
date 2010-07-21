@@ -14,7 +14,7 @@ from woven.environment import set_env
 
 class Command(BaseCommand):
     
-    help = "Pip bundle your requirements into .pybundles"
+    help = "Pip bundle your requirements into .pybundles for efficient deployment"
     args = ""
     requires_model_validation = False
     
@@ -33,7 +33,8 @@ class Command(BaseCommand):
                 set_env()
         else:
             set_env()
-        req_files = glob('req*')
+        if not state.env.PIP_REQUIREMENTS: req_files = glob('req*')
+        else: req_files = state.env.PIP_REQUIREMENTS
         dist_dir = os.path.join(os.getcwd(),'dist')
         if not os.path.exists(dist_dir):
             os.mkdir(dist_dir)
