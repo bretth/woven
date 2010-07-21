@@ -74,7 +74,7 @@ def activate():
                     sudo("chmod 644 %s" % '/'.join([path,'sites-available',site]))
                     sudo("ln -s %s/sites-available/%s %s/sites-enabled/%s"% (path,site,path,site))
                     if env.verbosity:
-                        print env.host," * enabled", "%s/sites-enabled/%s"% (path,site)
+                        print " * enabled", "%s/sites-enabled/%s"% (path,site)
   
         if env.verbosity:
             print env.host,env.project_fullname, "ACTIVATED"
@@ -202,7 +202,7 @@ def pip_install_requirements():
                 bundle = req_files[req]
                 if bundle: req=bundle
                 if env.verbosity:
-                    print env.host, ' * installing',req
+                    print ' * installing',req
                 if '.pybundle' in req.lower() or 'django' in req.lower():
                     install = run('pip install %s -q --environment=%s --log=/home/%s/.pip/%s_pip_log.txt'%
                                   (req, python_path, env.user, req.replace('.','_')))

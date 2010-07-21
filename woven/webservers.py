@@ -51,7 +51,7 @@ def _deploy_webserver(remote_dir,template):
                         context,
                         use_sudo=True)
         if env.verbosity:
-            print env.host," * uploaded", filename
+            print " * uploaded", filename
 
     return deployed
 
@@ -114,7 +114,7 @@ def deploy_wsgi():
                                 context,
                             )
             if env.verbosity:
-                print env.host," * uploaded", filename
+                print " * uploaded", filename
             #finally set the ownership/permissions
             #We'll use the group to allow www-data execute
             sudo("chown %s:www-data %s"% (env.user,filename))
