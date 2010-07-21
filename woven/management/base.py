@@ -131,4 +131,3 @@ class WovenCommand(BaseCommand):
                 self.handle_host(*args, **options)
             # Put old user back
             state.env.user = prev_user
-

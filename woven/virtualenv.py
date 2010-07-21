@@ -31,6 +31,13 @@ def activate():
     """
     Activates the version or the current version if criteria is met
     """
+
+    env_path = '/'.join([deployment_root(),'env',env.project_fullname])
+
+    if not exists(env_path):
+        print env.host,"ERROR: The version",env.project_version,"does not exist at"
+        print env_path
+
     active = active_version()
 
     if env.patch or active <> env.project_fullname:
@@ -39,12 +46,11 @@ def activate():
     if not env.patch and active <> env.project_fullname:
         #TODO - DATA MIGRATION HERE
         if env.verbosity:
-            print env.host, "ACTIVATING version", os.path.join(deployment_root(),'env',env.project_fullname)
+            print env.host, "ACTIVATING version", env_path
         #delete existing symlink
-        run('rm -f '+os.path.join(env.deployment_root,'env',env.project_name))
-        run('ln -s %s %s'% (os.path.join(env.deployment_root,'env',env.project_fullname),
-                            os.path.join(env.deployment_root,'env',env.project_name))
-           )
+        ln_path = '/'.join([env.deployment_root,'env',env.project_name])
+        run('rm -f '+ln_path)
+        run('ln -s %s %s'% (env_path,ln_path))
         #create shortcuts for virtualenv activation in the home directory
         activate_env = '/'.join(['/home',env.user,'workon-'+env.project_name])
         if not exists(activate_env):
@@ -84,6 +90,7 @@ def activate():
     if env.patch or active <> env.project_fullname:
         start_webservices()
         print
+    return
 
 @run_once_per_host_version
 def mkvirtualenv():

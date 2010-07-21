@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 import json, os, sys
+from contextlib import nested
 
 from django.utils.importlib import import_module
 
-from fabric.context_managers import settings
+
+from fabric.context_managers import _setenv, settings
 from fabric.contrib.files import exists
 from fabric.decorators import runs_once
 from fabric.main import find_fabfile
@@ -285,10 +287,12 @@ def project_version(full_version):
     """
     project_version context manager
     """
-    project_full_version=full_version,
+
+    project_full_version=full_version
     v = _parse_project_version(full_version)
     name = project_name()
     project_fullname = '-'.join([name,v])
+
     return _setenv(project_full_version=project_full_version, project_version=v,project_name=name,project_fullname=project_fullname)
 
 class State(str):
