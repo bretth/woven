@@ -15,6 +15,7 @@ from fabric.api import *
 
 from woven.management.base import WovenCommand
 from woven.api import *
+from woven.environment import _parse_project_version
 
 
 #Test the setup_environ indirectly by calling the management command 
@@ -42,7 +43,7 @@ env.HOST_PASSWORD = env.password = 'woven'
 env.ROOT_PASSWORD = 'root'
 
 #setup for the deployment functions
-set_project_env()
+
 
 #Test utils
 
@@ -50,7 +51,11 @@ def test_project_name():
     print project_name()
 
 def test_project_version():
-    print project_version()
+    with project_version('0.2'):
+        print 'env.project_fullname',env.project_fullname
+        print 'env.project_name',env.project_name
+        print 'env.project_full_version',env.project_full_version
+        print 'evn.project_version',env.project_version
  
 def test_project_fullname():
     print project_fullname()
@@ -540,43 +545,43 @@ def test_activate():
         assert exists('/etc/nginx/sites-enabled/someother_com-0.1.conf')
     
    
-def test_project_version():
+def test_parse_project_version():
     """
     Test the project version
     """
-    v = project_version('0.1')
+    v = _parse_project_version('0.1')
     env.project_version = ''
     assert v == '0.1'
-    v = project_version('0.1.0.1')
+    v = _parse_project_version('0.1.0.1')
     env.project_version = ''
     assert v == '0.1'
-    v = project_version('0.1 alpha')
+    v = _parse_project_version('0.1 alpha')
     env.project_version = ''
     assert v =='0.1-alpha'
-    v = project_version('0.1a 1234')
+    v = _parse_project_version('0.1a 1234')
     env.project_version = ''
     assert v == '0.1a'
-    v = project_version('0.1-alpha')
+    v = _parse_project_version('0.1-alpha')
     env.project_version = ''
     assert v == '0.1-alpha'
-    v = project_version('0.1 rc1 1234')
+    v = _parse_project_version('0.1 rc1 1234')
     env.project_version = ''
     assert v == '0.1-rc1'
-    v = project_version('0.1.0rc1')
+    v = _parse_project_version('0.1.0rc1')
     env.project_version = ''
     assert v == '0.1.0rc1'
-    v = project_version('0.1.1 rc2')
+    v = _parse_project_version('0.1.1 rc2')
     env.project_version = ''
     assert v == '0.1.1-rc2'
-    v = project_version('0.1.1.rc2.1234')
+    v = _parse_project_version('0.1.1.rc2.1234')
     env.project_version = ''
     assert v == '0.1.1.rc2'
-    v = project_version('0.1.1-rc2.1234')
+    v = _parse_project_version('0.1.1-rc2.1234')
     env.project_version = ''
     assert v == '0.1.1-rc2'
-    v = project_version('0.1.1-rc2-1234')
+    v = _parse_project_version('0.1.1-rc2-1234')
     env.project_version = ''
     assert v == '0.1.1-rc2'
-    v = project_version('0.1.1 rc2 1234')
+    v = _parse_project_version('0.1.1 rc2 1234')
     assert v ==  '0.1.1-rc2'  
     
