@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os,sys
+import os,socket, sys
 
 from fabric.state import env, connections
 from fabric.context_managers import settings
@@ -221,7 +221,7 @@ def install_packages(rollback = False,overwrite=False):
             if package == 'apache2' and (overwrite or not preinstalled):
                 if env.verbosity:
                     print "Uploading Apache2 template /etc/apache2/ports.conf"
-                context = {'host_ip':env.host}
+                context = {'host_ip':socket.gethostbyname(env.host)}
                 upload_template('woven/apache2/ports.conf','/etc/apache2/ports.conf',context=context, use_sudo=True)
                 #Turn keep alive off on apache
                 sed('/etc/apache2/apache2.conf',before='KeepAlive On',after='KeepAlive Off',use_sudo=True)
@@ -262,7 +262,6 @@ def install_packages(rollback = False,overwrite=False):
         sudo("easy_install -U virtualenv")
         sudo("easy_install -U pip")
 
-    
         #cleanup after easy_install
         sudo("rm -rf build")
     else: #rollback
