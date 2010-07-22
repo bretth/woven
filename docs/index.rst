@@ -16,6 +16,7 @@ Contents:
    :maxdepth: 2
 
    main
+   commands
    settings
    conventions
    changelog

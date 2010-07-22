@@ -19,31 +19,30 @@ Project Deployment Layout
 
 Root folder for our installation is the domain '~/example.com/'
 Within the root folder are the following::
-
+    ~/.staging (all rsynced files are staged here before copying to final destination for network efficiency)
     ~/example.com
         |--database (for sqlite)
-        |--dist
-            |--requirements-0.1.pybundle (the pybundle if this feature of pip is used)
         |--env (The root directory for all virtual environments)
             |--example_project (symlink to the current virtualenv version)
             |--example_project-0.1 (The virtualenv root for this version)
-                |--bin 
+                |--bin
+                |--dist
+                     |--requirements.pybundle
                 |--include 
                 |--lib
                 |--project
                     |--example_project (package directory)
                         |--manage.py
-                        |--settings.py (for single domain installations only)
-                        |--sitesettings (use instead of settings.py for multi-domain installs)
+                        |--settings.py (global settings)
+                        |--sitesettings (site local setting files)
                                 |--__init__.py 
-                                |--example_com.py (imports default settings and overrides)
-                                |--subdomain_example_com.py (imports default settings and overrides)
+                                |--example_com.py (site local settings)
+                                |--subdomain_example_com.py 
                 |--templates (your project templates go here)
                 |--static 
                     |--example.com (for multi-domain deployments, domain specific media can go under the media dir) TO BE IMPLEMENTED
                     |--subdomain.example.com
                 |--wsgi (web server scripts go here including wsgi)
-    
            |--example_project-0.2 (next release version - as above)
         ...
         |--logs
