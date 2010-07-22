@@ -13,7 +13,11 @@ from fabric.context_managers import hide
 from woven.environment import set_env
 
 class Command(BaseCommand):
+    """
+    Pip bundle your requirements into .pybundles for efficient deployment
     
+    python manage.py bundle
+    """    
     help = "Pip bundle your requirements into .pybundles for efficient deployment"
     args = ""
     requires_model_validation = False

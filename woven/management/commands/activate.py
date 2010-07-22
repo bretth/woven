@@ -8,6 +8,11 @@ from woven.management.base import WovenCommand
 
 
 class Command(WovenCommand):
+    """
+    Active a project version
+    
+    e.g. python manage.py activate 0.1
+    """
     option_list = WovenCommand.option_list + (
         
     )

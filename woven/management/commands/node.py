@@ -10,6 +10,13 @@ from fabric.operations import run
 from woven.management.base import WovenCommand
 
 class Command(WovenCommand):
+    """
+    Run a management command on a host
+    
+    Basic Usage:
+    ``python manage.py node [user]@[hoststring] --options="[option ...]"``
+
+    """
     option_list = WovenCommand.option_list + (
         make_option('--options',
             help='Store all the management command options in a string. ie --options="--[opt]=[value] ..."'),
