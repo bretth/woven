@@ -106,7 +106,7 @@ Deploy does the following::
 1. For your first deployment it will deploy your sqlite database
 2. Create a virtualenv for the project version
 3. Install django. By default it will install the current version. You can set a pip requirements string DJANGO_REQUIREMENT in your settings.py if you want svn trunk or some other version
-4. Install dependencies from one or more requirement req*.txt files. eg. req1.txt, requirements.txt. If one doesn't exist then it will create one locally and add woven in it by default.
+4. Install dependencies from one or more requirement req* files. eg. req, requirements.txt etc. If one doesn't exist then it will create one locally and add woven in it by default.
 5. Creates a local sitesettings folder and a settings file for your server [root domain].py if it doesn't already exist. You can see how woven lays out your project on the server here.
 6. Deploys your project to the virtualenv on the server
 7. Deploys your root (shortest path) TEMPLATE_DIR into a templates directory on the server.
@@ -138,14 +138,14 @@ This will update existing files in your project, media and webserver configurati
 Where to now
 ------------
 
-SSH into your host and type::
+If you want to work directly on the server you can SSH into your host and type::
 
     source workon-[projectname]
     
 This will activate your current virtualenv and drop you into the project manage.py directory.
 
 Of course installing packages from a requirements file each version can be slow, especially if you are
-downloading the same django version each time. To get around this first set your DJANGO_REQUIREMENT setting to file:///path/to/Django-x.x.x.tar.gz to rsync against a local copy. Next make use of pip ``bundle`` command. ``pip bundle dist/requirements-0.1.pybundle -r requirements.txt`` to bundle all the requirements into a dist directory in project. Woven will look in the dist directory first and install from a bundle with the same name as the requirements file with the current significant version on the end.
+downloading the same django version each time. To get around this first set your DJANGO_REQUIREMENT setting to file:///path/to/Django-x.x.x.tar.gz to rsync against a local copy. Next make use of  ``manage.py bundle`` command. This to bundle all the requirements into a dist directory in project. Woven will look in the dist directory first and install from a bundle with the same name as the requirements file.
 
 Development
 ===========
@@ -153,21 +153,7 @@ Development
 At the current version, Woven is under heavy development and may change radically until it gets closer to 1.0,
 though the core highlevel functions setupnode, deploy, and patch will not change.
 
-The main feature goals of this project are to:
-
-* allow deployment of Django projects with minimal configuration and using just a minimal setup.py file, your existing project settings.py, and a pip requirements file
-* take advantage of a proper setup.py sdist with a ``package`` command that creates bundles and source distributions. (not yet implemented)
-* issue arbitrary management commands to hosts ``python manage.py node [command] --host=[user@ipaddress]`` (not yet implemented)
-* deploy each significant version of your project and dependencies into a separate virtualenv virtual python environment to allow simple switching/rollback between versions
-* integration with Django South for database & data migration (not yet implemented)
-* maintainance pages for downtime (not yet implemented)
-* allow simple deployment of multi-site projects (not yet implemented)
-* allow command usage within a standard Fabric fabfile.py if complex configuration is required
-* provide standard django templates for all configuration files such as apache, nginx, mod-wsgi 
-* scale out to multi-host multi-site (not yet implemented)
-* configure postgresql (not yet implemented)
-* setup option for GeoDjango (not yet implemented)
-* install any configuraton templates for ubuntu packages in /etc/[package] (not yet implemented).
-
 The woven project is hosted on github at http://github.com/bretth/woven. Feature requests and bug reports are welcome.
+
+You can contact me at brett at haydon dot id dot au
 
