@@ -152,7 +152,7 @@ def _root_domain():
                 #assume the first part is the hostname of the machine
                 domain = '.'.join(domain[1:])
         #we'll just pick the first directory in the path which has a period.
-        if not domain:
+        else:
             for d in cwd:
                 if '.' in d: 
                     domain = d
