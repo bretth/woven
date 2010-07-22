@@ -46,6 +46,8 @@ Django settings.py. They are all optional.
         
     #Virtualenv/Pip
     DJANGO_REQUIREMENT = 'Django' # Defaults to django. A pip requirements string for the version of Django to install
+    PIP_REQUIREMENTS = [] # list of text pip requirements files (not pybundles). Defaults to any file in the setup.py directory with `req` prefix
+    # Note: Woven will look for optional pybundles matching the requirements in the dist directory - you can use the bundle management command to create these.
     
     #Application media - as per build_static app
     STATIC_URL = '' #optional - by default this is set to the ADMIN_MEDIA_PREFIX
