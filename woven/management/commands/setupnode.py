@@ -12,7 +12,7 @@ class Command(WovenCommand):
     )
     help = "Setup a baseline Ubuntu host"
     requires_model_validation = False
-    no_domain = True
+
     
     def handle_host(self,*args, **options):
         # Log to stdout

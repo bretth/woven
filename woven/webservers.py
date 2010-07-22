@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import socket
 
 from fabric.state import env
 from fabric.operations import run, sudo
@@ -41,7 +42,7 @@ def _deploy_webserver(remote_dir,template):
                     "domain":d,
                     "root_domain":env.root_domain,
                     "user":env.user,
-                    "host_ip":env.host,
+                    "host_ip":socket.gethostbyname(env.host),
                     "media_url":media_url,
                     "static_url":static_url,
                     }

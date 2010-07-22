@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import json, os, sys
+import json, os, string, sys
 from contextlib import nested
 
 from django.utils.importlib import import_module
@@ -129,7 +129,7 @@ def _parse_project_version(version=''):
    
     return project_version
 
-
+@runs_once
 def _root_domain():
     """
     Deduce the root domain name, usually a 'naked' domain but not necessarily. 
@@ -137,10 +137,25 @@ def _root_domain():
     if not hasattr(env,'root_domain'):
         cwd = os.getcwd().split(os.sep)
         domain = ''
+        #if the first env.host has a domain name then we'll use that
+        #since there are no top level domains that have numbers in them we can test env.host
+        if env.host[-1] in string.ascii_letters:
+            domain_parts = env.host.split('.')
+            length = len(domain_parts)
+            if length==2:
+                #assumes .com .net etc so we want the full hostname for the domain
+                domain = env.host
+            elif length==3 and len(domain_parts[-1])==2:
+                #assume country tld so we want the full hostname for domain
+                domain = env.host
+            elif length >=3:
+                #assume the first part is the hostname of the machine
+                domain = '.'.join(domain[1:])
         #we'll just pick the first directory in the path which has a period.
-        for d in cwd:
-            if '.' in d: 
-                domain = d
+        if not domain:
+            for d in cwd:
+                if '.' in d: 
+                    domain = d
         if not domain and env.INTERACTIVE:
             domain = prompt('Enter the root domain for this project ',default='example.com')
         else:
@@ -149,6 +164,10 @@ def _root_domain():
     return env.root_domain
 
 def deployment_root():
+    #determine domain for deployment commands/funcs
+    if not env.DOMAINS:
+        env.DOMAINS = [_root_domain()]
+    else: env.root_domain = env.DOMAINS[0]
     if not env.deployment_root:
         if env.root_domain: env.deployment_root = '/'.join(['/home',env.user,env.root_domain])
         else: env.deployment_root = '/'.join(['/home',env.user])
@@ -259,12 +278,7 @@ def set_env(settings=None, setup_dir=''):
     #noinput
     if not hasattr(env,'INTERACTIVE'): env.INTERACTIVE=True
     
-    #determine domain for deployment commands/funcs
-    if not env.DOMAINS:
-        if not hasattr(set_env,'no_domain') or not set_env.no_domain:
-            env.DOMAINS = [_root_domain()]
-        else: env.root_domain = ''
-    else: env.root_domain = env.DOMAINS[0]
+
     env.deployment_root = ''
 
 

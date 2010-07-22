@@ -18,6 +18,6 @@ class Command(WovenCommand):
     def handle_host(self,*args, **options):
         with settings(patch=True):
             deploy()
-            activate
+            activate()
 
 

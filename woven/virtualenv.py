@@ -37,6 +37,7 @@ def activate():
     if not exists(env_path):
         print env.host,"ERROR: The version",env.project_version,"does not exist at"
         print env_path
+        sys.exit(1)
 
     active = active_version()
 
