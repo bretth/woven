@@ -196,8 +196,9 @@ def install_packages(rollback = False,overwrite=False):
         if env.verbosity:
             print env.host, "INSTALLING & CONFIGURING HOST PACKAGES:"
         #Remove apparmor - TODO we may enable this later
-        sudo('/etc/init.d/apparmor stop')
-        sudo('update-rc.d -f apparmor remove')
+        with settings(warn_only=True):
+            sudo('/etc/init.d/apparmor stop')
+            sudo('update-rc.d -f apparmor remove')
         #Get a list of installed packages
         p = run("dpkg -l | awk '/ii/ {print $2}'").split('\n')
     
