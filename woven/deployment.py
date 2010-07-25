@@ -155,7 +155,7 @@ def deploy_files(local_dir, remote_dir, pattern = '', context={}, rsync_exclude=
     func = use_sudo and sudo or run
     #cp recursively -R from the staging to the destination and keep a list
     remote_base_path = '/'.join([remote_staging_dir,os.path.basename(local_dir),'*'])
-    copy_file_list = func(' '.join(['cp -Ruvp',remote_base_path,remote_dir])).split('\n')
+    copy_file_list = func(' '.join(['cp -Ruv',remote_base_path,remote_dir])).split('\n')
     if copy_file_list[0]: created_list += [file.split(' ')[2][1:-1] for file in copy_file_list if file]
 
     #cleanup any tmp staging dir
