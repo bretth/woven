@@ -3,6 +3,8 @@ Conventions
 
 Woven will use the following conventions to layout your project on the target host.
 
+In the following examples we are deploying a project ``example_project`` to a site ``example.com``
+
 Apache & Nginx Configuration files
 ----------------------------------
 
@@ -11,8 +13,7 @@ By convention the configuration file will be saved using the domain name as foll
 
 /etc/apache2/sites-available/example_com-0.1.conf
 
-Nginx is done the sames way
-
+Nginx for media is done the same way
 
 Project Deployment Layout
 -------------------------
