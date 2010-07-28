@@ -118,9 +118,6 @@ def deploy_files(local_dir, remote_dir, pattern = '', context={}, rsync_exclude=
     made to determine that the files that are being processed are actually templates.
     Templates are always rendered and uploaded even if the template hasn't changed.
     
-    ``chown`` chown args and options to run recursively (-R)
-    ``chmod`` chmod args and options to run recursively (-R)
-    
     ``rsync_exclude`` as per ``rsync_project``
     
     Returns a list of directories and files created on the host.
