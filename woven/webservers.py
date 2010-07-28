@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import socket
+import socket, sys
 
 from fabric.state import env
 from fabric.operations import run, sudo
@@ -124,14 +124,13 @@ def deploy_wsgi():
 
 def stop_webservices():
     #TODO - distinguish between a warning and a error on apache
-    if env.verbosity:
-        print env.host,"STOPPING nginx"
-    sudo("/etc/init.d/nginx stop")
 
     with settings(warn_only=True):
         if env.verbosity:
             print env.host,"STOPPING apache2"
-        a = sudo("apache2ctl stop")
+        a = sudo("/etc/init.d/apache2 stop")
+        if env.verbosity:
+            print a
         
     return True
 
@@ -139,12 +138,17 @@ def start_webservices():
     with settings(warn_only=True):
         if env.verbosity:
             print env.host,"STARTING apache2"
-        a = sudo("apache2ctl start")
-    if a.failed and env.verbosity:
+        a = sudo("/etc/init.d/apache2 start")
+        if env.verbosity:
+            print a
+        
+    if a.failed:
+        print "ERROR: /etc/init.d/apache2 start failed"
         print env.host, a
-        return False
+        sys.exit(1)
     if env.verbosity:
-        print env.host,"STARTING nginx"
+        #Reload used to fail on Ubuntu but at least in 10.04 it works
+        print env.host,"RELOADING nginx"
     sudo("/etc/init.d/nginx start")
     return True
 
