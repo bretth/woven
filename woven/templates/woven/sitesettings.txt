@@ -24,6 +24,6 @@ SITE_ID = {{ site_id }}
 
 #Normally you won't need to amend these settings
 MEDIA_ROOT = '/home/{{ user }}/{{ root_domain }}/public/'
-STATIC_ROOT = '/home/{{ user }}/{{ root_domain }}/env/{{ project_fullname }}/static/'
-TEMPLATE_DIRS = ('/home/{{ user }}/{{ root_domain }}/env/{{ project_fullname }}/templates/',
-                '/home/{{ user }}/{{ root_domain }}/env/{{ project_fullname }}/templates/{{ domain }}',)
+STATIC_ROOT = '/home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/static/'
+TEMPLATE_DIRS = ('/home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/templates/',
+                '/home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/templates/{{ domain }}',)
