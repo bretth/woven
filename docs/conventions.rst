@@ -1,5 +1,5 @@
 Conventions 
-============
+===========
 
 Woven will use the following conventions to layout your project on the target host.
 
