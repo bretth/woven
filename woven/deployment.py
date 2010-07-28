@@ -198,7 +198,7 @@ def run_once_per_host_version(func):
             state = func(*args, **kwargs)
             verbose =''
             #if the returning function is a state object with an object attr we will store it as json in the file 
-            if state: set_server_state(func.__name__,object=getattr(state,'object',None))
+            set_server_state(func.__name__,object=getattr(state,'object',None))
         if env.verbosity and verbose: print verbose
         return state            
           
