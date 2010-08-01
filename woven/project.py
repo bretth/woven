@@ -102,8 +102,8 @@ def deploy_static():
     """
     Deploy static (application) versioned media
     """
-    if not env.STATIC_ROOT and not env.ADMIN_MEDIA_PREFIX: return
-         
+    if (not env.STATIC_ROOT and not env.ADMIN_MEDIA_PREFIX) or 'http://' in env.STATIC_URL: return
+        
     remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'static'])
     
     #if app media is not handled by django-staticfiles we can install admin media by default
@@ -123,12 +123,7 @@ def deploy_static():
             sys.exit(1)
         elif env.STATIC_ROOT:
             local_dir = env.STATIC_ROOT
-            if 'http://' in env.STATIC_URL:
-                static_url = env.STATIC_URL.replace('http://','')
-                static_url = static_url.split('/')
-                static_url = '/'.join(static_url[1:])
-            else:
-                static_url = env.STATIC_URL[1:]
+            static_url = env.STATIC_URL[1:]
             if static_url:
                 remote_dir = '/'.join([remote_dir,static_url])
         else: return
@@ -142,16 +137,11 @@ def deploy_public():
     """
     Deploy MEDIA_ROOT unversioned on host
     """
-    if not env.MEDIA_ROOT: return
+    if not env.MEDIA_ROOT or 'http://' in env.MEDIA_URL: return
     local_dir = env.MEDIA_ROOT
     
     remote_dir = '/'.join([deployment_root(),'public']) 
-    if 'http://' in env.MEDIA_URL:
-        media_url = env.MEDIA_URL.replace('http://','')
-        media_url = media_url.split('/')
-        media_url = '/'.join(media_url[1:])
-    else:
-        media_url = env.MEDIA_URL[1:]
+    media_url = env.MEDIA_URL[1:]
     if media_url:
         remote_dir = '/'.join([remote_dir,media_url])
     if env.verbosity:
