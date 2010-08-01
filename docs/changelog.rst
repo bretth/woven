@@ -2,6 +2,14 @@
 Changelog
 ==========
 
+Release 0.3.1 (1-Aug-2010)
+--------------------------
+
+* fixed a failure where trying to disable apparmor
+* shifted from apache2ctl to init.d for starting and stopping apache2
+* fixed an issue with requirements files
+* uses the first domain SITE_ID = 1 sitesettings for project settings
+
 Release 0.3 (22-Jul-2010)
 -------------------------
 
