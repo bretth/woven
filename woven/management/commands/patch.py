@@ -4,6 +4,9 @@ from optparse import make_option
 from fabric.context_managers import settings
 
 from woven.api import deploy, activate
+from woven.api import deploy_project, deploy_templates, deploy_static, deploy_public
+from woven.api import deploy_wsgi, deploy_webservers
+
 from woven.management.base import WovenCommand
 
 
@@ -27,12 +30,35 @@ class Command(WovenCommand):
     option_list = WovenCommand.option_list + (
 
     )
-    help = "Patch the current version of your project"
+    help = "Patch all parts of the current version of your project, or patch part of the project"
+    args = "[project|templates|static|public|wsgi|webservers] [user@hoststring ...]"
     requires_model_validation = False
+
+    def parse_host_args(self, *args):
+        """
+        Splits out the patch subcommand and returns a comma separated list of host_strings
+        """
+        self.subcommand = None
+        new_args = args
+        try:
+            sub = args[0]
+            print sub
+            if sub in ['project','templates','static','public','wsgi','webservers']:
+                self.subcommand = args[0]
+                new_args = args[1:]
+                print new_args
+        except IndexError:
+            print 'IndexError'
+        
+        return ','.join(new_args)
     
     def handle_host(self,*args, **options):
         with settings(patch=True):
-            deploy()
-            activate()
+            if not self.subcommand:
+                deploy()
+                activate()
+            else:
+                eval(''.join(['deploy_',self.subcommand,'()']))
+                activate()
 
 
