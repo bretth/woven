@@ -230,30 +230,15 @@ def install_packages(rollback = False,overwrite=False):
                     sudo("apache2ctl stop")
             elif package == 'nginx' and (overwrite or not preinstalled):
                 if env.verbosity:
-                    print "Uploading Nginx templates /etc/nginx/nginx.conf /etc/nginx/proxy.conf"
+                    print "Uploading Nginx templates /etc/nginx/nginx.conf /etc/nginx/proxy.conf, and /etc/init/nginx.conf"
                 upload_template('woven/nginx/nginx.conf','/etc/nginx/nginx.conf',use_sudo=True)
                 #Upload a default proxy
                 upload_template('woven/nginx/proxy.conf','/etc/nginx/proxy.conf',use_sudo=True)
+                #Upload a upstart conf - bug in 10.04 prevents init.d working
+                upload_template('woven/nginx/nginx-init.conf','/etc/init/nginx.conf', use_sudo=True)
+                
                 with settings(warn_only=True):
                     sudo("/etc/init.d/nginx stop")
-
-        #Set unattended-updates configuration
-        unattended_config = '/etc/apt/apt.conf.d/10periodic'
-        if not exists(unattended_config, use_sudo=True):
-            if env.verbosity:
-                "Configuring unattended-updates /etc/apt/apt.conf.d/10periodic"
-            sudo('touch '+unattended_config)
-            #in theory append() should intelligently ignore lines if they already exist
-            #in practice this doesn't work as expected for this particular list.
-            #possibly some characters it is not matching correctly hence if the
-            #file already exists we'll skip this
-            append([
-                'APT::Periodic::Update-Package-Lists "1";',
-                'APT::Periodic::Download-Upgradeable-Packages "1";',
-                'APT::Periodic::AutocleanInterval "7";',
-                'APT::Periodic::Unattended-Upgrade "1";',
-            ], filename=' /etc/apt/apt.conf.d/10periodic',use_sudo=True)
-            set_server_state('unattended_config_created')
         
         #Install base python packages
         #We'll use easy_install at this stage since it doesn't download if the package
