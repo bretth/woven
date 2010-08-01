@@ -153,8 +153,6 @@ def pip_install_requirements():
         req_files = {}.fromkeys(glob('req*'))
     else:
         req_files = {}.fromkeys(env.PIP_REQUIREMENTS)
-    req_files_list = req_files.keys()
-    req_files_list.sort()
     
     for key in req_files:
         bundle = ''.join([key.split('.')[0],'.pybundle'])
@@ -167,7 +165,10 @@ def pip_install_requirements():
         text = render_to_string('woven/requirements.txt')
         f.write(text)
         f.close()
-        req_files = {"requirements.txt":None}
+        req_files["requirements.txt"]=''
+        
+    req_files_list = req_files.keys()
+    req_files_list.sort()
         
     #determine the django version
     file_patterns =''
