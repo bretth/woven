@@ -42,7 +42,7 @@ Patch the current version of your project on hosts and restart webservices
 Includes project, web configuration, media, and wsgi but does not pip install
 
 Basic Usage:
-``python manage.py patch [user]@[hoststring]``
+``python manage.py patch [subcommand] [user]@[hoststring]``
 
 Examples:
 ``python manage.py patch woven@192.168.188.10``
@@ -50,6 +50,15 @@ Examples:
 
 For just the current user
 ``python manage.py patch host.example.com``
+
+You can just patch a part of the deployment with a subcommand.
+
+The possible subcommands are::
+
+    project, templates, static, public, wsgi, webservers
+
+Example:
+``python manage.py patch public woven@host.example.com``
 
 activate
 --------
