@@ -16,6 +16,7 @@ from fabric.api import *
 from woven.management.base import WovenCommand
 from woven.api import *
 from woven.environment import _parse_project_version
+from woven.project import _make_local_sitesettings
 
 
 #Test the setup_environ indirectly by calling the management command 
@@ -63,8 +64,15 @@ def test_project_fullname():
     print env.project_name
     print env.project_version
 
-def test_setup_environ():
-    pass
+def test_setenv():
+    print "Determine that we are getting sitesettings"
+    local('rm -rf example_project/sitesettings')
+    #Prior to creating the sitesettings it should be whatever the default dev setting is
+    print env.MEDIA_ROOT <> '/home/woven/example.com/public/'
+    deployment_root()
+    _make_local_sitesettings()
+    set_env()
+    assert env.MEDIA_ROOT == '/home/woven/example.com/public/'
 
 def test_server_state():
     set_server_state('example',delete=True)
@@ -264,16 +272,22 @@ def test_setupnode_rollback():
 ### DEPLOYMENT TESTS
 
 def deploy_teardown():
-    sudo('rm -rf /var/local/woven')
-    sudo('rm -rf /home/woven/example.com')
-    local('rm -rf example_project/sitesettings')
-    sudo('rm -f /etc/nginx/sites-enabled/*')
-    sudo('rm -f /etc/nginx/sites-available/*')
-    sudo('rm -f /etc/apache2/sites-enabled/*')
-    sudo('rm -f /etc/apache2/sites-available/*')
-    sudo('rm -rf /home/woven/workon-example_project')
-    sudo('rm -f /etc/nginx/sites-enabled/someother_com-0.1.conf')
-    sudo('rm -rf /home/woven/*')
+    with hide('running', 'stdout'):
+        local('rm -f dist/requirements1.pybundle')
+        local('rm -f requirements.txt')
+        local('rm -f requirements1.txt')
+        local('rm -f pip*')
+        local('rm -rf example_project/sitesettings')
+        sudo('rm -rf /var/local/woven')
+        sudo('rm -rf /home/woven/example.com')
+        sudo('rm -f /etc/nginx/sites-enabled/*')
+        sudo('rm -f /etc/nginx/sites-available/*')
+        sudo('rm -f /etc/apache2/sites-enabled/*')
+        sudo('rm -f /etc/apache2/sites-available/*')
+        sudo('rm -rf /home/woven/workon-example_project')
+        sudo('rm -f /etc/nginx/sites-enabled/someother_com-0.1.conf')
+        sudo('rm -rf /home/woven/*')
+        sudo('rm -rf /home/woven/.staging')
 
 # Test related util functions
 def test_root_domain():
@@ -323,17 +337,9 @@ def bundle():
 def test_pip_install_requirements():
     #output.debug = True
     #Ensure nothing already there
-    local('rm -f dist/requirements1.pybundle')
-    local('rm -f requirements.txt')
-    local('rm -f requirements1.txt')
-    local('rm -f pip*')
-    sudo('rm -rf /var/local/woven')
-    sudo('rm -rf /home/woven/example.com')
-    sudo('rm -rf /home/woven/.staging')
+    deploy_teardown()
 
     rmvirtualenv()
-
-    
     #Try installing without an virtual env which should fail
     p = pip_install_requirements()
     assert not p
@@ -366,22 +372,13 @@ def test_pip_install_requirements():
 
 def test_pip_install_fail():
     print "TEST_PIP_INSTALL_FAIL"
-    local('rm -f dist/requirements1.pybundle')
-    local('rm -f requirements.txt')
-    local('rm -f requirements1.txt')
-    local('rm -f pip*')
-    sudo('rm -rf /var/local/woven')
-    sudo('rm -rf /home/woven/example.com')
-    sudo('rm -rf /home/woven/.staging')
+    deploy_teardown()
     
     v = mkvirtualenv()
     env.DJANGO_REQUIREMENT='Drongo'
     p = pip_install_requirements()
     print 'FAILED:',p.failed
     print 'STDERR:',p.stderr
-    
-    
-
 
 def test_deploy_project():
     #setup to ensure nothing left from a previous run
@@ -453,8 +450,6 @@ def test_deploy_templates():
 
     deploy_templates()
     assert exists('/home/woven/example.com/env/example_project-0.1/templates/index.html')
-
-    
     
 def test_deploy_wsgi():
     sudo('rm -rf /var/local/woven')
@@ -508,7 +503,7 @@ def test_webservices():
     stop_webservices()
     start_webservices()
     start_webservices()
-    stop_webservices()
+    #stop_webservices()
 
 def test_activate():
     sudo('rm -rf /var/local/woven')
@@ -543,6 +538,16 @@ def test_activate():
         sudo('rm -f /etc/nginx/sites-enabled/someother_com-0.1.conf.bak')
         activate()
         assert exists('/etc/nginx/sites-enabled/someother_com-0.1.conf')
+
+def test_deploy():
+    print "TESTING DEPLOY"
+    deploy_teardown()
+    deploy()
+    activate()
+    
+    print "RUN AGAIN"
+    deploy()
+    
     
    
 def test_parse_project_version():
