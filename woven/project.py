@@ -92,7 +92,7 @@ def deploy_templates():
     if hasattr(env,'project_template_dir'):
         remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'templates'])
         if env.verbosity:
-            print env.host,"DEPLOYING TEMPLATES", remote_dir
+            print env.host,"DEPLOYING templates", remote_dir
         deployed = deploy_files(env.project_template_dir,remote_dir)
     return deployed
     
@@ -128,7 +128,7 @@ def deploy_static():
                 remote_dir = '/'.join([remote_dir,static_url])
         else: return
     if env.verbosity:
-        print env.host,"DEPLOYING STATIC_ROOT",remote_dir
+        print env.host,"DEPLOYING static",remote_dir
     return deploy_files(local_dir,remote_dir)
     
 
@@ -145,7 +145,7 @@ def deploy_public():
     if media_url:
         remote_dir = '/'.join([remote_dir,media_url])
     if env.verbosity:
-        print env.host,"DEPLOYING MEDIA_ROOT",remote_dir    
+        print env.host,"DEPLOYING public",remote_dir    
     deployed = deploy_files(local_dir,remote_dir)
     
     #make writable for www-data for file uploads

@@ -79,7 +79,7 @@ def deploy_webservers():
     #TODO - incorrect - check for actual package to confirm installation
     if exists('/etc/apache2/sites-enabled/') and exists('/etc/nginx/sites-enabled'):
         if env.verbosity:
-            print env.host,"DEPLOYING webserver configuration:"
+            print env.host,"DEPLOYING webservers:"
         if not exists(log_dir):
             deployed += mkdirs(log_dir)
             sudo("chown -R www-data:sudo %s" % log_dir)
@@ -149,7 +149,9 @@ def start_webservices():
     if env.verbosity:
         #Reload used to fail on Ubuntu but at least in 10.04 it works
         print env.host,"RELOADING nginx"
-    sudo("/etc/init.d/nginx start")
+    n = sudo("/etc/init.d/nginx reload")
+    if env.verbosity:
+        print n
     return True
 
     
