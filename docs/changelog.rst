@@ -2,6 +2,12 @@
 Changelog
 ==========
 
+Release 0.4.0 (Not Yet Released)
+---------------------------------
+
+* removed unattended upgrades - due to unreliability
+* added an nginx upstart conf - the init.d one doesn't work at bootup
+
 Release 0.3.1 (1-Aug-2010)
 --------------------------
 

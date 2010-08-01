@@ -57,7 +57,7 @@ activate
 Activate a project version
 
 Usage:
-``python manage.py activate [version]
+``python manage.py activate [version]``
 
 Examples:
 ``python manage.py activate 0.1``

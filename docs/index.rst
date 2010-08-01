@@ -19,6 +19,7 @@ Contents:
    commands
    settings
    conventions
+   troubleshooting
    changelog
    
 
