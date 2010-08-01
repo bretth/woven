@@ -212,12 +212,22 @@ def set_env(settings=None, setup_dir=''):
     #We'll assume that if the settings aren't passed in we're running from a fabfile
     if not settings:
         sys.path.insert(0,local_working_dir)
-        #First try a multi-site configuration
-        #TODO - import multiple settings files for per-site settings
+        
+        #import global settings
+        project_settings = import_module(env.project_name+'.settings')
+
+        #overwrite with SITE_ID=1 sitesettings module
         try:
-            project_settings = import_module(env.project_name+'settings.settings')
-        except ImportError:
-            project_settings = import_module(env.project_name+'.settings')
+            sites = os.listdir(os.path.join(env.project_name,'sitesettings'))
+        except OSError:
+            sites = []
+
+        for site in sites:
+            if site[:2] <> '__' and site[-3:]=='.py':
+                u_domain = site.replace('.py','')
+                site_settings = import_module('.'.join([env.project_name,'sitesettings',u_domain]))
+                if hasattr(site_settings, 'SITE_ID') and site_settings.SITE_ID == 1:
+                    project_settings = site_settings
     else:
         project_settings = settings
     
