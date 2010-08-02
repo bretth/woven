@@ -5,8 +5,10 @@ Changelog
 Release 0.4.0 (Not Yet Released)
 ---------------------------------
 
+* added manage.py patch subcommand where subcommand is an individual part of the deploy process.
 * removed unattended upgrades - due to unreliability
-* added an nginx upstart conf - the init.d one doesn't work at bootup
+* added an modified nginx init.d conf - the default init.d doesn't work under some boot timing circumstances
+* use nginx reload command instead of start
 
 Release 0.3.1 (1-Aug-2010)
 --------------------------
