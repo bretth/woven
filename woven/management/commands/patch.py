@@ -42,13 +42,11 @@ class Command(WovenCommand):
         new_args = args
         try:
             sub = args[0]
-            print sub
             if sub in ['project','templates','static','public','wsgi','webservers']:
                 self.subcommand = args[0]
                 new_args = args[1:]
-                print new_args
         except IndexError:
-            print 'IndexError'
+            pass
         
         return ','.join(new_args)
     
