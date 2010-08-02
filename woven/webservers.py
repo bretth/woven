@@ -148,8 +148,15 @@ def start_webservices():
         sys.exit(1)
     if env.verbosity:
         #Reload used to fail on Ubuntu but at least in 10.04 it works
+        
+        #TODO - Check that it is already running
         print env.host,"RELOADING nginx"
-    n = sudo("/etc/init.d/nginx reload")
+    with settings(warn_only=True):
+        s = run("/etc/init.d/nginx status")
+        if 'running' in s:
+            n = sudo("/etc/init.d/nginx reload")
+        else:
+            n = sudo("/etc/init.d/nginx start")
     if env.verbosity:
         print n
     return True

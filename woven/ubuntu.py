@@ -226,19 +226,15 @@ def install_packages(rollback = False,overwrite=False):
                 upload_template('woven/apache2/ports.conf','/etc/apache2/ports.conf',context=context, use_sudo=True)
                 #Turn keep alive off on apache
                 sed('/etc/apache2/apache2.conf',before='KeepAlive On',after='KeepAlive Off',use_sudo=True)
-                with settings(warn_only=True):
-                    sudo("apache2ctl stop")
             elif package == 'nginx' and (overwrite or not preinstalled):
                 if env.verbosity:
                     print "Uploading Nginx templates /etc/nginx/nginx.conf /etc/nginx/proxy.conf, and /etc/init/nginx.conf"
                 upload_template('woven/nginx/nginx.conf','/etc/nginx/nginx.conf',use_sudo=True)
                 #Upload a default proxy
                 upload_template('woven/nginx/proxy.conf','/etc/nginx/proxy.conf',use_sudo=True)
-                #Upload a upstart conf - bug in 10.04 prevents init.d working
-                upload_template('woven/nginx/nginx-init.conf','/etc/init/nginx.conf', use_sudo=True)
-                
-                with settings(warn_only=True):
-                    sudo("/etc/init.d/nginx stop")
+                #Upload a custom init.d conf - an issue with timing causes nginx start to fail on boot
+                #We need to add some sleep time
+                upload_template('woven/nginx/nginx-init-d','/etc/init.d/nginx', use_sudo=True)
         
         #Install base python packages
         #We'll use easy_install at this stage since it doesn't download if the package
