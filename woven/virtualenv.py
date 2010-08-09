@@ -32,7 +32,10 @@ def active_version():
 
 def activate():
     """
-    Activates the version or the current version if criteria is met
+    Activates the version specified in ``env.project_version`` if it is different
+    from the current active version.
+    
+    An active version is just the version that is symlinked.
     """
 
     env_path = '/'.join([deployment_root(),'env',env.project_fullname])
@@ -102,6 +105,9 @@ def activate():
 
 @runs_once
 def sync_db():
+    """
+    Runs the django syncdb command
+    """
     with cd('/'.join([env.deployment_root,'env',env.project_fullname,'project',env.project_name])):
         venv = '/'.join([env.deployment_root,'env',env.project_fullname,'bin','activate'])
         if env.verbosity:
@@ -112,6 +118,12 @@ def sync_db():
 
 @runs_once
 def manual_migration():
+    """
+    Simple interactive function to pause the deployment.
+    A manual migration can be done two different ways:
+    Option 1: Enter y to exit the current deployment. When migration is completed run deploy again.
+    Option 2: run the migration in a separate shell   
+    """
     if env.INTERACTIVITY:
         print "A manual migration can be done two different ways:"
         print "Option 1: Enter y to exit the current deployment. When migration is completed run deploy again."
@@ -148,6 +160,9 @@ def migration():
 
 @run_once_per_host_version
 def mkvirtualenv():
+    """
+    Create the virtualenv project environment
+    """
     root = '/'.join([deployment_root(),'env'])
     path = '/'.join([root,env.project_fullname])
     dirs_created = []
