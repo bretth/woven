@@ -36,7 +36,8 @@ def _make_local_sitesettings(overwrite=False):
         settings_file_path = os.path.join(local_settings_dir,''.join([u_domain,'.py']))
         if not os.path.exists(settings_file_path):
             output = render_to_string('woven/sitesettings.txt',
-                    {"site_id":str(site_id),
+                    {"deployment_root":env.deployment_root,
+                    "site_id":str(site_id),
                     "project_name": env.project_name,
                     "project_fullname": env.project_fullname,
                     "u_domain":u_domain,
