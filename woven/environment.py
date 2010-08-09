@@ -15,7 +15,7 @@ from fabric.state import _AttributeDict, env
 woven_env = _AttributeDict({
 'HOSTS':[], #optional - a list of host strings to setup on as per Fabric
 'DOMAINS':[], #optional a list of domains that will be deployed on the host. The first is the primary domain
-'ROLEDEFS':{'staging':['']}, #optional as per fabric. Staging will be used in deployment
+'ROLEDEFS':{}, #optional as per fabric. eg {'staging':['woven@example.com']}
 'HOST_SSH_PORT':10022, #optional - the ssh port to be setup
 'HOST_USER':'', #optional - can be used in place of defining it elsewhere (ie host_string)
 'HOST_PASSWORD':'',#optional
@@ -50,7 +50,7 @@ woven_env = _AttributeDict({
 'STATIC_ROOT':'', #optional
 
 #Database migrations
-'MANUAL_MIGRATION':False, #Manage database migrations manually
+'MANUAL_MIGRATION':False, #optional Manage database migrations manually
 
 })
 
@@ -173,7 +173,7 @@ def deployment_root():
     if not env.deployment_root or not env.user in env.deployment_root:
         if env.root_domain: env.deployment_root = '/'.join(['/home',env.user])
         else: env.deployment_root = '/'.join(['/home',env.user])
-    #hack to get around an issue with virtualenvwrapper
+    #hack to get around an issue with virtualenvwrapper logging - I suspect virtualenvwrapper + fabric
     with cd('/'.join([env.deployment_root,'env'])):
         if exists('hook.log'):
             sudo("chmod -f ugo+w hook*")
@@ -191,8 +191,6 @@ def set_env(settings=None, setup_dir=''):
     This would be used in instances where setup.py was not above the cwd
 
     """
-    #TODO tighter integration with fabric 1.0 fabric.contrib.django
-    
     #switch the working directory to the distribution root where setup.py is
     original_fabfile = env.fabfile
     env.fabfile = 'setup.py'
@@ -221,38 +219,32 @@ def set_env(settings=None, setup_dir=''):
         
         #import global settings
         project_settings = import_module(env.project_name+'.settings')
-
-        #overwrite with SITE_ID=1 sitesettings module
-        #just for MEDIA_URL, ADMIN_MEDIA_PREFIX, and STATIC_URL
-        try:
-            sites = os.listdir(os.path.join(env.project_name,'sitesettings'))
-        except OSError:
-            sites = []
-
-        for site in sites:
-            if site[:2] <> '__' and site[-3:]=='.py':
-                u_domain = site.replace('.py','')
-                site_settings = import_module('.'.join([env.project_name,'sitesettings',u_domain]))
-                if hasattr(site_settings, 'SITE_ID') and site_settings.SITE_ID == 1:
-                    project_settings.MEDIA_URL = site_settings.MEDIA_URL
-                    project_settings.ADMIN_MEDIA_PREFIX = site_settings.ADMIN_MEDIA_PREFIX
-                    if hasattr(site_settings,'STATIC_URL'):
-                        project_settings.STATIC_URL = site_settings.STATIC_URL
     else:
         project_settings = settings
-    
-    #If the settings are optionally stored in a dictionary in the settings file
-    #to prevent namespace clashes
-    if hasattr(project_settings,'WOVEN'):
-        local_settings = project_settings.WOVEN
-        woven_env.update(local_settings)
-    else: #alternatively if the settings are at module level as per normal usage
-        local_settings = dir(project_settings)
+    #overwrite with SITE_ID=1 sitesettings module
+    #just for MEDIA_URL, ADMIN_MEDIA_PREFIX, and STATIC_URL
+    try:
+        sites = os.listdir(os.path.join(env.project_name,'sitesettings'))
+    except OSError:
+        sites = []
 
-        for setting in local_settings:
-            if setting.isupper() and hasattr(woven_env,setting):
-                s = getattr(project_settings,setting,'')
-                woven_env[setting] = s
+    for site in sites:
+        if site[:2] <> '__' and site[-3:]=='.py':
+            u_domain = site.replace('.py','')
+            site_settings = import_module('.'.join([env.project_name,'sitesettings',u_domain]))
+            if hasattr(site_settings, 'SITE_ID') and site_settings.SITE_ID == 1:
+                project_settings.MEDIA_URL = site_settings.MEDIA_URL
+                project_settings.ADMIN_MEDIA_PREFIX = site_settings.ADMIN_MEDIA_PREFIX
+                if hasattr(site_settings,'STATIC_URL'):
+                    project_settings.STATIC_URL = site_settings.STATIC_URL
+    
+    #update woven_env from project_settings    
+    local_settings = dir(project_settings)
+    #only get settings that woven uses
+    for setting in local_settings:
+        if setting.isupper() and hasattr(woven_env,setting):
+            s = getattr(project_settings,setting,'')
+            woven_env[setting] = s
     
     #upate the fabric env with all the woven settings
     env.update(woven_env)
@@ -266,11 +258,11 @@ def set_env(settings=None, setup_dir=''):
     
     #set the hosts
     if not env.hosts: env.hosts = woven_env.HOSTS
+    if not env.roledefs: env.roledefs = woven_env.ROLEDEFS
     
     #since port is not handled by fabric.main.normalize we'll do it ourselves
     host_list = []
     for host_string in env.hosts:
-        #print 'host_string',woven_env.HOST_SSH_PORT
         if not ':' in host_string:
             host_string += ':%s'% str(woven_env.HOST_SSH_PORT)
         #not sure that this is necessary but it seems clearer to make full
@@ -280,8 +272,8 @@ def set_env(settings=None, setup_dir=''):
         host_list.append(host_string)
         env.hosts = host_list
     
-    #Now update the env with any settings that are not woven specific
-    #but may be used by woven or fabric
+    #Now update the env with any settings that are not defined by woven but may
+    #be used by woven or fabric
     env.MEDIA_ROOT = project_settings.MEDIA_ROOT
     env.MEDIA_URL = project_settings.MEDIA_URL
     env.ADMIN_MEDIA_PREFIX = project_settings.ADMIN_MEDIA_PREFIX
@@ -295,15 +287,16 @@ def set_env(settings=None, setup_dir=''):
     env.TIME_ZONE = project_settings.TIME_ZONE
     #Used to detect certain apps eg South, static_builder
     env.INSTALLED_APPS = project_settings.INSTALLED_APPS
+    
     #noinput
     if not hasattr(env,'INTERACTIVE'): env.INTERACTIVE=True
+    
     env.deployment_root = ''
     
     #South integration defaults
     env.nomigration = False
     env.manualmigration = False
     env.migration = ''
-
 
 def patch_project():
     return env.patch
