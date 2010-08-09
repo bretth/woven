@@ -126,13 +126,12 @@ def deploy_wsgi():
 
 def stop_webservices():
     #TODO - distinguish between a warning and a error on apache
-
     with settings(warn_only=True):
         if env.verbosity:
             print env.host,"STOPPING apache2"
         a = sudo("/etc/init.d/apache2 stop")
         if env.verbosity:
-            print a
+            print '',a
         
     return True
 
@@ -142,7 +141,7 @@ def start_webservices():
             print env.host,"STARTING apache2"
         a = sudo("/etc/init.d/apache2 start")
         if env.verbosity:
-            print a
+            print '',a
         
     if a.failed:
         print "ERROR: /etc/init.d/apache2 start failed"
@@ -160,7 +159,7 @@ def start_webservices():
         else:
             n = sudo("/etc/init.d/nginx start")
     if env.verbosity:
-        print n
+        print ' *',n
     return True
 
     
