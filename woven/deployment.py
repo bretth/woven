@@ -57,15 +57,12 @@ def _get_local_files(local_dir, pattern=''):
         os.chdir(cwd)
     return local_files
 
-def _stage_local_files(local_dir, local_files={}, context={}):
+def _stage_local_files(local_dir, local_files={}):
     """
     Either ``local_files`` and/or ``context`` should be supplied.
     
     Will stage a ``local_files`` dictionary of path:filename pairs where path
     is relative to ``local_dir`` into a local tmp staging directory.
-    
-    Supply a ``context`` to render templates under ``local_dir`` or restricted to
-    ``local_files`` and save into the local tmp staging directory.
     
     Returns a path to the temporary local staging directory
 
@@ -84,18 +81,10 @@ def _stage_local_files(local_dir, local_files={}, context={}):
                 if not os.path.exists(os.path.join(staging_dir,relative_tree)):
                     os.mkdir(os.path.join(staging_dir,relative_tree))
             else: filepath = file
-            if context: #render templates
-                text = render_to_string(os.path.join(root,file),context)
-                output = open(os.path.join(staging_dir,filepath), "w+b")
-                output.write(text)
-                output.close()
-            else:
-                shutil.copy2(os.path.join(root,file),os.path.join(staging_dir,filepath))
+            shutil.copy2(os.path.join(root,file),os.path.join(staging_dir,filepath))
     return staging_dir
 
-
-
-def deploy_files(local_dir, remote_dir, pattern = '', context={}, rsync_exclude=['*.pyc','.*'], use_sudo=False):
+def deploy_files(local_dir, remote_dir, pattern = '',rsync_exclude=['*.pyc','.*'], use_sudo=False):
     """
     Generic deploy function for cases where one or more files are being deployed to a host.
     Wraps around ``rsync_project`` and stages files locally and/or remotely
@@ -113,11 +102,7 @@ def deploy_files(local_dir, remote_dir, pattern = '', context={}, rsync_exclude=
     to the local_dir according to the rules used by the Unix shell.
     ``pattern`` enhances the basic functionality by allowing the python | to include
     multiple patterns. eg '*.txt|Django*'
-    
-    By including a ``context``, files will be processed as templates. No attempt is
-    made to determine that the files that are being processed are actually templates.
-    Templates are always rendered and uploaded even if the template hasn't changed.
-    
+     
     ``rsync_exclude`` as per ``rsync_project``
     
     Returns a list of directories and files created on the host.
