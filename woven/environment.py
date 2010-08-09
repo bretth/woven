@@ -5,11 +5,11 @@ from contextlib import nested
 from django.utils.importlib import import_module
 
 
-from fabric.context_managers import _setenv, settings
+from fabric.context_managers import _setenv, settings, cd
 from fabric.contrib.files import exists
 from fabric.decorators import runs_once
 from fabric.main import find_fabfile
-from fabric.operations import local, sudo, prompt
+from fabric.operations import local, run, sudo, prompt
 from fabric.state import _AttributeDict, env
 
 woven_env = _AttributeDict({
@@ -31,7 +31,6 @@ woven_env = _AttributeDict({
 
 #The default ubuntu packages that are setup. It is NOT recommended you change these:
 'HOST_BASE_PACKAGES':[
-        'unattended-upgrades', #base
         'subversion','git-core','mercurial','bzr', #version control
         'gcc','build-essential', 'python-dev', 'python-setuptools', #build
         'apache2','libapache2-mod-wsgi','nginx', #webservers
@@ -41,15 +40,17 @@ woven_env = _AttributeDict({
 
 #Put any additional packages here 
 'HOST_EXTRA_PACKAGES':[], #optional - additional ubuntu packages as required
-
     
 #Virtualenv/Pip
 'PIP_REQUIREMENTS':[], # a list of pip requirement and or pybundle files to use for installation
-'DJANGO_REQUIREMENT':'Django',#A pip requirements string for the version of Django to install
+'DJANGO_REQUIREMENT':'',#A pip requirements string for the version of Django to install
 
 #Application media
 'STATIC_URL':'', #optional
 'STATIC_ROOT':'', #optional
+
+#Database migrations
+'MANUAL_MIGRATION':False, #Manage database migrations manually
 
 })
 
@@ -134,6 +135,7 @@ def _root_domain():
     """
     Deduce the root domain name, usually a 'naked' domain but not necessarily. 
     """
+    #TODO - refactor to use the database sites
     if not hasattr(env,'root_domain'):
         cwd = os.getcwd().split(os.sep)
         domain = ''
@@ -164,13 +166,17 @@ def _root_domain():
     return env.root_domain
 
 def deployment_root():
-    #determine domain for deployment commands/funcs
+    #determine domain for deployment commands/funcs TODO - refactor to use the database sites
     if not env.DOMAINS:
         env.DOMAINS = [_root_domain()]
     else: env.root_domain = env.DOMAINS[0]
-    if not env.deployment_root:
-        if env.root_domain: env.deployment_root = '/'.join(['/home',env.user,env.root_domain])
+    if not env.deployment_root or not env.user in env.deployment_root:
+        if env.root_domain: env.deployment_root = '/'.join(['/home',env.user])
         else: env.deployment_root = '/'.join(['/home',env.user])
+    #hack to get around an issue with virtualenvwrapper
+    with cd('/'.join([env.deployment_root,'env'])):
+        if exists('hook.log'):
+            sudo("chmod -f ugo+w hook*")
     return env.deployment_root
 
 def set_env(settings=None, setup_dir=''):
@@ -287,9 +293,12 @@ def set_env(settings=None, setup_dir=''):
     env.INSTALLED_APPS = project_settings.INSTALLED_APPS
     #noinput
     if not hasattr(env,'INTERACTIVE'): env.INTERACTIVE=True
-    
-
     env.deployment_root = ''
+    
+    #South integration defaults
+    env.nomigration = False
+    env.manualmigration = False
+    env.migration = ''
 
 
 def patch_project():

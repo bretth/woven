@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from optparse import make_option
 
+from fabric.context_managers import settings
+
 from woven.api import deploy
 from woven.virtualenv import activate
 from woven.management.base import WovenCommand
@@ -21,11 +23,35 @@ class Command(WovenCommand):
     ``python manage.py deploy host.example.com``
     
     """
-
+    option_list = WovenCommand.option_list + (
+        make_option('-m', '--migration',
+            default='', #use south default run all migrations
+            help="Specify a specific migration to run"
+        ),
+        make_option('--fake',
+            action='store_true',
+            default=False,
+            help="Fake the south migration. Useful when converting an app"
+        ),        
+        make_option('--nomigration',
+            action='store_true',
+            default=False,
+            help="Do not run any migration"
+        ),
+        make_option('--manualmigration',
+            action='store_true',
+            default=False,
+            help="Manage the database migration manually"
+        ),
+        
+    )
     help = "Deploy the current version of your project"
     requires_model_validation = False
     
     def handle_host(self,*args, **options):
         deploy()
-        activate()
+        with settings(nomigration = options.get('nomigration'),
+                      migration = options.get('migration'),
+                      manualmigration = options.get('manualmigration')):
+            activate()
 

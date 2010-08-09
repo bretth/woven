@@ -13,9 +13,7 @@ class Command(WovenCommand):
     
     e.g. python manage.py activate 0.1
     """
-    option_list = WovenCommand.option_list + (
-        
-    )
+
     help = "Activate a version of your project"
     requires_model_validation = False
     args = "version user@ipaddress [host2...]"
@@ -28,6 +26,7 @@ class Command(WovenCommand):
     
     def handle_host(self,*args, **options):
         vers = args[0]
+        env.nomigration = True
         with project_version(vers):        
             activate()
 

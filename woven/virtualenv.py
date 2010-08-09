@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 from glob import glob
 import os, sys
+import site
 
 from django import get_version
 from django.template.loader import render_to_string
 
+from fabric.decorators import runs_once
 from fabric.state import env 
 from fabric.operations import run, sudo
 from fabric.context_managers import cd, settings
 from fabric.contrib.files import exists
+from fabric.contrib.console import confirm
 
 from woven.deployment import mkdirs, run_once_per_host_version, deploy_files
 from woven.environment import deployment_root,set_server_state, server_state, State
@@ -45,26 +48,24 @@ def activate():
         stop_webservices()
         
     if not env.patch and active <> env.project_fullname:
-        #TODO - DATA MIGRATION HERE
+        
         if env.verbosity:
             print env.host, "ACTIVATING version", env_path
+
+        sync_db()
+        
+        #south migration
+        if 'south' in env.INSTALLED_APPS and not env.nomigration and not env.manualmigration:
+            migration()
+            
+        if env.manualmigration or env.MANUAL_MIGRATION: manual_migration()
+        
         #delete existing symlink
         ln_path = '/'.join([env.deployment_root,'env',env.project_name])
         run('rm -f '+ln_path)
         run('ln -s %s %s'% (env_path,ln_path))
-        #create shortcuts for virtualenv activation in the home directory
-        activate_env = '/'.join(['/home',env.user,'workon-'+env.project_name])
-        if not exists(activate_env):
-            run("touch "+activate_env)
-            append('#!/bin/bash',activate_env)
-            append("source "+ os.path.join(env.deployment_root,'env',env.project_name,'bin','activate'),
-                   activate_env)
-            append("cd "+ os.path.join(env.deployment_root,'env',env.project_name,'project',env.project_name),
-                   activate_env)
-            run("chmod +x "+activate_env)
-        
+      
         #activate sites
-        #enabled_sites = _ls_sites('/etc/apache2/sites-enabled') + _ls_sites('/etc/nginx/sites-enabled')
         activate_sites = [''.join([d.replace('.','_'),'-',env.project_version,'.conf']) for d in env.DOMAINS]
         site_paths = ['/etc/apache2','/etc/nginx']
         
@@ -88,10 +89,52 @@ def activate():
     else:
         if env.verbosity and not env.patch:
             print env.project_fullname,"is the active version"
+
+    #fix virtualenvwrapper permission issue with hook.log
+    with cd('/'.join([env.deployment_root,'env'])):
+        sudo('chown %s:sudo hook*'% env.user)
+
     if env.patch or active <> env.project_fullname:
         start_webservices()
         print
     return
+
+@runs_once
+def sync_db():
+    with cd('/'.join([env.deployment_root,'env',env.project_fullname,'project',env.project_name])):
+        venv = '/'.join([env.deployment_root,'env',env.project_fullname,'bin','activate'])
+        output = run(' '.join(['source',venv,'&&',"./manage.py syncdb --noinput"]))
+
+@runs_once
+def manual_migration():
+    if env.INTERACTIVITY:
+        print "A manual migration can be done two different ways:"
+        print "Option 1: Enter y to exit the current deployment. When migration is completed run deploy again."
+        print "Option 2: run the migration in a separate shell"
+        exit = confirm("Enter y to exit or accept default to complete deployment and activate the new version",default=False)
+    else:
+        exit = True
+    if exit:
+        print "Login to your node and run 'workon %s'"% env.project_fullname 
+        sys.exit(0)
+
+    
+@runs_once
+def migration():
+    """
+    Integrate with south schema migration
+    """
+
+    #activate env        
+    with cd('/'.join([env.deployment_root,'env',env.project_fullname,'project',env.project_name])):
+        #migrates all or specific env.migration
+        venv = '/'.join([env.deployment_root,'env',env.project_fullname,'bin','activate'])
+        command = ' '.join(['source',venv,'&&',"python manage.py migrate",env.migration])
+        if hasattr(env,"fakemigration"):
+            command = ' '.join([command,'--fake'])
+        output = run(command)
+    return           
+    
 
 @run_once_per_host_version
 def mkvirtualenv():
@@ -107,6 +150,7 @@ def mkvirtualenv():
         dirs_created += mkdirs('egg_cache')
         sudo('chown -R %s:www-data egg_cache'% env.user)
         sudo('chmod -R g+w egg_cache')
+        
     
     #Create a state
     out = State(' '.join([env.host,'virtualenv',path,'created']))
@@ -193,13 +237,13 @@ def pip_install_requirements():
     if req_files: file_patterns = '|'.join([file_patterns,'req*.pybundle'])
 
     #create a pip cache & src directory
-    cache = '/'.join([deployment_root(),'package-cache'])
+    cache =  '/'.join(['/home',env.user,'.package-cache'])
     src = '/'.join([env.deployment_root,'src'])
     deployed = mkdirs(cache)
     deployed += mkdirs(src)
     #deploy bundles and any local copy of django
     local_dir = os.path.join(os.getcwd(),'dist')
-    remote_dir = '/'.join([env.deployment_root,'env',env.project_fullname,'dist'])
+    remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'dist'])
     if file_patterns: deployed += deploy_files(local_dir, remote_dir, pattern=file_patterns)
     
     #deploy any requirement files
@@ -215,9 +259,12 @@ def pip_install_requirements():
                 if bundle: req=bundle
                 if env.verbosity:
                     print ' * installing',req
-                if '.pybundle' in req.lower() or 'django' in req.lower():
+                if '.pybundle' in req.lower():
                     install = run('pip install %s -q --environment=%s --log=/home/%s/.pip/%s_pip_log.txt'%
                                   (req, python_path, env.user, req.replace('.','_')))
+                elif 'django' in req.lower():
+                    install = run('pip install %s -q --environment=%s --src=%s --download-cache=%s --log=/home/%s/.pip/django_pip_log.txt'%
+                                  (req, python_path, src, cache, env.user))                    
                 else:
                     install = run('pip install -q --environment=%s --src=%s --download-cache=%s --requirement=%s --log=/home/%s/.pip/%s_pip_log.txt'%
                                   (python_path,src,cache,req, env.user,req.replace('.','_')))

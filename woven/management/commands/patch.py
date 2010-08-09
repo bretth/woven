@@ -27,9 +27,7 @@ class Command(WovenCommand):
     ``python manage.py patch host.example.com``
     
     """
-    option_list = WovenCommand.option_list + (
 
-    )
     help = "Patch all parts of the current version of your project, or patch part of the project"
     args = "[project|templates|static|public|wsgi|webservers] [user@hoststring ...]"
     requires_model_validation = False
