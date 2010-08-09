@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 
 from optparse import make_option
 
@@ -38,15 +39,6 @@ class WovenCommand(BaseCommand):
             help="password for use with authentication and/or sudo"
         ),
     
-        make_option('-H', '--hosts',
-            default=[],
-            help="comma-separated list of hosts to operate on"
-        ),
-        #TODO
-        #make_option('-R', '--roles',
-        #    default=[],
-        #    help="comma-separated list of roles to operate on"
-        #),
         make_option('--setup',
             help='The /path/to/dir containing the setup.py module. The command will execute from this directory. Only required if you are not executing the command from below the setup.py directory',
         ),
@@ -83,18 +75,31 @@ class WovenCommand(BaseCommand):
         #Django passes in a dictionary instead of the optparse options objects
         for option in options:
             state.env[option] = options[option]
+       
+        #args will be tuple. We convert it to a comma separated string for fabric
+        #if a role is used then we lookup the host list from the ROLEDEFS setting
+        
+        if args:
+            comma_hosts = self.parse_host_args(*args)
+            if hasattr(settings,'ROLEDEFS') and settings.ROLEDEFS: 
+                all_role_hosts = []
+                normalized_host_list = comma_hosts.split(',')
+                for r in normalized_host_list:
+                    role_host = settings.ROLEDEFS.get(r,'')
+                    if role_host: all_role_hosts+=role_host
+                if all_role_hosts: comma_hosts = ','.join(all_role_hosts)
+            state.env.hosts = comma_hosts
 
-        #Hosts can be args or options
-        #args will be tuple, --host option will be same as Fabric
-        if args: state.env.hosts = self.parse_host_args(*args)
-
+        if 'hosts' in state.env and isinstance(state.env['hosts'], str):
+            state.env['hosts'] = state.env['hosts'].split(',')
+        elif hasattr(settings,'HOSTS') and settings.HOSTS:
+            state.env['hosts'] = settings.HOSTS
+        else:
+            print "Error: You include a host or role in the command line or set HOSTS or ROLEDEFS in your settings file"
+            sys.exit(1)
+            
         #This next section is taken pretty much verbatim from fabric.main
         #so we follow an almost identical but more limited execution strategy
-        
-        # Handle --hosts, --roles (comma separated string => list)
-        for key in ['hosts', 'roles']:
-            if key in state.env and isinstance(state.env[key], str):
-                state.env[key] = state.env[key].split(',')
         
         #We now need to load django project woven settings into env
         #This is the equivalent to module level execution of the fabfile.py.
