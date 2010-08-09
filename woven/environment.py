@@ -223,6 +223,7 @@ def set_env(settings=None, setup_dir=''):
         project_settings = import_module(env.project_name+'.settings')
 
         #overwrite with SITE_ID=1 sitesettings module
+        #just for MEDIA_URL, ADMIN_MEDIA_PREFIX, and STATIC_URL
         try:
             sites = os.listdir(os.path.join(env.project_name,'sitesettings'))
         except OSError:
@@ -233,7 +234,10 @@ def set_env(settings=None, setup_dir=''):
                 u_domain = site.replace('.py','')
                 site_settings = import_module('.'.join([env.project_name,'sitesettings',u_domain]))
                 if hasattr(site_settings, 'SITE_ID') and site_settings.SITE_ID == 1:
-                    project_settings = site_settings
+                    project_settings.MEDIA_URL = site_settings.MEDIA_URL
+                    project_settings.ADMIN_MEDIA_PREFIX = site_settings.ADMIN_MEDIA_PREFIX
+                    if hasattr(site_settings,'STATIC_URL'):
+                        project_settings.STATIC_URL = site_settings.STATIC_URL
     else:
         project_settings = settings
     
