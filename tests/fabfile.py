@@ -10,8 +10,11 @@ import os
 import sys
 import time
 
+from django.template.loader import render_to_string
+
 from fabric.operations import _AttributeString
 from fabric.api import *
+from fabric.contrib.files import uncomment, exists
 
 from woven.management.base import WovenCommand
 from woven.api import *
@@ -68,11 +71,11 @@ def test_setenv():
     print "Determine that we are getting sitesettings"
     local('rm -rf example_project/sitesettings')
     #Prior to creating the sitesettings it should be whatever the default dev setting is
-    print env.MEDIA_ROOT <> '/home/woven/example.com/public/'
+    print env.MEDIA_ROOT <> '/home/woven/public/'
     deployment_root()
     _make_local_sitesettings()
     set_env()
-    assert env.MEDIA_ROOT == '/home/woven/example.com/public/'
+    assert env.MEDIA_ROOT == '/home/woven/public/'
 
 def test_server_state():
     set_server_state('example',delete=True)
@@ -279,7 +282,11 @@ def deploy_teardown():
         local('rm -f pip*')
         local('rm -rf example_project/sitesettings')
         sudo('rm -rf /var/local/woven')
-        sudo('rm -rf /home/woven/example.com')
+        sudo('rm -rf /home/woven/env')
+        sudo('rm -rf /home/woven/public')
+        sudo('rm -rf /home/woven/static')
+        sudo('rm -rf /home/woven/log')
+        sudo('rm -rf /home/woven/database')
         sudo('rm -f /etc/nginx/sites-enabled/*')
         sudo('rm -f /etc/nginx/sites-available/*')
         sudo('rm -f /etc/apache2/sites-enabled/*')
@@ -287,7 +294,9 @@ def deploy_teardown():
         sudo('rm -rf /home/woven/workon-example_project')
         sudo('rm -f /etc/nginx/sites-enabled/someother_com-0.1.conf')
         sudo('rm -rf /home/woven/*')
-        sudo('rm -rf /home/woven/.staging')
+    
+        with settings(warn_only=True):
+            local('cp -f example_project/original_settings.py example_project/settings.py')
 
 # Test related util functions
 def test_root_domain():
@@ -296,17 +305,17 @@ def test_root_domain():
     assert domain == 'example.com'
 
 # First Deployment step
-def test_virtualenv():
+def test_mkvirtualenv():
     
     #Ensure we're cleared out settings
     sudo('rm -rf /var/local/woven')
-    sudo('rm -rf /home/woven/example.com')
+    sudo('rm -rf /home/woven/env')
     v = mkvirtualenv()
     #Returns True if it is created
     print v.object
     print v.failed
     assert v
-    assert exists('/home/woven/example.com/env/example_project-0.1/bin/python')
+    assert exists('/home/woven/env/example_project-0.1/bin/python')
     
     v = mkvirtualenv()
     #Returns True if already created.
@@ -320,15 +329,15 @@ def test_virtualenv():
         v = mkvirtualenv()
     
     #teardown
-    assert exists('/home/woven/example.com/env/example_project-0.2/bin/python')
-    with project_version('0.2'):
-        rmvirtualenv()
-        assert not exists('/home/woven/example.com/env/example_project-0.2/bin/python')
-        assert not server_state('mkvirtualenv')
-    assert exists('/home/woven/example.com/env/example_project-0.1/bin/python')
-    rmvirtualenv()
-    assert not exists('/home/woven/example.com')
-    assert not server_state('mkvirtualenv')
+    #assert exists('/home/woven/env/example_project-0.2/bin/python')
+    #with project_version('0.2'):
+    #    rmvirtualenv()
+    #    assert not exists('/home/woven/env/example_project-0.2/bin/python')
+    #    assert not server_state('mkvirtualenv')
+    #assert exists('/home/woven/env/example_project-0.1/bin/python')
+    #rmvirtualenv()
+    #assert not exists('/home/woven/env')
+    #assert not server_state('mkvirtualenv')
 
 def bundle():
     local('pip bundle -r requirements1.txt dist/requirements1.pybundle')
@@ -348,7 +357,7 @@ def test_pip_install_requirements():
     print "INSTALL Just woven & django"
     env.DJANGO_REQUIREMENT='file://'+os.path.join(os.getcwd(),'dist','Django-1.2.1.tar.gz')
     p = pip_install_requirements()
-    assert exists('/home/woven/example.com/env/example_project-0.1/lib/python2.6/site-packages/django')
+    assert exists('/home/woven/env/example_project-0.1/lib/python2.6/site-packages/django')
     ##Install our example staticfiles
     #c = confirm('PROCEED Install staticfiles')
     print " INSTALL staticfiles"
@@ -356,7 +365,7 @@ def test_pip_install_requirements():
     local("echo 'django-staticfiles' >> requirements1.txt")
     p = pip_install_requirements()
     assert p
-    assert exists('/home/woven/example.com/env/example_project-0.1/lib/python2.6/site-packages/staticfiles')
+    assert exists('/home/woven/env/example_project-0.1/lib/python2.6/site-packages/staticfiles')
     #c = confirm('PROCEED fail test')
     #Try installing again - should show installed
     p = pip_install_requirements()
@@ -367,8 +376,8 @@ def test_pip_install_requirements():
     set_server_state('pip_install_requirements', delete=True)
     bundle()
     p = pip_install_requirements()
-    assert exists('/home/woven/example.com/env/example_project-0.1/dist/requirements1.pybundle')
-    assert exists('/home/woven/example.com/env/example_project-0.1/lib/python2.6/site-packages/staticfiles')
+    assert exists('/home/woven/env/example_project-0.1/dist/requirements1.pybundle')
+    assert exists('/home/woven/env/example_project-0.1/lib/python2.6/site-packages/staticfiles')
 
 def test_pip_install_fail():
     print "TEST_PIP_INSTALL_FAIL"
@@ -382,30 +391,22 @@ def test_pip_install_fail():
 
 def test_deploy_project():
     #setup to ensure nothing left from a previous run
-    #change_version('0.2','0.1')
-    sudo('rm -rf /var/local/woven')
-    sudo('rm -rf /home/woven/example.com')
-    sudo('rm -rf /home/woven/.staging')
-    local('rm -rf example_project/sitesettings')
+    deploy_teardown()
     
     #tests
     deploy_project()
-    assert exists('/home/woven/example.com/env/example_project-0.1/project/setup.py')
-    assert exists('/home/woven/example.com/env/example_project-0.1/project/example_project/sitesettings/example_com.py')
+    assert exists('/home/woven/env/example_project-0.1/project/setup.py')
+    assert exists('/home/woven/env/example_project-0.1/project/example_project/sitesettings/example_com.py')
     assert contains('from example_project.settings import','/home/woven/example.com/env/example_project-0.1/project/example_project/sitesettings/example_com.py')
     
     #Test deploy version '0.2'
     with project_version('0.2'):
         deploy_project()
-        assert exists('/home/woven/example.com/env/example_project-0.2/project/setup.py')
+        assert exists('/home/woven/env/example_project-0.2/project/setup.py')
 
     
 def test_deploy_static():
-    sudo('rm -rf /var/local/woven')
-    sudo('rm -rf /home/woven/example.com')
-    sudo('rm -rf /home/woven/.staging')
-    local('rm -rf example_project/sitesettings')
-    run('rm -rf /home/woven/example.com')
+    deploy_teardown()
 
     
     #Test simple with no app media
@@ -415,15 +416,11 @@ def test_deploy_static():
     #Test with just admin_media
     env.INSTALLED_APPS += ['django.contrib.admin']
     deploy_static()
-    assert exists('/home/woven/example.com/env/example_project-0.1/static/static/admin-media/css')
+    assert exists('/home/woven/env/example_project-0.1/static/static/admin-media/css')
  
 
 def test_deploy_public():
-    sudo('rm -rf /var/local/woven')
-    sudo('rm -rf /home/woven/example.com')
-    sudo('rm -rf /home/woven/.staging')
-    local('rm -rf example_project/sitesettings')
-    local('rm -f dist/django-pony1.jpg')
+    deploy_teardown()
 
     with settings(MEDIA_ROOT=''):
     #Test simple with no media_root - fails
@@ -434,14 +431,11 @@ def test_deploy_public():
     print 'MEDIA_ROOT', env.MEDIA_ROOT
 
     deploy_public()
-    assert exists('/home/woven/example.com/public/media/django-pony.jpg')
+    assert exists('/home/woven/public/media/django-pony.jpg')
 
 def test_deploy_templates():
     #teardown
-    sudo('rm -rf /var/local/woven')
-    sudo('rm -rf /home/woven/example.com')
-    sudo('rm -rf /home/woven/.staging')
-    local('rm -rf example_project/sitesettings')
+    deploy_teardown()
     
     #simple deploy with no templates defined
     with settings(TEMPLATE_DIRS=()):
@@ -449,30 +443,17 @@ def test_deploy_templates():
    
 
     deploy_templates()
-    assert exists('/home/woven/example.com/env/example_project-0.1/templates/index.html')
+    assert exists('/home/woven/env/example_project-0.1/templates/index.html')
     
 def test_deploy_wsgi():
-    sudo('rm -rf /var/local/woven')
-    sudo('rm -rf /home/woven/example.com')
-    sudo('rm -rf /home/woven/.staging')
-    local('rm -rf example_project/sitesettings')
+    deploy_teardown()
 
     deploy_wsgi()
-    assert exists('/home/woven/example.com/env/example_project-0.1/wsgi/example_com.wsgi')
+    assert exists('/home/woven/env/example_project-0.1/wsgi/example_com.wsgi')
     
 def test_deploy_webservers():
     #setup for test
-    sudo('rm -rf /var/local/woven')
-    sudo('rm -rf /home/woven/example.com')
-    sudo('rm -rf /home/woven/.staging')
-    local('rm -rf example_project/sitesettings')
-
-    sudo('rm -f /etc/nginx/sites-enabled/*')
-    sudo('rm -f /etc/nginx/sites-available/*')
-    sudo('rm -f /etc/apache2/sites-enabled/*')
-    sudo('rm -f /etc/apache2/sites-available/*')
-
-    
+    deploy_teardown()
     #Initial test
     print "SIMPLE TEST"
     deploy_webservers()
@@ -506,15 +487,7 @@ def test_webservices():
     #stop_webservices()
 
 def test_activate():
-    sudo('rm -rf /var/local/woven')
-    sudo('rm -rf /home/woven/example.com')
-    local('rm -rf example_project/sitesettings')
-    sudo('rm -f /etc/nginx/sites-enabled/*')
-    sudo('rm -f /etc/nginx/sites-available/*')
-    sudo('rm -f /etc/apache2/sites-enabled/*')
-    sudo('rm -f /etc/apache2/sites-available/*')
-    sudo('rm -rf /home/woven/workon-example_project')
-    sudo('rm -f /etc/nginx/sites-enabled/someother_com-0.1.conf')
+    deploy_teardown()
     
     mkvirtualenv()
     #deploy_db()
@@ -539,9 +512,29 @@ def test_activate():
         activate()
         assert exists('/etc/nginx/sites-enabled/someother_com-0.1.conf')
 
+def test_migration():
+    deploy_teardown()
+    
+    #setup
+    f = open("requirements.txt","w+")
+    text = render_to_string('woven/requirements.txt')
+    f.write(text)
+    f.write('\n')
+    f.write('south')
+    f.close()
+    with settings(warn_only=True):
+        local('cp example_project/south_settings.py example_project/settings.py')
+    #The settings have already been imported so we need to manually add south for testing
+    env.INSTALLED_APPS = env.INSTALLED_APPS + ['south']
+    #Add a requirements file 
+    print "Test that a simple migration passes"
+    deploy()
+    activate()    
+
 def test_deploy():
     print "TESTING DEPLOY"
     deploy_teardown()
+    #with show('debug'):
     deploy()
     activate()
     
