@@ -59,11 +59,6 @@ def activate():
             migration()
             
         if env.manualmigration or env.MANUAL_MIGRATION: manual_migration()
-        
-        #delete existing symlink
-        ln_path = '/'.join([env.deployment_root,'env',env.project_name])
-        run('rm -f '+ln_path)
-        run('ln -s %s %s'% (env_path,ln_path))
       
         #activate sites
         activate_sites = [''.join([d.replace('.','_'),'-',env.project_version,'.conf']) for d in env.DOMAINS]
@@ -83,6 +78,12 @@ def activate():
                     sudo("ln -s %s/sites-available/%s %s/sites-enabled/%s"% (path,site,path,site))
                     if env.verbosity:
                         print " * enabled", "%s/sites-enabled/%s"% (path,site)
+        
+        #delete existing symlink
+        ln_path = '/'.join([env.deployment_root,'env',env.project_name])
+        run('rm -f '+ln_path)
+        run('ln -s %s %s'% (env_path,ln_path))
+
   
         if env.verbosity:
             print env.host,env.project_fullname, "ACTIVATED"
@@ -103,7 +104,11 @@ def activate():
 def sync_db():
     with cd('/'.join([env.deployment_root,'env',env.project_fullname,'project',env.project_name])):
         venv = '/'.join([env.deployment_root,'env',env.project_fullname,'bin','activate'])
+        if env.verbosity:
+            print " * python manage.py syncdb --noinput"
         output = run(' '.join(['source',venv,'&&',"./manage.py syncdb --noinput"]))
+        if env.verbosity:
+            print output
 
 @runs_once
 def manual_migration():
@@ -118,7 +123,6 @@ def manual_migration():
         print "Login to your node and run 'workon %s'"% env.project_fullname 
         sys.exit(0)
 
-    
 @runs_once
 def migration():
     """
@@ -129,10 +133,16 @@ def migration():
     with cd('/'.join([env.deployment_root,'env',env.project_fullname,'project',env.project_name])):
         #migrates all or specific env.migration
         venv = '/'.join([env.deployment_root,'env',env.project_fullname,'bin','activate'])
-        command = ' '.join(['source',venv,'&&',"python manage.py migrate",env.migration])
+        cmdpt1 = ' '.join(['source',venv,'&&'])
+        cmdpt2 = ' '.join(["python manage.py migrate",env.migration])
+        
         if hasattr(env,"fakemigration"):
-            command = ' '.join([command,'--fake'])
-        output = run(command)
+            cmdpt2 = ' '.join([cmdpt2,'--fake'])
+        if env.verbosity:
+            print " *", cmdpt2
+        output = run(' '.join([cmdpt1,cmdpt2]))
+        if env.verbosity:
+            print output
     return           
     
 
