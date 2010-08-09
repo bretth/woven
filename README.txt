@@ -3,9 +3,9 @@ Woven is a Python library built on `Fabric <http://docs.fabfile.org/0.9.1/>`_ wh
 projects served by Apache and Nginx on Ubuntu Linux servers. 
 
 Woven grew out of a simple fabric script that followed Will Larson's
-`Ubuntu intrepid almanac <http://lethain.com/entry/2009/feb/13/the-django-and-ubuntu-intrepid-almanac/>`_. Out of the box there is a fair bit of tedious work in setting up a server environment for Django. Modern Django projects can also be a cosmopolitan mix of source repositories and binary packages which makes keeping a development environment in sync with production challenging. Where traditional rsync and source repository scripts fall far short, Woven utilizes Pip, Virtualenv, Fabric and Django templates to simplify deployment making ``release early and often`` a reality.
+`Ubuntu intrepid almanac <http://lethain.com/entry/2009/feb/13/the-django-and-ubuntu-intrepid-almanac/>`_. Out of the box there is a fair bit of tedious work in setting up a server environment for Django. Modern Django projects can also be a cosmopolitan mix of source repositories and binary packages which makes keeping a development environment in sync with production challenging. Where traditional rsync and source repository scripts fall far short, Woven utilizes Pip, Virtualenv, Fabric and Django templates to simplify deployment making *release early and often* a reality.
 
-Woven currently provides four core Django commands/functions; ``setupnode``, ``deploy``, ``patch``, ``activate`` and a standard webserver configuration that aims for stability and flexibility. Additionally Woven can be integrated into standard Fabric fabfile.py scripts as projects grow in complexity.
+Woven provides four core Django commands/functions; ``setupnode``, ``deploy``, ``patch``, ``activate`` and a standard webserver configuration that aims for stability and flexibility. Additionally Woven can be integrated into standard Fabric fabfile.py scripts as projects grow in complexity.
 
 .. note::
 

@@ -1,6 +1,6 @@
-Woven assumes you have Django already installed.
+Woven assumes you have Django already installed. And you are using pip and virtualenv right?
 
-    pip install woven
+    ``pip install woven``
     
 .. note::
     
