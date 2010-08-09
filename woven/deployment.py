@@ -117,7 +117,7 @@ def deploy_files(local_dir, remote_dir, pattern = '',rsync_exclude=['*.pyc','.*'
     #resolve pattern into a dir:filename dict
     local_files = _get_local_files(local_dir,pattern)
     #If we are only copying specific files or rendering templates we need to stage locally
-    if local_files or context: staging_dir = _stage_local_files(local_dir, local_files, context)
+    if local_files: staging_dir = _stage_local_files(local_dir, local_files)
     remote_staging_dir = '/home/%s/.staging'% env.user
     if not exists(remote_staging_dir):
         run(' '.join(['mkdir -pv',remote_staging_dir])).split('\n')
@@ -215,7 +215,7 @@ def upload_template(filename,  destination,  context={},  use_sudo=False):
     # need it there to upload it (Windows locks the file for reading while open).
     tempfile_fd, tempfile_name = tempfile.mkstemp()
     output = open(tempfile_name, "w+b")
-
+    
     output.write(text)
     output.close()
 
