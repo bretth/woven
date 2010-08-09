@@ -70,7 +70,7 @@ def change_ssh_port(rollback=False):
                         print >> sys.stderr, "\nStopped."
                     sys.exit(1)
                 except: #No way to catch the failing connection without catchall? 
-                    print env.host, "Warning: Default port not responding. Setupnode may already have been run or the host is down. Skipping.."
+                    print env.host, "Warning: Default port not responding.\n * Setupnode may already have been run previously or the host is down. Skipping ssh port.."
                     return False
                 sed('/etc/ssh/sshd_config','Port '+ str(before),'Port '+str(after),use_sudo=True)
                 if env.verbosity:
@@ -219,23 +219,24 @@ def install_packages(rollback = False,overwrite=False):
             else:
                 preinstalled = True
 
-            if package == 'apache2' and (overwrite or not preinstalled):
+            if package == 'apache2':
                 if env.verbosity:
                     print "Uploading Apache2 template /etc/apache2/ports.conf"
                 context = {'host_ip':socket.gethostbyname(env.host)}
                 upload_template('woven/apache2/ports.conf','/etc/apache2/ports.conf',context=context, use_sudo=True)
                 #Turn keep alive off on apache
                 sed('/etc/apache2/apache2.conf',before='KeepAlive On',after='KeepAlive Off',use_sudo=True)
-            elif package == 'nginx' and (overwrite or not preinstalled):
+            elif package == 'nginx':
                 if env.verbosity:
-                    print "Uploading Nginx templates /etc/nginx/nginx.conf /etc/nginx/proxy.conf, and /etc/init/nginx.conf"
+                    print "Uploading Nginx templates /etc/nginx/nginx.conf /etc/nginx/proxy.conf, and /etc/init.d/nginx"
                 upload_template('woven/nginx/nginx.conf','/etc/nginx/nginx.conf',use_sudo=True)
                 #Upload a default proxy
                 upload_template('woven/nginx/proxy.conf','/etc/nginx/proxy.conf',use_sudo=True)
                 #Upload a custom init.d conf - an issue with timing causes nginx start to fail on boot
                 #We need to add some sleep time
-                upload_template('woven/nginx/nginx-init-d','/etc/init.d/nginx', use_sudo=True)
-        
+                upload_template('woven/nginx-init-d','/etc/init.d/nginx', use_sudo=True)
+                sudo('chown -f root:root /etc/init.d/nginx')
+                sudo('chmod ugo+rx /etc/init.d/nginx')
         #Install base python packages
         #We'll use easy_install at this stage since it doesn't download if the package
         #is current whereas pip always downloads.
@@ -243,6 +244,10 @@ def install_packages(rollback = False,overwrite=False):
 
         sudo("easy_install -U virtualenv")
         sudo("easy_install -U pip")
+        sudo("easy_install -U virtualenvwrapper")
+        if not contains("source /usr/local/bin/virtualenvwrapper.sh","/home/%s/.profile"% env.user):
+            append("export WORKON_HOME=$HOME/env","/home/%s/.profile"% env.user)
+            append("source /usr/local/bin/virtualenvwrapper.sh","/home/%s/.profile"% env.user)
 
         #cleanup after easy_install
         sudo("rm -rf build")
@@ -405,7 +410,8 @@ def upgrade_ubuntu():
         print " * running apt-get update "
     sudo('apt-get -qqy update')
     if env.verbosity:
-        print " * running apt-get upgrade (note: this may take sometime to complete if the host has not been upgraded recently)"
+        print " * running apt-get upgrade"
+        print " NOTE: If apt-get upgrade does not complete within 10 minutes see troubleshooting docs before aborting the process"
     sudo('apt-get -qqy upgrade')
 
 def upload_ssh_key(rollback=False):
