@@ -8,7 +8,7 @@ from fabric.contrib.files import comment, uncomment, contains, exists, append, s
 from fabric.contrib.console import confirm
 from fabric.network import join_host_strings, normalize
 
-from woven.deployment import _backup_file, _restore_file, upload_template
+from woven.deployment import _backup_file, _restore_file, deploy_files, upload_template
 from woven.environment import server_state, set_server_state
     
 def add_user(username='',password='',group=''):
@@ -220,23 +220,8 @@ def install_packages(rollback = False,overwrite=False):
                 preinstalled = True
 
             if package == 'apache2':
-                if env.verbosity:
-                    print "Uploading Apache2 template /etc/apache2/ports.conf"
-                context = {'host_ip':socket.gethostbyname(env.host)}
-                upload_template('woven/apache2/ports.conf','/etc/apache2/ports.conf',context=context, use_sudo=True)
-                #Turn keep alive off on apache
-                sed('/etc/apache2/apache2.conf',before='KeepAlive On',after='KeepAlive Off',use_sudo=True)
-            elif package == 'nginx':
-                if env.verbosity:
-                    print "Uploading Nginx templates /etc/nginx/nginx.conf /etc/nginx/proxy.conf, and /etc/init.d/nginx"
-                upload_template('woven/nginx/nginx.conf','/etc/nginx/nginx.conf',use_sudo=True)
-                #Upload a default proxy
-                upload_template('woven/nginx/proxy.conf','/etc/nginx/proxy.conf',use_sudo=True)
-                #Upload a custom init.d conf - an issue with timing causes nginx start to fail on boot
-                #We need to add some sleep time
-                upload_template('woven/nginx-init-d','/etc/init.d/nginx', use_sudo=True)
-                sudo('chown -f root:root /etc/init.d/nginx')
-                sudo('chmod ugo+rx /etc/init.d/nginx')
+                 sed('/etc/apache2/apache2.conf',before='KeepAlive On',after='KeepAlive Off',use_sudo=True)
+ 
         #Install base python packages
         #We'll use easy_install at this stage since it doesn't download if the package
         #is current whereas pip always downloads.
@@ -269,7 +254,6 @@ def install_packages(rollback = False,overwrite=False):
             set_server_state('unattended_config_created',delete=True)
         #Finally remove any unneeded packages
         sudo('apt-get autoremove -qqy')
-
 
 def restrict_ssh(rollback=False):
     """
@@ -348,7 +332,6 @@ def set_timezone(rollback=False):
         _restore_fie('/etc/timezone')
         sudo('dpkg-reconfigure --frontend noninteractive tzdata')
     return True
-    
 
 def setup_ufw(rollback=False):
     """
@@ -386,7 +369,6 @@ def setup_ufw(rollback=False):
             apt_get_purge('ufw')
             set_server_state('ufw_installed',delete=True)
 
-
 def uncomment_sources(rollback=False):
     """
     Uncomments universe sources in /etc/apt/sources.list if necessary
@@ -413,6 +395,50 @@ def upgrade_ubuntu():
         print " * running apt-get upgrade"
         print " NOTE: If apt-get upgrade does not complete within 10 minutes see troubleshooting docs before aborting the process"
     sudo('apt-get -qqy upgrade')
+
+def _get_template_files(template_dir):
+    etc_dir = os.path.join(template_dir,'woven','etc')
+    templates = []
+    for root, dirs, files in os.walk(etc_dir):
+        if files:
+            for f in files:
+                if f[0] <> '.':
+                    new_root = root.replace(template_dir,'')
+                    templates.append(os.path.join(new_root,f))
+
+    return set(templates)
+
+def upload_etc():
+    """
+    Upload and render all templates in the woven/etc directory to the respective directories on the nodes
+    """
+    #determine the templatedir
+    if env.verbosity:
+        print "UPLOAD ETC configuration templates"
+    if not hasattr(env, 'project_template_dir'):
+        #the normal pattern would mean the shortest path is the main one.
+        #its probably the last listed
+        length = 1000   
+        for dir in env.TEMPLATE_DIRS:
+            if dir:
+                len_dir = len(dir)
+                if len_dir < length:
+                    length = len_dir
+                    env.project_template_dir = dir
+
+    template_dir = os.path.join(os.path.split(os.path.realpath(__file__))[0],'templates','')
+    default_templates = _get_template_files(template_dir)
+    user_templates = _get_template_files(os.path.join(env.project_template_dir,''))
+    etc_templates = user_templates | default_templates
+    context = {'host_ip':socket.gethostbyname(env.host)}
+    for t in etc_templates:
+        dest = t.replace('woven','')
+        upload_template(t,dest,context=context,use_sudo=True)
+        sudo(' '.join(["chown root:root",dest]))
+        if 'init.d' in dest: sudo(' '.join(["chmod ugo+rx",dest]))
+        else: sudo(' '.join(["chmod ugo+r",dest]))
+        if env.verbosity:
+            print " * uploaded",dest
 
 def upload_ssh_key(rollback=False):
     """
@@ -450,7 +476,3 @@ def upload_ssh_key(rollback=False):
         else: #no pre-existing keys remove the .ssh directory
             sudo('rm -rf /home/%s/.ssh')
         return
-
-    
-    
-

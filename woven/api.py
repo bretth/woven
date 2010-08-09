@@ -13,7 +13,7 @@ from woven.project import deploy_static, deploy_public, deploy_project, deploy_d
 from woven.ubuntu import add_user, apt_get_install, apt_get_purge
 from woven.ubuntu import install_packages, upgrade_ubuntu, setup_ufw, disable_root
 from woven.ubuntu import uncomment_sources, restrict_ssh, upload_ssh_key
-from woven.ubuntu import change_ssh_port, set_timezone, ubuntu_version
+from woven.ubuntu import change_ssh_port, set_timezone, ubuntu_version, upload_etc
 
 from woven.virtualenv import activate, active_version
 from woven.virtualenv import mkvirtualenv, rmvirtualenv, pip_install_requirements
@@ -54,6 +54,7 @@ def setupnode(rollback=False, overwrite=False):
         upgrade_ubuntu()
         setup_ufw()
         install_packages(overwrite=overwrite)
+        upload_etc()
         set_timezone()
 
         
