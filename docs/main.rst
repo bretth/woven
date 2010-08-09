@@ -8,11 +8,11 @@ Installation
 Getting Started
 ===============
 
-Woven currently provides three management commands for your Django project:
+Woven provides four core management commands for your Django project:
 
-``setupnode``, ``deploy`` and ``patch``
+``setupnode``, ``deploy``, ``patch``, and ``activate``
 
-Others may be added in the future, but for now that's it. They're pretty simple but Lets walk through how they are used to deploy your project.
+They're pretty simple but Lets walk through how they are used to deploy your project.
 
 Setupnode
 ----------
@@ -31,21 +31,21 @@ Create a minimal setup.py in the directory above your django project. This is th
     )
 
 where `package` is the django-admin.py startproject name. Only name and version are
-significant to woven.
+required for woven.
 
 Run setupnode from your project directory.
 
 .. code-block:: bash
 
-    python manage.py setupnode [ipaddress]
+    python manage.py setupnode [host]
 
 or
 
 .. code-block:: bash
 
-    python manage.py setupnode [user@ipaddress]
+    python manage.py setupnode [user@host]
 
-where user is the *new* user that will be created (instead of the current client os user).
+where user is the *new* user that will be created (instead of the current client os user ie ``root``).
 
 Lets go through what this actually does:
 
@@ -68,7 +68,7 @@ If you want to modify them you can copy them from the package into a woven folde
 Deploy
 ----------------
 
-Deploy early. Deploy often.
+*Deploy early. Deploy often.*
 
 First configure the usual necessary project settings.py if they're not already done. Here are some notes about the main ones:: 
 
@@ -83,46 +83,44 @@ First configure the usual necessary project settings.py if they're not already d
     # Woven treats ADMIN_MEDIA_PREFIX as application media 
     # this cannot be on the same path as MEDIA_URL
     ADMIN_MEDIA_PREFIX
- 
+
 .. note::
 
-    Woven deploys a separate virtual environment and configuration for each significant version of your project. This includes your project and python library dependencies including Django itself. It also includes application media (such as admin), your webserver configuration, and wsgi file. The only thing that doesn't get versioned is MEDIA_ROOT which is where you might store user created media (and file-storage). See :doc:`conventions` for more information about how woven lays out your project on the host.   
+    Starting with a sqlite3 database is actually a pretty good idea. It's easy to load up to production, performs well for sites that are mostly reads, and if you like you can dump the database and load it into postgresql or mysql when you need *write* scalability or the extra features of an enterprise database.
 
 Follow the usual django instructions for enabling admin for your site and then run ``python manage.py syncdb``.
 Make sure you can login to your default admin site, and if everything is alright it is time to do your first deployment.
 
 .. code-block:: bash
 
-    python manage.py deploy [user@ipaddress]
+    python manage.py deploy [user@host]
 
-The first thing it will ask for is the root domain. This is your SITE_ID = 1 domain. You can define it as the first domain in the ``DOMAINS`` list setting in your settings.py.
+The first thing it will ask for is the root domain. This is your SITE_ID = 1 production domain. You can define it as the first domain in the ``DOMAINS`` list setting in your settings.py.
 
 .. note::
 
     Make sure your domain server or /etc/hosts file has an entry for the domain (and on osx, run ``dscacheutil -flushcache``).
     
-Deploy does the following::
+The default deploy does the following::
 
 1. For your first deployment it will deploy your sqlite database
 2. Create a virtualenv for the project version
 3. Install django. By default it will install the current version. You can set a pip requirements string DJANGO_REQUIREMENT in your settings.py if you want svn trunk or some other version
 4. Install dependencies from one or more requirement req* files. eg. req, requirements.txt etc. If one doesn't exist then it will create one locally and add woven in it by default.
-5. Creates a local sitesettings folder and a settings file for your server [root domain].py if it doesn't already exist. You can see how woven lays out your project on the server here.
+5. Creates a local sitesettings folder and a settings file for your server [domain].py if it doesn't already exist. You can see how woven lays out your project on the server in the sitesettings file.
 6. Deploys your project to the virtualenv on the server
 7. Deploys your root (shortest path) TEMPLATE_DIR into a templates directory on the server.
 8. Deploys admin media or STATIC_ROOT setting (if you use django-staticfiles) into a virtualenv static directory.
 9. Deploys anything at MEDIA_ROOT into a non-virtualenv public directory.
 10. Deploys your domain wsgi file into a virtualenv wsgi directory as [domain].wsgi
 11. Renders your apache and nginx templates and deploys them into the sites-available with the version in the name.
-12. Symlinks the webserver conf versions into sites-enabled
-13. Stops the webservices
-14. Symlinks the project virtualenv version to the active virtualenv.
-15. Starts the webservices
+12. Stops the webservices
+13. Syncs the database
+14. Runs South migrate if you have South installed
+15. Symlinks the webserver conf versions into sites-enabled
+16. Symlinks the project virtualenv version to the active virtualenv.
+17. Starts the webservices
 
-.. note::
-
-    Currently the deploy command **does not** do any data/schema migration. Future versions will integrate with south,
-    and provide an optional point to do any custom migration.
 
 Patch
 ------
@@ -131,27 +129,34 @@ Of course mistakes are made, and you cannot re-deploy the same significant versi
 
 .. code-block:: bash
 
-    python manage.py patch [user@ipaddress]
+    python manage.py patch [user@host]
     
 This will update existing files in your project, media and webserver configurations. It won't delete any files or update any dependencies. To update dependencies to a new library version you would need to increase your setup.py version and re-run deploy.
+
+Patch can also just upload a specific part of your project using a subcommand. For example to just patch your webserver conf files:
+
+.. code-block:: bash
+
+    python manage.py patch webservers [user@host] 
 
 Where to now
 ------------
 
 If you want to work directly on the server you can SSH into your host and type::
 
-    source workon-[projectname]
+    workon [projectname]
     
-This will activate your current virtualenv and drop you into the project manage.py directory.
+This will use virtualenvwrapper to activate your current virtualenv and drop you into the project manage.py directory.
 
-Of course installing packages from a requirements file each version can be slow, especially if you are
-downloading the same django version each time. To get around this first set your DJANGO_REQUIREMENT setting to file:///path/to/Django-x.x.x.tar.gz to rsync against a local copy. Next make use of  ``manage.py bundle`` command. This to bundle all the requirements into a dist directory in project. Woven will look in the dist directory first and install from a bundle with the same name as the requirements file.
+Of course installing packages from a requirements file can be problematic if pypi is down.  To get around this first set your DJANGO_REQUIREMENT setting to file:///path/to/Django-x.x.x.tar.gz to rsync against a local copy. Next make use of  ``manage.py bundle`` command. This to bundle all the requirements into a dist directory in project. Woven will look in the dist directory first and install from a bundle with the same name as the requirements file.
+
+Have a read of the woven django management :ref:commands to get a better feel of woven. 
 
 Development
 ===========
 
 At the current version, Woven is under heavy development and may change radically until it gets closer to 1.0,
-though the core highlevel functions setupnode, deploy, and patch will not change.
+though the core highlevel functions setupnode, deploy, patch, and activate will not change.
 
 The woven project is hosted on github at http://github.com/bretth/woven. Feature requests and bug reports are welcome.
 

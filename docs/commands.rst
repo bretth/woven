@@ -23,7 +23,7 @@ Pip bundle your requirements into .pybundles for efficient deployment
 deploy
 ------
 
-Deploy your project to a host and activate
+Deploy your project to a host run syncdb and activate
 
 Basic Usage:
 ``python manage.py deploy [user]@[hoststring]``
@@ -35,19 +35,18 @@ Examples:
 For just the current user
 ``python manage.py deploy host.example.com``
 
-Select options::
 
-    **South migration**
-    
-    deploy syncs the database with syncdb and integrates with south if it is installed
+*South migration options*
 
-    ``-m --migration`` Specify a specific migration to run
-    
-    ``--fake``  Fake a South migration (see South documentation)
-    
-    ``--nomigration`` Do not migrate
-    
-    ``--manualmigration`` Manage the database migration manually. With this option you can drop out of the current deployment to migrate the database manually, or pause the deployment while migrating in a separate shell. To migrate the database you could login to your node and then run ``workon [yourproject-version]`` to drop into the new versions environment and migrate your database using south, then logout and re-run deploy or continue the existing deploy. 
+deploy integrates with south if it is installed
+
+``-m --migration`` Specify a specific migration to run
+
+``--fake``  Fake a South migration (see South documentation)
+
+``--nomigration`` Do not migrate
+
+``--manualmigration`` Manage the database migration manually. With this option you can drop out of the current deployment to migrate the database manually, or pause the deployment while migrating in a separate shell. To migrate the database you could login to your node and then run ``workon [yourproject-version]`` to drop into the new versions environment and migrate your database using south, then logout and re-run deploy or continue the existing deploy. 
 
 
 patch
@@ -89,7 +88,7 @@ Examples:
 node
 ----
 
-Run a no arguments management command on a host
+Run a no arguments management command on hosts
 
 Basic Usage:
 ``python manage.py node [command] [user]@[hoststring] --options="[option ...]"``
