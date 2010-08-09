@@ -35,6 +35,21 @@ Examples:
 For just the current user
 ``python manage.py deploy host.example.com``
 
+Select options::
+
+    **South migration**
+    
+    deploy syncs the database with syncdb and integrates with south if it is installed
+
+    ``-m --migration`` Specify a specific migration to run
+    
+    ``--fake``  Fake a South migration (see South documentation)
+    
+    ``--nomigration`` Do not migrate
+    
+    ``--manualmigration`` Manage the database migration manually. With this option you can drop out of the current deployment to migrate the database manually, or pause the deployment while migrating in a separate shell. To migrate the database you could login to your node and then run ``workon [yourproject-version]`` to drop into the new versions environment and migrate your database using south, then logout and re-run deploy or continue the existing deploy. 
+
+
 patch
 -----
 

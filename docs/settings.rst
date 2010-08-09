@@ -34,7 +34,6 @@ Django settings.py. They are all optional.
     
     #The default ubuntu packages that are setup. It is NOT recommended you overwrite these
     HOST_BASE_PACKAGES = [
-            'unattended-upgrades', #base
             'subversion','git-core','mercurial','bzr', #version control
             'gcc','build-essential', 'python-dev', 'python-setuptools', #build
             'apache2','libapache2-mod-wsgi','nginx', #webservers
@@ -45,12 +44,15 @@ Django settings.py. They are all optional.
     HOST_EXTRA_PACKAGES = [] 
         
     #Virtualenv/Pip
-    DJANGO_REQUIREMENT = 'Django' # Defaults to django. A pip requirements string for the version of Django to install
+    DJANGO_REQUIREMENT = '' #defaults to development django. A pip requirements string for the version of Django to install
     PIP_REQUIREMENTS = [] # list of text pip requirements files (not pybundles). Defaults to any file in the setup.py directory with `req` prefix
     # Note: Woven will look for optional pybundles matching the requirements in the dist directory - you can use the bundle management command to create these.
     
     #Application media - as per build_static app
-    STATIC_URL = '' #optional - by default this is set to the ADMIN_MEDIA_PREFIX
-    STATIC_ROOT = '' #optional - by default this gets set to the admin media directory if admin is used
+    STATIC_URL = '' #by default this is set to the ADMIN_MEDIA_PREFIX
+    STATIC_ROOT = '' #by default this gets set to the admin media directory if admin is used
+    
+    #Database migrations
+    MANUAL_MIGRATION = False #Manage database migrations manually
 
 
