@@ -1,17 +1,17 @@
-#!/home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/bin/python
+#!{{ deployment_root }}/env/{{ project_name }}/bin/python
 import site
-site.addsitedir('/home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/lib/python2.6/site-packages')
+site.addsitedir('{{ deployment_root }}/env/{{ project_name }}/lib/python2.6/site-packages')
 
 import sys, os
 
-os.environ['PATH'] = '/home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/bin:%s' % os.environ.get('PATH', '/bin:/usr/bin')
-os.environ['VIRTUAL_ENV'] = '/home/{{ user }}/{{ root_domain }}/env/{{ project_name }}' 
-os.environ['PYTHON_EGG_CACHE'] = '/home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/egg_cache'
+os.environ['PATH'] = '{{ deployment_root }}/env/{{ project_name }}/bin:%s' % os.environ.get('PATH', '/bin:/usr/bin')
+os.environ['VIRTUAL_ENV'] = '{{ deployment_root }}/env/{{ project_name }}' 
+os.environ['PYTHON_EGG_CACHE'] = '{{ deployment_root }}/env/{{ project_name }}/egg_cache'
 
 # Add the project to the sys.path
-sys.path.insert(0, "/home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/project")
+sys.path.insert(0, "{{ deployment_root }}/env/{{ project_name }}/project")
 
-activate_this = '/home/{{ user }}/{{ root_domain }}/env/{{ project_name }}/bin/activate_this.py'
+activate_this = '{{ deployment_root }}/env/{{ project_name }}/bin/activate_this.py'
 execfile(activate_this, dict(__file__=activate_this))
 
 # Uncomment to switch to the directory of your project (optional).

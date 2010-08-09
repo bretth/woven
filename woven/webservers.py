@@ -38,6 +38,7 @@ def _deploy_webserver(remote_dir,template):
 
         filename = ''.join([remote_dir,'/',u_domain,'-',env.project_version,'.conf'])
         context = {"project_name": env.project_name,
+                   "deployment_root":env.deployment_root,
                     "u_domain":u_domain,
                     "domain":d,
                     "root_domain":env.root_domain,
@@ -105,7 +106,8 @@ def deploy_wsgi():
         with cd(remote_dir):
             u_domain = domain.replace('.','_')
             filename = "%s.wsgi"% u_domain
-            context = {"user": env.user,
+            context = {"deployment_root":env.deployment_root,
+                       "user": env.user,
                        "project_name": env.project_name,
                        "u_domain":u_domain,
                        "root_domain":env.root_domain,
