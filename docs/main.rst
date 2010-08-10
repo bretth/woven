@@ -17,8 +17,6 @@ They're pretty simple but Lets walk through how they are used to deploy your pro
 Setupnode
 ----------
 
-To use woven add ``woven`` to your ``INSTALLED_APPS`` in your ``settings.py``
-
 Purchase an Ubuntu 10.04 VM on the host of your choice with root and ssh access.
 
 Create a minimal setup.py in the directory above your django project. This is the only additional configuration file that will be required::
@@ -39,13 +37,13 @@ Run setupnode from your project directory.
 
     python manage.py setupnode [host]
 
-or
+in which case woven will use your current username to create on the node or
 
 .. code-block:: bash
 
     python manage.py setupnode [user@host]
 
-where user is the *new* user that will be created (instead of the current client os user ie ``root``).
+where user is the *new* user that will be created in place of using root. 
 
 Lets go through what this actually does:
 
@@ -57,7 +55,7 @@ Lets go through what this actually does:
 6. Updates and upgrades your packages
 7. Installs UFW firewall
 8. Installs a baseline of Ubuntu packages including Apache, Nginx, and mod-wsgi
-9. Install any etc templates/files in the woven or project woven/etc template directories
+9. Install any etc templates/files sourced from the woven or project woven/etc template directories
 10. Sets the timezone according to your settings file
 
 Of course not all hosts are the same and no two deployments are alike so have a look
