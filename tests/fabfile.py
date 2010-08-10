@@ -281,6 +281,8 @@ def deploy_teardown():
         local('rm -f requirements1.txt')
         local('rm -f pip*')
         local('rm -rf example_project/sitesettings')
+        with settings(warn_only=True):
+            local('cp -f example_project/original_settings.py example_project/settings.py')
         sudo('rm -rf /var/local/woven')
         sudo('rm -rf /home/woven/env')
         sudo('rm -rf /home/woven/public')
@@ -295,8 +297,7 @@ def deploy_teardown():
         sudo('rm -f /etc/nginx/sites-enabled/someother_com-0.1.conf')
         sudo('rm -rf /home/woven/*')
     
-        with settings(warn_only=True):
-            local('cp -f example_project/original_settings.py example_project/settings.py')
+
 
 # Test related util functions
 def test_root_domain():

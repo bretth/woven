@@ -98,7 +98,4 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
     'woven',
-    'south',
-    'example_project.poll',
 )
-
