@@ -11,8 +11,8 @@ Django settings.py. They are all optional.
     HOSTS = [] #eg ['woven@example.com','example.com','10.0.0.1']
     #List of domains that will be deployed on the host. The first is the primary domain
     DOMAINS = []
-    #You can group collections of servers instead of HOSTS as per fabric eg {'staging':['woven@example.com']}
-    ROLEDEFS = {} #This would be used instead of HOSTS
+    #You can group collections of servers instead of HOSTS as per fabric
+    ROLEDEFS = {} #This would be used instead of HOSTS  eg {'staging':['woven@example.com']}
     #The ssh port to be setup. We change the port for security
     HOST_SSH_PORT = 10022 #default
     #User can be defined here instead of in the hosts/roledefs

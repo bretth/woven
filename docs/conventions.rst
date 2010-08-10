@@ -38,19 +38,17 @@ Within the root folder are the following::
                     |--sitesettings (site local setting files)
                             |--__init__.py 
                             |--example_com.py (site local settings)
-                            |--subdomain_example_com.py 
+                            |--manage.py (you run this on the node)
+                            |--settings.py (convenience settings for manage.py)
             |--templates (your project templates go here)
             |--static 
-                |--example.com (for multi-domain deployments, domain specific media can go under the media dir) TO BE IMPLEMENTED
-                |--subdomain.example.com
             |--wsgi (web server scripts go here including wsgi)
        |--example_project-0.2 (next release version - as above)
     ...
-    |--logs
+    |--log (symlinks to /var/log)
     | Another media directory for files that in the user domain (MEDIA_URL) rather than required for the application
     | These would normally be hosted on something like s3, but you may want to host it locally
     |--public  (for single domain deployments any project media goes here if you are hosting media locally)
-        |--example.com (for multi-domain deployments) TO BE IMPLEMENTED
     |--src (pip will store any source repositories here)
 
 Server-side State

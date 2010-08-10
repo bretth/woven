@@ -3,7 +3,7 @@ Management Commands
 
 Commands that run on a node (host) require a hoststring, role or have HOSTS or ROLEDEFS defined in your settings.
 
-As per fabric a hoststring can be username@hostname, or use just the hostname or ip address. If no username is defined then woven will use the current user or that set in settings.HOST_USER. You never need to set the port. It will always use port 10022 though another port can be defined using the HOST_SSH_PORT setting.
+As per fabric a hoststring can be username@hostname, or use just the hostname or ip address. If no username is defined then woven will use the current user or settings.HOST_USER. You never need to set the port. It will always use port 10022 though another port can be defined using the HOST_SSH_PORT setting.
 
 A common and recommended deployment pattern is to separate out staging servers from production servers. To do this in woven you would define your hoststrings in the ROLEDEFS settings (like fabfile roledefs). For example to have one staging server and two production servers you could define::
     
@@ -36,11 +36,11 @@ Deploy your project to host[s] run syncdb and activate
 
 Basic Usage:
 
-``python manage.py deploy [hoststring] [options] ``
+``python manage.py deploy [hoststring] [options]``
 
 *South migration options*
 
-deploy integrates with south if it is installed
+deploy integrates with south if it is installed. By default *all* migrations are run.
 
 ``-m --migration`` Specify a specific migration to run (see South documentation)
 
@@ -57,7 +57,9 @@ patch
 Patch the current version of your project on host[s] and restart webservices
 Includes project, web configuration, media, and wsgi but does not pip install
 
-Basic Usage: ``python manage.py patch [subcommand] [hoststring] [options] ``
+Basic Usage:
+
+``python manage.py patch [subcommand] [hoststring] [options]``
 
 You can just patch a part of the deployment with a subcommand.
 
@@ -65,7 +67,9 @@ The possible subcommands are::
 
     project, templates, static, public, wsgi, webservers
 
-Example: ``python manage.py patch public woven@host.example.com``
+Example:
+
+``python manage.py patch public woven@host.example.com``
 
 
 activate
@@ -73,9 +77,13 @@ activate
 
 Activate a project version
 
-Usage: ``python manage.py activate version [options] ``
+Usage:
 
-Examples: ``python manage.py activate 0.1 woven@host.example.com``
+``python manage.py activate version [options]``
+
+Example:
+
+``python manage.py activate 0.1 woven@host.example.com``
 
 node
 ----
@@ -83,9 +91,13 @@ node
 Run a no arguments management command on host[s]. You can supply command options through the
 --options option --options="[option ...]"
 
-Basic Usage: ``python manage.py node command [hoststring] [options] ``
+Basic Usage:
 
-Examples: ``python manage.py node flush woven@host.example.com --options="--noinput"``
+``python manage.py node command [hoststring] [options]``
+
+Example:
+
+``python manage.py node flush woven@host.example.com --options="--noinput"``
 
 
 
