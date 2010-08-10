@@ -124,7 +124,7 @@ The default deploy does the following::
 Patch
 ------
 
-Of course mistakes are made, and you cannot re-deploy the same significant version. A significant version might be 0.1, 0.1.1 or something like 0.1.0-alpha etc. An insignificant version might be 0.1.0.1 when the last digit is your build number. To get around having to deploy a new version for small changes you can run:
+Of course mistakes are made, but you cannot re-deploy the same significant version with deploy. A significant version might be 0.1, 0.1.1 or something like 0.1.0-alpha etc. An insignificant version might be 0.1.0.1 when the last digit is your build number. To get around having to deploy a new version for small changes you can run:
 
 .. code-block:: bash
 
@@ -145,17 +145,16 @@ If you want to work directly on the server you can SSH into your host and type::
 
     workon [projectname]
     
-This will use virtualenvwrapper to activate your current virtualenv and drop you into the project sitesettings manage.py directory.
+This will use virtualenvwrapper to activate your current virtualenv and drop you into the project sitesettings manage.py directory. A convenience manage.py and settings.py is provided to run manage.py from there on the first site.
 
-Of course installing packages from a requirements file can be problematic if pypi is down.  To get around this first set your DJANGO_REQUIREMENT setting to file:///path/to/Django-x.x.x.tar.gz to rsync against a local copy. Next make use of  ``manage.py bundle`` command. This to bundle all the requirements into a dist directory in project. Woven will look in the dist directory first and install from a bundle with the same name as the requirements file.
+Of course installing packages from a requirements file can be problematic if pypi is down.  To get around this first set your DJANGO_REQUIREMENT setting to file:///path/to/Django-x.x.x.tar.gz to rsync against a local copy. Next make use of  ``manage.py bundle`` command. This will use pip to bundle all the requirements into a dist directory in project. When deploying woven will look in the dist directory first and install from a bundle with the same name as the requirements file.
 
-Have a read of the woven django management :ref:commands to get a better feel of woven. 
+Have a read of the woven django management :doc:commands to get a better feel of the woven commands. 
 
 Development
 ===========
 
-At the current version, Woven is under heavy development and may change radically until it gets closer to 1.0,
-though the core highlevel functions setupnode, deploy, patch, and activate will not change.
+At the current version, Woven is under heavy development and may be incompatible between versions until the api matures enough for a beta release. The core highlevel functions setupnode, deploy, patch, and activate will not change.
 
 The woven project is hosted on github at http://github.com/bretth/woven. Feature requests and bug reports are welcome.
 
