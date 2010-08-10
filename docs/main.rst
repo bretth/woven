@@ -94,7 +94,7 @@ Make sure you can login to your default admin site, and if everything is alright
 
     python manage.py deploy [user@host]
 
-The first thing it will ask for is the root domain. This is your SITE_ID = 1 production domain. You can define it as the first domain in the ``DOMAINS`` list setting in your settings.py.
+The first thing it may ask for is the root domain if it can't guess it from your nodes hostname. This is your SITE_ID = 1 production domain. You can define it as the first domain in the ``DOMAINS`` list setting in your settings.py.
 
 .. note::
 
