@@ -2,13 +2,24 @@
 Changelog
 ==========
 
-Release 0.4.0 (Not Yet Released)
+Release 0.4.0 (10-Aug-2010)
 ---------------------------------
 
+Note: This release is backwards incompatable with earlier releases. You will need to re-run setupnode and re-deploy your project.
+
+* can now use ROLEDEFS to define roles to group node functionality and use them in commands. ie ./manage.py deploy staging
+* moved logs back to /var/log/apache2 nginx etc and link into them instead
+* moved almost all woven /etc templates files into a new woven/etc template directory.
+* user can create their own woven/etc templates to upload any arbitrary /etc/ files into their corresponding directories on the host
+* changed deployment_root to the users home directory to allow integration with virtualenvwrapper
+* integrate with virtualenvwrapper. Can now run workon [projectname] to drop into the current version on the node
+* added a convenience settings.py, manage.py to sitesettings. The settings.py just imports the first sites settings
+* integrate with south for migrations, and added syncdb to activation
 * added manage.py patch subcommand where subcommand is an individual part of the deploy process.
 * removed unattended upgrades - due to unreliability
 * added an modified nginx init.d conf - the default init.d doesn't work under some boot timing circumstances
-* use nginx reload command instead of start
+* use nginx reload command instead of start stop
+* symlink the project directory to site-packages
 
 Release 0.3.1 (1-Aug-2010)
 --------------------------

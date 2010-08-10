@@ -15,10 +15,10 @@ Django settings.py. They are all optional.
     ROLEDEFS = {} #This would be used instead of HOSTS
     #The ssh port to be setup. We change the port for security
     HOST_SSH_PORT = 10022 #default
-    #User can be defined here instead of in the hosts
+    #User can be defined here instead of in the hosts/roledefs
     HOST_USER = ''
     #Since password login will normally be disabled you can define it here
-    #for just ssh key security per host, but I wouldn't recommend it 
+    #for just ssh key security per host
     HOST_PASSWORD = '' 
     
     #The first setup task is usually disabling the default root account and
