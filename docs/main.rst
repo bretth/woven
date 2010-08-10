@@ -147,7 +147,7 @@ If you want to work directly on the server you can SSH into your host and type::
 
     workon [projectname]
     
-This will use virtualenvwrapper to activate your current virtualenv and drop you into the project manage.py directory.
+This will use virtualenvwrapper to activate your current virtualenv and drop you into the project sitesettings manage.py directory.
 
 Of course installing packages from a requirements file can be problematic if pypi is down.  To get around this first set your DJANGO_REQUIREMENT setting to file:///path/to/Django-x.x.x.tar.gz to rsync against a local copy. Next make use of  ``manage.py bundle`` command. This to bundle all the requirements into a dist directory in project. Woven will look in the dist directory first and install from a bundle with the same name as the requirements file.
 
