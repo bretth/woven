@@ -49,7 +49,17 @@ def _make_local_sitesettings(overwrite=False):
             f = open(settings_file_path,"w+")
             f.writelines(output)
             f.close()
-
+        #create a convenience settings file link for the first site
+        settings_file_path = os.path.join(local_settings_dir,''.join(['settings.py']))
+        if site_id == 1 and not os.path.exists(settings_file_path):
+            settings_file_path = os.path.join(local_settings_dir,''.join(['settings.py']))
+            f = open(settings_file_path, "w+")
+            f.write("from %s.sitesettings.%s import *"% (env.project_name,u_domain))
+            f.close()
+            #copy manage.py into that directory
+            manage_path = os.path.join(os.getcwd(),env.project_name,'manage.py')
+            dest_manage_path = os.path.join(os.getcwd(),env.project_name,'sitesettings','manage.py')
+            shutil.copy(manage_path, dest_manage_path)
     return
 
 @run_once_per_host_version
@@ -69,7 +79,14 @@ def deploy_project():
 
     #make site local settings if they don't already exist
     _make_local_sitesettings()
-    return deploy_files(local_dir, project_root, rsync_exclude=rsync_exclude)
+    created = deploy_files(local_dir, project_root, rsync_exclude=rsync_exclude)
+    if not env.patch:
+        #hook the project into sys.path - #TODO make the python version flexible
+        link_name = '/'.join([env.deployment_root,'env',env.project_fullname,'lib/python2.6/site-packages',env.project_name])
+        target = '/'.join([project_root,env.project_name])
+        run(' '.join(['ln -s',target,link_name]))
+    
+    return created
     
 
 @run_once_per_host_version

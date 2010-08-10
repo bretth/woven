@@ -8,9 +8,6 @@ os.environ['PATH'] = '{{ deployment_root }}/env/{{ project_name }}/bin:%s' % os.
 os.environ['VIRTUAL_ENV'] = '{{ deployment_root }}/env/{{ project_name }}' 
 os.environ['PYTHON_EGG_CACHE'] = '{{ deployment_root }}/env/{{ project_name }}/egg_cache'
 
-# Add the project to the sys.path
-sys.path.insert(0, "{{ deployment_root }}/env/{{ project_name }}/project")
-
 activate_this = '{{ deployment_root }}/env/{{ project_name }}/bin/activate_this.py'
 execfile(activate_this, dict(__file__=activate_this))
 

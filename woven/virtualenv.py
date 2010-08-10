@@ -175,6 +175,8 @@ def mkvirtualenv():
         dirs_created += mkdirs('egg_cache')
         sudo('chown -R %s:www-data egg_cache'% env.user)
         sudo('chmod -R g+w egg_cache')
+        run(''.join(["echo 'cd ",path,'/','project','/',env.project_name,'/sitesettings',"' > bin/postactivate"]))
+        sudo('chmod ugo+rwx bin/postactivate')
         
     
     #Create a state
