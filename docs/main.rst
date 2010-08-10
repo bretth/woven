@@ -57,7 +57,8 @@ Lets go through what this actually does:
 6. Updates and upgrades your packages
 7. Installs UFW firewall
 8. Installs a baseline of Ubuntu packages including Apache, Nginx, and mod-wsgi
-9. Sets the timezone according to your settings file
+9. Install any etc templates/files in the woven or project woven/etc template directories
+10. Sets the timezone according to your settings file
 
 Of course not all hosts are the same and no two deployments are alike so have a look
 at some of the :doc:`settings` you can use in your Django project.
