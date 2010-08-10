@@ -2,12 +2,9 @@ server {
     listen   {{ host_ip }}:80;
     server_name  {{ domain }};
     
-    #rewrite ^/(.*) http:/{{ domain }}/$1 permanent;
-
-    
-    error_log {{ deployment_root }}/log/{{ u_domain }}_nginx_error.log;
+    error_log /var/log/nginx/{{ u_domain }}_nginx_error.log;
     access_log off;
-    #access_log {{ deployment_root }}/log/{{ u_domain }}_nginx_access.log;
+    #access_log /var/log/nginx/{{ u_domain }}_nginx_access.log;
     
     location / {
         proxy_pass    http://{{ host_ip }}:10080/;

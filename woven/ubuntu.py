@@ -130,7 +130,8 @@ def disable_root(rollback=False):
                     original_password = enter_password()
                 
                 add_user(username=original_username, password=original_password,group='sudo')
-                
+                #adm group used by Ubuntu logs
+                sudo('usermod -a -G adm %s'% original_username)
                 #add user to /etc/sudoers
                 if not exists('/etc/sudoers.wovenbak',use_sudo=True):
                     sudo('cp -f /etc/sudoers /etc/sudoers.wovenbak')

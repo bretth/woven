@@ -2,7 +2,6 @@
 from {{ project_name }}.settings import *
 
 #Override global settings with site/host local settings
-#template tags will be substituted on project deployment
 #Customize and add any other local site settings as required
 
 DEBUG = False

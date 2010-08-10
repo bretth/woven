@@ -1,11 +1,8 @@
 <VirtualHost {{ host_ip }}:10080>
-    #First admin from settings.ADMIN
-    #ServerAdmin {{ first_admin }}
+
+    #ServerAdmin 
 
     ServerName {{ domain }}
-
-
-    #TODO: Maybe insert per domain users - user={{ u_domain}} group={{ u_domain }}
     
     #Stack size reduces the amount of virtual memory available per thread to a much more sensible limit than 8MB
     #This setting is especially useful for small servers
@@ -21,7 +18,7 @@
 
     #LogLevels: debug, info, notice, warn, error, crit, alert, emerg.
     LogLevel warn
-    CustomLog {{ deployment_root }}/log/{{ u_domain }}_apache_access.log combined
-    ErrorLog {{ deployment_root }}/log/{{ u_domain }}_apache_error.log
+    CustomLog /var/log/apache2/{{ u_domain }}_apache_access.log combined
+    ErrorLog /var/log/apache2/{{ u_domain }}_apache_error.log
 
 </VirtualHost>

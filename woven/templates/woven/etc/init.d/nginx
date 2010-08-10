@@ -10,6 +10,8 @@
 # Description:       starts nginx using start-stop-daemon
 ### END INIT INFO
 
+#Woven init.d script for nginx - just adds sleep to ensure consistent start after reboot
+
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/sbin/nginx
 NAME=nginx
