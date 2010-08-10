@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from optparse import make_option
 
+from fabric.state import env
+
 from woven.environment import project_version
 from woven.virtualenv import activate
 from woven.management.base import WovenCommand

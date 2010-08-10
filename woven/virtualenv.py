@@ -54,8 +54,9 @@ def activate():
         
         if env.verbosity:
             print env.host, "ACTIVATING version", env_path
-
-        sync_db()
+        
+        if not env.nomigration:
+            sync_db()
         
         #south migration
         if 'south' in env.INSTALLED_APPS and not env.nomigration and not env.manualmigration:
