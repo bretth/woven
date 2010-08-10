@@ -14,11 +14,11 @@ You would then use the role in place of the hoststring e.g. ``python manage.py d
 setupnode
 ---------
 
-Setup a baseline Ubuntu server ready for deployment
+Setup baseline Ubuntu server[s] ready for deployment
 
 Basic Usage::
 
-``python manage.py setupnode [hoststring]``
+``python manage.py setupnode [hoststring] [options] ``
 
 
 bundle
@@ -32,17 +32,17 @@ Pip bundle your requirements into .pybundles for efficient deployment
 deploy
 ------
 
-Deploy your project to a host run syncdb and activate
+Deploy your project to host[s] run syncdb and activate
 
 Basic Usage:
 
-``python manage.py deploy [hoststring]``
+``python manage.py deploy [hoststring] [options] ``
 
 *South migration options*
 
 deploy integrates with south if it is installed
 
-``-m --migration`` Specify a specific migration to run
+``-m --migration`` Specify a specific migration to run (see South documentation)
 
 ``--fake``  Fake a South migration (see South documentation)
 
@@ -54,10 +54,10 @@ deploy integrates with south if it is installed
 patch
 -----
 
-Patch the current version of your project on hosts and restart webservices
+Patch the current version of your project on host[s] and restart webservices
 Includes project, web configuration, media, and wsgi but does not pip install
 
-Basic Usage: ``python manage.py patch [subcommand] [hoststring]``
+Basic Usage: ``python manage.py patch [subcommand] [hoststring] [options] ``
 
 You can just patch a part of the deployment with a subcommand.
 
@@ -73,16 +73,17 @@ activate
 
 Activate a project version
 
-Usage: ``python manage.py activate [version]``
+Usage: ``python manage.py activate version [options] ``
 
 Examples: ``python manage.py activate 0.1 woven@host.example.com``
 
 node
 ----
 
-Run a no arguments management command on hosts
+Run a no arguments management command on host[s]. You can supply command options through the
+--options option --options="[option ...]"
 
-Basic Usage: ``python manage.py node [command] [hoststring] --options="[option ...]"``
+Basic Usage: ``python manage.py node command [hoststring] [options] ``
 
 Examples: ``python manage.py node flush woven@host.example.com --options="--noinput"``
 
