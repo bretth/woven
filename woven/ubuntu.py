@@ -429,6 +429,13 @@ def _get_template_files(template_dir):
 def upload_etc():
     """
     Upload and render all templates in the woven/etc directory to the respective directories on the nodes
+    
+    Only configuration for installed packages will be uploaded where that package creates it's own subdirectory
+    in /etc/ ie /etc/apache2.
+    
+    For configuration that falls in some other non package directories ie init.d, logrotate.d etc
+    it is intended that this function only replace existing configuration files. To ensure we don't upload 
+    etc files that are intended to accompany a particular package.
     """
     #determine the templatedir
     if env.verbosity:
@@ -452,7 +459,7 @@ def upload_etc():
     for t in etc_templates:
         dest = t.replace('woven','')
         directory = os.path.split(dest)[0]
-        if directory in ['/etc','/etc/init.d']:
+        if directory in ['/etc','/etc/init.d','/etc/init','/etc/logrotate.d','/etc/rsyslog.d']:
             #must be replacing an existing file
             if exists(dest): upload = True
         elif exists(directory, use_sudo=True): upload = True
