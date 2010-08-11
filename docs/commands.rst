@@ -1,7 +1,7 @@
 Management Commands
 ===================
 
-Commands that run on a node (host) require a hoststring, role or have HOSTS or ROLEDEFS defined in your settings.
+Commands that run on a host require a hoststring, role or have HOSTS or ROLEDEFS defined in your settings.
 
 As per fabric a hoststring can be username@hostname, or use just the hostname or ip address. If no username is defined then woven will use the current user or settings.HOST_USER. You never need to set the port. It will always use port 10022 though another port can be defined using the HOST_SSH_PORT setting.
 
@@ -14,7 +14,9 @@ You would then use the role in place of the hoststring e.g. ``python manage.py d
 setupnode
 ---------
 
-Setup baseline Ubuntu server[s] ready for deployment
+Setup Ubuntu host[s]. By default this will just setup a baseline host for django deployment but it can be used to setup other types of host such as postgresql nodes and varnish.
+
+By defining ROLEDEFS in your settings you define packages for those hosts in the ROLE_PACKAGES settings. For example to setup a postgresql server you might define a role ROLEDEFS = {'database':['woven@host.example.com']}, then set ROLE_PACKAGES = {'database':['postgresql']}, and finally set the firewall to ROLE_UFW_RULES = {'database':['allow tcp/5432']}. Finally configuration can be set in the project TEMPLATES_DIR woven/etc subdirectory.
 
 Basic Usage::
 

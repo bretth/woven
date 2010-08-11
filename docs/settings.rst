@@ -31,8 +31,10 @@ Django settings.py. They are all optional.
     DEFAULT_SSH_PORT = 22 #default
     #Firewall rules (note HOST_SSH_PORT/tcp is always allowed)
     UFW_RULES = ['allow 80/tcp','allow 443/tcp'] #default  
+    ROLE_UFW_RULES = {} # eg {'postgresql':['allow 5432/tcp']}
     
     #The default ubuntu packages that are setup. It is NOT recommended you overwrite these
+    #use ROLE_PACKAGES if you want to define all your packages
     HOST_BASE_PACKAGES = [
             'subversion','git-core','mercurial','bzr', #version control
             'gcc','build-essential', 'python-dev', 'python-setuptools', #build
@@ -40,8 +42,12 @@ Django settings.py. They are all optional.
             'python-imaging', #pil
             'python-psycopg2','python-mysqldb','python-pysqlite2'] #default database drivers
     
-    #Put any additional packages here to save overwriting the base_packages
-    HOST_EXTRA_PACKAGES = [] 
+    Put any additional packages here to save overwriting the base_packages 
+    HOST_EXTRA_PACKAGES = []
+    
+    #Role packages give you complete flexibility in defining packages with ROLEDEFS.
+    #By default any role that does not have role packages defined installs the HOST_BASE_PACKAGES + EXTRA_PACKAGES instead
+    ROLE_PACKAGES = {} #eg ROLE_PACKAGES = {'postgresql':['postgresql']}
         
     #Virtualenv/Pip
     DJANGO_REQUIREMENT = '' #defaults to development django. A pip requirements string for the version of Django to install
