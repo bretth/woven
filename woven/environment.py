@@ -4,7 +4,6 @@ from contextlib import nested
 
 from django.utils.importlib import import_module
 
-
 from fabric.context_managers import _setenv, settings, cd
 from fabric.contrib.files import exists
 from fabric.decorators import runs_once
@@ -28,7 +27,8 @@ woven_env = _AttributeDict({
 'DEFAULT_SSH_PORT':22, #optional - The default ssh port, prior to woven changing it. Defaults to 22
 'UFW_DISABLED':False, #optional - If some alternative firewall is already pre-installed
 'UFW_RULES':['allow 80/tcp','allow 443/tcp'], #optional - the default firewall rules (note ssh is always allowed)
-
+'ROLE_UFW_RULES':{},
+    
 #The default ubuntu packages that are setup. It is NOT recommended you change these:
 'HOST_BASE_PACKAGES':[
         'subversion','git-core','mercurial','bzr', #version control
@@ -38,8 +38,9 @@ woven_env = _AttributeDict({
         'python-imaging', #pil
         'python-psycopg2','python-mysqldb','python-pysqlite2'], #default database drivers
 
-#Put any additional packages here 
 'HOST_EXTRA_PACKAGES':[], #optional - additional ubuntu packages as required
+
+'ROLE_PACKAGES':{},#define ROLEDEFS packages instead of using HOST_BASE_PACKAGES + HOST_EXTRA_PACKAGES
     
 #Virtualenv/Pip
 'PIP_REQUIREMENTS':[], # a list of pip requirement and or pybundle files to use for installation
@@ -221,23 +222,17 @@ def set_env(settings=None, setup_dir=''):
         project_settings = import_module(env.project_name+'.settings')
     else:
         project_settings = settings
-    #overwrite with SITE_ID=1 sitesettings module
+    #overwrite with main sitesettings module
     #just for MEDIA_URL, ADMIN_MEDIA_PREFIX, and STATIC_URL
     try:
-        sites = os.listdir(os.path.join(env.project_name,'sitesettings'))
-    except OSError:
-        sites = []
+        site_settings = import_module('.'.join([env.project_name,'sitesettings.settings']))
+        project_settings.MEDIA_URL = site_settings.MEDIA_URL
+        project_settings.ADMIN_MEDIA_PREFIX = site_settings.ADMIN_MEDIA_PREFIX
+        if hasattr(site_settings,'STATIC_URL'):
+            project_settings.STATIC_URL = site_settings.STATIC_URL
+    except ImportError:
+        pass
 
-    for site in sites:
-        if site[:2] <> '__' and site[-3:]=='.py':
-            u_domain = site.replace('.py','')
-            site_settings = import_module('.'.join([env.project_name,'sitesettings',u_domain]))
-            if hasattr(site_settings, 'SITE_ID') and site_settings.SITE_ID == 1:
-                project_settings.MEDIA_URL = site_settings.MEDIA_URL
-                project_settings.ADMIN_MEDIA_PREFIX = site_settings.ADMIN_MEDIA_PREFIX
-                if hasattr(site_settings,'STATIC_URL'):
-                    project_settings.STATIC_URL = site_settings.STATIC_URL
-    
     #update woven_env from project_settings    
     local_settings = dir(project_settings)
     #only get settings that woven uses

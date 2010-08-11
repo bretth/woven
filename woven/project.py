@@ -33,7 +33,7 @@ def _make_local_sitesettings(overwrite=False):
     for domain in env.DOMAINS:
         u_domain = domain.replace('.','_')
         site_id+=1
-        settings_file_path = os.path.join(local_settings_dir,''.join([u_domain,'.py']))
+        settings_file_path = os.path.join(local_settings_dir,'settings.py')
         if not os.path.exists(settings_file_path):
             output = render_to_string('woven/sitesettings.txt',
                     {"deployment_root":env.deployment_root,
@@ -49,12 +49,13 @@ def _make_local_sitesettings(overwrite=False):
             f = open(settings_file_path,"w+")
             f.writelines(output)
             f.close()
+        
         #create a convenience settings file link for the first site
-        settings_file_path = os.path.join(local_settings_dir,''.join(['settings.py']))
+        settings_file_path = os.path.join(local_settings_dir,''.join([u_domain,'.py']))
         if site_id == 1 and not os.path.exists(settings_file_path):
-            settings_file_path = os.path.join(local_settings_dir,''.join(['settings.py']))
             f = open(settings_file_path, "w+")
-            f.write("from %s.sitesettings.%s import *"% (env.project_name,u_domain))
+            f.write("from %s.sitesettings.settings import *"% env.project_name)
+            f.write("/nSITE_ID=1/n")
             f.close()
             #copy manage.py into that directory
             manage_path = os.path.join(os.getcwd(),env.project_name,'manage.py')

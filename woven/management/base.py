@@ -86,7 +86,9 @@ class WovenCommand(BaseCommand):
                 normalized_host_list = comma_hosts.split(',')
                 for r in normalized_host_list:
                     role_host = settings.ROLEDEFS.get(r,'')
-                    if role_host: all_role_hosts+=role_host
+                    if role_host:
+                        all_role_hosts+=role_host
+                        state.env['roles'] = state.env['roles'] + [r]
                 if all_role_hosts: comma_hosts = ','.join(all_role_hosts)
             state.env.hosts = comma_hosts
 
@@ -114,7 +116,7 @@ class WovenCommand(BaseCommand):
         # Set current command name (used for some error messages)
         #state.env.command = self.name
         # Set host list (also copy to env)
-        state.env.all_hosts = hosts = _merge(state.env.hosts,state.env.roles)
+        state.env.all_hosts = hosts = state.env.hosts
         # If hosts found, execute the function on each host in turn
         for host in hosts:
             # Preserve user

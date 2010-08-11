@@ -1,8 +1,7 @@
 #Import global project settings
 from {{ project_name }}.settings import *
 
-#Override global settings with site/host local settings
-#Customize and add any other local site settings as required
+#This module is the base for all production/staging sites
 
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG

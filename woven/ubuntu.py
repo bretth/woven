@@ -192,7 +192,16 @@ def install_packages(rollback = False,overwrite=False):
     
     overwrite will allow existing configurations to be overwritten
     """
-    u = env.HOST_BASE_PACKAGES + env.HOST_EXTRA_PACKAGES
+    u = set([])
+    for r in env.roles:
+        packages = env.ROLE_PACKAGES.get(r,[])
+        u = u | set(packages)
+    if not u:
+        if env.verbosity and env.roles:
+            print "No custom packages defined for this role"
+        u = env.HOST_BASE_PACKAGES + env.HOST_EXTRA_PACKAGES
+    if env.verbosity and env.roles:
+        print "Role defines custom packages:",','.join(u)
     if not rollback:
         if env.verbosity:
             print env.host, "INSTALLING & CONFIGURING HOST PACKAGES:"
@@ -227,13 +236,13 @@ def install_packages(rollback = False,overwrite=False):
         #We'll use easy_install at this stage since it doesn't download if the package
         #is current whereas pip always downloads.
         #Once both these packages mature we'll move to using the standard Ubuntu packages
-
-        sudo("easy_install -U virtualenv")
-        sudo("easy_install -U pip")
-        sudo("easy_install -U virtualenvwrapper")
-        if not contains("source /usr/local/bin/virtualenvwrapper.sh","/home/%s/.profile"% env.user):
-            append("export WORKON_HOME=$HOME/env","/home/%s/.profile"% env.user)
-            append("source /usr/local/bin/virtualenvwrapper.sh","/home/%s/.profile"% env.user)
+        if 'python-setuptools' in u:
+            sudo("easy_install -U virtualenv")
+            sudo("easy_install -U pip")
+            sudo("easy_install -U virtualenvwrapper")
+            if not contains("source /usr/local/bin/virtualenvwrapper.sh","/home/%s/.profile"% env.user):
+                append("export WORKON_HOME=$HOME/env","/home/%s/.profile"% env.user)
+                append("source /usr/local/bin/virtualenvwrapper.sh","/home/%s/.profile"% env.user)
 
         #cleanup after easy_install
         sudo("rm -rf build")
@@ -355,7 +364,15 @@ def setup_ufw(rollback=False):
             apt_get_install('ufw')
             set_server_state('ufw_installed')
         sudo('ufw allow %s/tcp'% env.port) #ssh port
-        for rule in env.UFW_RULES:
+        u = set([])
+        if env.roles:
+            for r in env.roles:
+                u = u | set(env.ROLE_UFW_RULES.get(r,[]))
+            if not u: u = env.UFW_RULES
+        else:
+            u = env.UFW_RULES
+            
+        for rule in u:
             if rule:
                 if env.verbosity:
                     print ' *',rule
@@ -434,12 +451,19 @@ def upload_etc():
     context = {'host_ip':socket.gethostbyname(env.host)}
     for t in etc_templates:
         dest = t.replace('woven','')
-        upload_template(t,dest,context=context,use_sudo=True)
-        sudo(' '.join(["chown root:root",dest]))
-        if 'init.d' in dest: sudo(' '.join(["chmod ugo+rx",dest]))
-        else: sudo(' '.join(["chmod ugo+r",dest]))
-        if env.verbosity:
-            print " * uploaded",dest
+        directory = os.path.split(dest)[0]
+        if directory in ['/etc','/etc/init.d']:
+            #must be replacing an existing file
+            if exists(dest): upload = True
+        elif exists(directory, use_sudo=True): upload = True
+        else: upload = False
+        if upload:
+            upload_template(t,dest,context=context,use_sudo=True)
+            sudo(' '.join(["chown root:root",dest]))
+            if 'init.d' in dest: sudo(' '.join(["chmod ugo+rx",dest]))
+            else: sudo(' '.join(["chmod ugo+r",dest]))
+            if env.verbosity:
+                print " * uploaded",dest
 
 def upload_ssh_key(rollback=False):
     """
