@@ -5,11 +5,13 @@ from contextlib import nested
 from django.utils.importlib import import_module
 
 from fabric.context_managers import _setenv, settings, cd
-from fabric.contrib.files import exists
-from fabric.decorators import runs_once
+from fabric.contrib.files import exists, comment
+from fabric.decorators import runs_once, hosts
 from fabric.main import find_fabfile
+from fabric.network import normalize
 from fabric.operations import local, run, sudo, prompt
 from fabric.state import _AttributeDict, env
+        
 
 woven_env = _AttributeDict({
 'HOSTS':[], #optional - a list of host strings to setup on as per Fabric
@@ -43,6 +45,7 @@ woven_env = _AttributeDict({
 'ROLE_PACKAGES':{},#define ROLEDEFS packages instead of using HOST_BASE_PACKAGES + HOST_EXTRA_PACKAGES
     
 #Virtualenv/Pip
+'DEPLOYMENT_ROOT':'', 
 'PIP_REQUIREMENTS':[], # a list of pip requirement and or pybundle files to use for installation
 'DJANGO_REQUIREMENT':'',#A pip requirements string for the version of Django to install
 
@@ -71,7 +74,6 @@ def _parse_project_version(version=''):
     major.minor.maintenancestage
     
     Anything beyond the maintenance or stage whichever is last is ignored 
-    
     """
     
     def mm_version(vers):
@@ -131,26 +133,29 @@ def _parse_project_version(version=''):
    
     return project_version
 
-@runs_once
 def _root_domain():
     """
-    Deduce the root domain name, usually a 'naked' domain but not necessarily. 
+    Deduce the root domain name - usually a 'naked' domain.
+    
+    This only needs to be done prior to the first deployment
     """
-    #TODO - refactor to use the database sites
+
     if not hasattr(env,'root_domain'):
         cwd = os.getcwd().split(os.sep)
         domain = ''
         #if the first env.host has a domain name then we'll use that
         #since there are no top level domains that have numbers in them we can test env.host
-        if env.host[-1] in string.ascii_letters:
+
+        username, host, port = normalize(env.hosts[0])
+        if host[-1] in string.ascii_letters:
             domain_parts = env.host.split('.')
             length = len(domain_parts)
             if length==2:
                 #assumes .com .net etc so we want the full hostname for the domain
-                domain = env.host
+                domain = host
             elif length==3 and len(domain_parts[-1])==2:
                 #assume country tld so we want the full hostname for domain
-                domain = env.host
+                domain = host
             elif length >=3:
                 #assume the first part is the hostname of the machine
                 domain = '.'.join(domain[1:])
@@ -167,18 +172,19 @@ def _root_domain():
     return env.root_domain
 
 def deployment_root():
-    #determine domain for deployment commands/funcs TODO - refactor to use the database sites
-    if not env.DOMAINS:
-        env.DOMAINS = [_root_domain()]
-    else: env.root_domain = env.DOMAINS[0]
-    if not env.deployment_root or not env.user in env.deployment_root:
-        if env.root_domain: env.deployment_root = '/'.join(['/home',env.user])
-        else: env.deployment_root = '/'.join(['/home',env.user])
+    """
+    deployment root varies per host based on the user
+    
+    It can be overridden by the DEPLOYMENT_ROOT setting
+
+    """
+    if not env.DEPLOYMENT_ROOT: return '/'.join(['/home',env.user])
+    else: return env.DEPLOYMENT_ROOT
     #hack to get around an issue with virtualenvwrapper logging - I suspect virtualenvwrapper + fabric
-    with cd('/'.join([env.deployment_root,'env'])):
-        if exists('hook.log'):
-            sudo("chmod -f ugo+w hook*")
-    return env.deployment_root
+    #with cd('/'.join([env.deployment_root,'env'])):
+    #    if exists('hook.log'):
+    #        sudo("chmod -f ugo+w hook*")
+ 
 
 def set_env(settings=None, setup_dir=''):
     """
@@ -190,6 +196,8 @@ def set_env(settings=None, setup_dir=''):
     
     ``setup_dir`` is an optional path to the directory containing setup.py
     This would be used in instances where setup.py was not above the cwd
+    
+    This function is used to set the environment for all hosts
 
     """
     #switch the working directory to the distribution root where setup.py is
@@ -222,8 +230,10 @@ def set_env(settings=None, setup_dir=''):
         project_settings = import_module(env.project_name+'.settings')
     else:
         project_settings = settings
+    
     #overwrite with main sitesettings module
     #just for MEDIA_URL, ADMIN_MEDIA_PREFIX, and STATIC_URL
+    #if this settings file exists
     try:
         site_settings = import_module('.'.join([env.project_name,'sitesettings.settings']))
         project_settings.MEDIA_URL = site_settings.MEDIA_URL
@@ -286,12 +296,16 @@ def set_env(settings=None, setup_dir=''):
     #noinput
     if not hasattr(env,'INTERACTIVE'): env.INTERACTIVE=True
     
-    env.deployment_root = ''
-    
     #South integration defaults
     env.nomigration = False
     env.manualmigration = False
     env.migration = ''
+    
+    #Sites
+    env.sites = {}
+    
+    
+    
 
 def patch_project():
     return env.patch
