@@ -16,7 +16,7 @@ from fabric.contrib.console import confirm
 from fabric.version import get_version
 
 from woven.deployment import deploy_files, run_once_per_host_version
-from woven.environment import deployment_root
+from woven.environment import deployment_root, _root_domain
 
 
 @runs_once
@@ -28,34 +28,31 @@ def _make_local_sitesettings(overwrite=False):
         os.mkdir(local_settings_dir)
         f = open(os.path.join(local_settings_dir,'__init__.py'),"w")
         f.close()
-    site_id = 0
-    
-    for domain in env.DOMAINS:
-        u_domain = domain.replace('.','_')
-        site_id+=1
-        settings_file_path = os.path.join(local_settings_dir,'settings.py')
-        if not os.path.exists(settings_file_path):
-            output = render_to_string('woven/sitesettings.txt',
-                    {"deployment_root":env.deployment_root,
-                    "site_id":str(site_id),
-                    "project_name": env.project_name,
-                    "project_fullname": env.project_fullname,
-                    "u_domain":u_domain,
-                    "domain":domain,
-                    "root_domain":env.root_domain,
-                    "user":env.user},
-                )
-                        
-            f = open(settings_file_path,"w+")
-            f.writelines(output)
-            f.close()
+
+    settings_file_path = os.path.join(local_settings_dir,'settings.py')
+    if not os.path.exists(settings_file_path):
+        root_domain = _root_domain()    
+        u_domain = root_domain.replace('.','_')
+        output = render_to_string('woven/sitesettings.txt',
+                {"deployment_root":deployment_root(),
+                "site_id":"1",
+                "project_name": env.project_name,
+                "project_fullname": env.project_fullname,
+                "u_domain":u_domain,
+                "domain":root_domain,
+                "user":env.user},
+            )
+                    
+        f = open(settings_file_path,"w+")
+        f.writelines(output)
+        f.close()
         
         #create a convenience settings file link for the first site
         settings_file_path = os.path.join(local_settings_dir,''.join([u_domain,'.py']))
-        if site_id == 1 and not os.path.exists(settings_file_path):
+        if not os.path.exists(settings_file_path):
             f = open(settings_file_path, "w+")
             f.write("from %s.sitesettings.settings import *"% env.project_name)
-            f.write("/nSITE_ID=1/n")
+            f.write("\nSITE_ID=1\n")
             f.close()
             #copy manage.py into that directory
             manage_path = os.path.join(os.getcwd(),env.project_name,'manage.py')
@@ -83,7 +80,7 @@ def deploy_project():
     created = deploy_files(local_dir, project_root, rsync_exclude=rsync_exclude)
     if not env.patch:
         #hook the project into sys.path - #TODO make the python version flexible
-        link_name = '/'.join([env.deployment_root,'env',env.project_fullname,'lib/python2.6/site-packages',env.project_name])
+        link_name = '/'.join([deployment_root(),'env',env.project_fullname,'lib/python2.6/site-packages',env.project_name])
         target = '/'.join([project_root,env.project_name])
         run(' '.join(['ln -s',target,link_name]))
     

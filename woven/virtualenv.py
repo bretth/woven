@@ -15,7 +15,7 @@ from fabric.contrib.console import confirm
 
 from woven.deployment import mkdirs, run_once_per_host_version, deploy_files
 from woven.environment import deployment_root,set_server_state, server_state, State
-from woven.webservers import _ls_sites, stop_webservices, start_webservices
+from woven.webservers import _ls_sites, stop_webservices, start_webservices, domain_sites
 from fabric.contrib.files import append
 
 def active_version():
@@ -65,7 +65,7 @@ def activate():
         if env.manualmigration or env.MANUAL_MIGRATION: manual_migration()
       
         #activate sites
-        activate_sites = [''.join([d.replace('.','_'),'-',env.project_version,'.conf']) for d in env.DOMAINS]
+        activate_sites = [''.join([d.replace('.','_'),'-',env.project_version,'.conf']) for d in domain_sites()]
         site_paths = ['/etc/apache2','/etc/nginx']
         
         #disable existing sites
@@ -84,7 +84,7 @@ def activate():
                         print " * enabled", "%s/sites-enabled/%s"% (path,site)
         
         #delete existing symlink
-        ln_path = '/'.join([env.deployment_root,'env',env.project_name])
+        ln_path = '/'.join([deployment_root(),'env',env.project_name])
         run('rm -f '+ln_path)
         run('ln -s %s %s'% (env_path,ln_path))
 
@@ -96,7 +96,7 @@ def activate():
             print env.project_fullname,"is the active version"
 
     #fix virtualenvwrapper permission issue with hook.log
-    with cd('/'.join([env.deployment_root,'env'])):
+    with cd('/'.join([deployment_root(),'env'])):
         sudo('chown %s:sudo hook*'% env.user)
 
     if env.patch or active <> env.project_fullname:
@@ -109,8 +109,8 @@ def sync_db():
     """
     Runs the django syncdb command
     """
-    with cd('/'.join([env.deployment_root,'env',env.project_fullname,'project',env.project_name])):
-        venv = '/'.join([env.deployment_root,'env',env.project_fullname,'bin','activate'])
+    with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_name])):
+        venv = '/'.join([deployment_root(),'env',env.project_fullname,'bin','activate'])
         if env.verbosity:
             print " * python manage.py syncdb --noinput"
         output = run(' '.join(['source',venv,'&&',"./manage.py syncdb --noinput"]))
@@ -143,9 +143,9 @@ def migration():
     """
 
     #activate env        
-    with cd('/'.join([env.deployment_root,'env',env.project_fullname,'project',env.project_name])):
+    with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_name])):
         #migrates all or specific env.migration
-        venv = '/'.join([env.deployment_root,'env',env.project_fullname,'bin','activate'])
+        venv = '/'.join([deployment_root(),'env',env.project_fullname,'bin','activate'])
         cmdpt1 = ' '.join(['source',venv,'&&'])
         cmdpt2 = ' '.join(["python manage.py migrate",env.migration])
         
@@ -196,7 +196,7 @@ def rmvirtualenv():
         set_server_state('mkvirtualenv',delete=True)
     #If there are no further remaining envs we'll delete the home directory to effectively teardown the project
     if not server_state('mkvirtualenv',prefix=True):
-        sudo('rm -rf '+env.deployment_root)        
+        sudo('rm -rf '+deployment_root())        
 
 @run_once_per_host_version    
 def pip_install_requirements():
@@ -266,7 +266,7 @@ def pip_install_requirements():
 
     #create a pip cache & src directory
     cache =  '/'.join(['/home',env.user,'.package-cache'])
-    src = '/'.join([env.deployment_root,'src'])
+    src = '/'.join([deployment_root(),'src'])
     deployed = mkdirs(cache)
     deployed += mkdirs(src)
     #deploy bundles and any local copy of django
@@ -279,7 +279,7 @@ def pip_install_requirements():
     
     #install in the env
     out = State(' '.join([env.host,'pip install requirements']))
-    python_path = '/'.join([env.deployment_root,'env',env.project_fullname,'bin','python'])
+    python_path = '/'.join([deployment_root(),'env',env.project_fullname,'bin','python'])
     with settings(warn_only=True):
         with cd(remote_dir):
             for req in req_files_list:

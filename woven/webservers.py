@@ -1,15 +1,17 @@
 #!/usr/bin/env python
-import socket, sys
+import os,socket, sys
+import json
 
 from fabric.state import env
 from fabric.operations import run, sudo
 from fabric.context_managers import cd, settings
 from fabric.contrib.files import exists
+from fabric.decorators import runs_once
 #Required for a bug in 0.9
 from fabric.version import get_version
 
 from woven.deployment import deploy_files, mkdirs, run_once_per_host_version, upload_template
-from woven.environment import deployment_root
+from woven.environment import deployment_root, server_state
 
 def _activate_sites(path, filenames):
     enabled_sites = _ls_sites(path)            
@@ -32,13 +34,13 @@ def _deploy_webserver(remote_dir,template):
     log_dir = '/'.join([deployment_root(),'log'])
     deployed = []
 
-    for d in env.DOMAINS:
+    for d in domain_sites():
 
         u_domain = d.replace('.','_')
 
         filename = ''.join([remote_dir,'/',u_domain,'-',env.project_version,'.conf'])
         context = {"project_name": env.project_name,
-                   "deployment_root":env.deployment_root,
+                   "deployment_root":deployment_root(),
                     "u_domain":u_domain,
                     "domain":d,
                     "root_domain":env.root_domain,
@@ -59,11 +61,11 @@ def _deploy_webserver(remote_dir,template):
 
 def _ls_sites(path):
     """
-    List only sites in the env.DOMAINS to ensure we co-exist with other projects
+    List only sites in the domain_sites() to ensure we co-exist with other projects
     """
     with cd(path):
         sites = run('ls').split('\n')
-        doms = env.DOMAINS
+        doms =  domain_sites()
         dom_sites = []
         for s in sites:
             ds = s.split('-')[0]
@@ -71,6 +73,42 @@ def _ls_sites(path):
             if ds in doms and s not in dom_sites:
                 dom_sites.append(s)
     return dom_sites
+
+@runs_once
+def _get_django_sites():
+    """
+    Get a list of sites as dictionaries {site_id:'domain.name'}
+
+    """
+    deployed = server_state('deploy_project')
+    if not env.sites and deployed:
+        with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_name])):
+            venv = '/'.join([deployment_root(),'env',env.project_fullname,'bin','activate'])
+            output = run(' '.join(['source',venv,'&&',"./manage.py dumpdata sites"]))
+            sites = json.loads(output)
+            env.sites = {}
+            for s in sites:
+                env.sites[s['pk']] = s['fields']['domain']
+    return env.sites
+
+def domain_sites():
+    """
+    Get a list of the domains that have settings files
+    """
+
+    if not hasattr(env,'domains'):
+        sites = _get_django_sites()
+        site_ids = sites.keys()
+        site_ids.sort()
+        domains = []
+        for id in site_ids:
+            sitesetting_path = os.path.join(env.project_name,'sitesettings',''.join([sites[id].replace('.','_'),'.py']))
+            if os.path.exists(sitesetting_path):
+                domains.append(sites[id])
+        env.domains = domains
+        if env.domains: env.root_domain = env.domains[0]
+        else: env.domains = [_root_domain()]
+    return env.domains
 
 @run_once_per_host_version
 def deploy_webservers():
@@ -88,6 +126,8 @@ def deploy_webservers():
             #sudo("chmod -R ug+w %s"% log_dir)
         deployed += _deploy_webserver('/etc/apache2/sites-available','django-apache-template.txt')
         deployed += _deploy_webserver('/etc/nginx/sites-available','nginx-template.txt')
+        upload_template('woven/maintenance.html','/var/www/nginx-default/maintenance.html',use_sudo=True)
+        sudo('chmod ugo+r /var/www/nginx-default/maintenance.html')
     else:
         print env.host,"""WARNING: Apache or Nginx not installed"""
         
@@ -102,12 +142,12 @@ def deploy_wsgi():
     deployed = []
     if env.verbosity:
         print env.host,"DEPLOYING wsgi", remote_dir
-    for domain in env.DOMAINS:
+    for domain in domain_sites():
         deployed += mkdirs(remote_dir)
         with cd(remote_dir):
             u_domain = domain.replace('.','_')
             filename = "%s.wsgi"% u_domain
-            context = {"deployment_root":env.deployment_root,
+            context = {"deployment_root":deployment_root(),
                        "user": env.user,
                        "project_name": env.project_name,
                        "u_domain":u_domain,

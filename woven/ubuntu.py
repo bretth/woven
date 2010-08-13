@@ -242,7 +242,7 @@ def install_packages(rollback = False,overwrite=False):
             sudo("easy_install -U virtualenvwrapper")
             if not contains("source /usr/local/bin/virtualenvwrapper.sh","/home/%s/.profile"% env.user):
                 append("export WORKON_HOME=$HOME/env","/home/%s/.profile"% env.user)
-                append("source /usr/local/bin/virtualenvwrapper.sh","/home/%s/.profile"% env.user)
+                append("#source /usr/local/bin/virtualenvwrapper.sh","/home/%s/.profile"% env.user)
 
         #cleanup after easy_install
         sudo("rm -rf build")
