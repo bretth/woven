@@ -7,8 +7,6 @@ from woven.environment import project_version
 from woven.virtualenv import activate
 from woven.management.base import WovenCommand
 
-
-
 class Command(WovenCommand):
     """
     Active a project version
