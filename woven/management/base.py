@@ -97,7 +97,7 @@ class WovenCommand(BaseCommand):
         elif hasattr(settings,'HOSTS') and settings.HOSTS:
             state.env['hosts'] = settings.HOSTS
         else:
-            print "Error: You include a host or role in the command line or set HOSTS or ROLEDEFS in your settings file"
+            print "Error: You must include a host or role in the command line or set HOSTS or ROLEDEFS in your settings file"
             sys.exit(1)
             
         #This next section is taken pretty much verbatim from fabric.main
