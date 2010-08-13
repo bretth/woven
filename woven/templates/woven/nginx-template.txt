@@ -1,7 +1,7 @@
 server {
     listen   {{ host_ip }}:80;
     server_name  {{ domain }};
-    
+
     error_log /var/log/nginx/{{ u_domain }}_nginx_error.log;
     access_log off;
     #access_log /var/log/nginx/{{ u_domain }}_nginx_access.log;
@@ -9,7 +9,15 @@ server {
     location / {
         proxy_pass    http://{{ host_ip }}:10080/;
         include       /etc/nginx/proxy.conf;
+        
     }
+
+    error_page 502 503 504 /maintenance.html;
+    location /maintenance.html {
+        root /var/www/nginx-default/;
+    }
+    
+
     {% if media_url %}
     location {{ media_url }} {
             root  {{ deployment_root }}/public/; 
