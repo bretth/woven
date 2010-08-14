@@ -18,7 +18,7 @@ from fabric.contrib.files import uncomment, exists
 
 from woven.management.base import WovenCommand
 from woven.api import *
-from woven.environment import _parse_project_version
+from woven.environment import _parse_project_version, disable_virtualenvwrapper, enable_virtualenvwrapper
 from woven.project import _make_local_sitesettings
 
 
@@ -66,6 +66,7 @@ def test_project_fullname():
     print env.project_fullname
     print env.project_name
     print env.project_version
+    
 
 def test_setenv():
     print "Determine that we are getting sitesettings"
@@ -75,7 +76,7 @@ def test_setenv():
     deployment_root()
     _make_local_sitesettings()
     set_env()
-    assert env.MEDIA_ROOT == '/home/woven/public/'
+
 
 def test_server_state():
     set_server_state('example',delete=True)
@@ -86,6 +87,9 @@ def test_server_state():
     set_server_state('example',object=['something'])
     state = server_state('example')
     assert state.object == ['something']
+    set_server_state('example',delete=True)
+    state = server_state('example')
+    assert not state
     print state
    
 def test_stage_local_files():
@@ -141,6 +145,10 @@ def test_deploy_files():
     files = deploy_files(local_dir,remote_dir)
     assert not files
     run('rm -rf /home/woven/test')
+
+def test_get_sites():
+    print env.all_hosts
+    _get_sites()
 
 def test_run_once_per_version():
     sudo('rm -rf /var/local/woven')
@@ -302,7 +310,8 @@ def deploy_teardown():
 # Test related util functions
 def test_root_domain():
     #In the event of noinput, the domain will default to example.com
-    domain = root_domain()
+    domain = _root_domain()
+    print domain
     assert domain == 'example.com'
 
 # First Deployment step
