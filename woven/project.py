@@ -18,7 +18,6 @@ from fabric.version import get_version
 from woven.deployment import deploy_files, run_once_per_host_version
 from woven.environment import deployment_root, _root_domain
 
-
 @runs_once
 def _make_local_sitesettings(overwrite=False):
     local_settings_dir = os.path.join(os.getcwd(),env.project_name,'sitesettings')
@@ -66,7 +65,6 @@ def deploy_project():
     Deploy to the project directory in the virtualenv
     """
     
-    #TODO - deploy packaged dist if exists
     project_root = '/'.join([deployment_root(),'env',env.project_fullname,'project'])
     local_dir = os.getcwd()
     
@@ -79,13 +77,12 @@ def deploy_project():
     _make_local_sitesettings()
     created = deploy_files(local_dir, project_root, rsync_exclude=rsync_exclude)
     if not env.patch:
-        #hook the project into sys.path - #TODO make the python version flexible
+        #hook the project into sys.path - #TODO make the python version not fixed
         link_name = '/'.join([deployment_root(),'env',env.project_fullname,'lib/python2.6/site-packages',env.project_name])
         target = '/'.join([project_root,env.project_name])
         run(' '.join(['ln -s',target,link_name]))
     
     return created
-    
 
 @run_once_per_host_version
 def deploy_templates():
@@ -111,7 +108,6 @@ def deploy_templates():
             print env.host,"DEPLOYING templates", remote_dir
         deployed = deploy_files(env.project_template_dir,remote_dir)
     return deployed
-    
      
 @run_once_per_host_version
 def deploy_static():
@@ -146,7 +142,6 @@ def deploy_static():
     if env.verbosity:
         print env.host,"DEPLOYING static",remote_dir
     return deploy_files(local_dir,remote_dir)
-    
 
 @run_once_per_host_version       
 def deploy_public():
