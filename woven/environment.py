@@ -5,12 +5,12 @@ from contextlib import nested
 from django.utils.importlib import import_module
 
 from fabric.context_managers import _setenv, settings, cd
-from fabric.contrib.files import exists, comment
+from fabric.contrib.files import exists, comment, contains, sed, append
 from fabric.decorators import runs_once, hosts
 from fabric.main import find_fabfile
 from fabric.network import normalize
 from fabric.operations import local, run, sudo, prompt
-from fabric.state import _AttributeDict, env
+from fabric.state import _AttributeDict, env, output
         
 
 woven_env = _AttributeDict({
@@ -171,6 +171,21 @@ def _root_domain():
         env.root_domain = domain
     return env.root_domain
 
+def disable_virtualenvwrapper():
+    """
+    Hack to workaround an issue with virtualenvwrapper logging caused by Fabric sudo
+    
+    Can also add --noprofile to env.shell
+    """
+    profile_path = '/'.join([deployment_root(),'.profile'])
+
+    sed(profile_path,'source /usr/local/bin/virtualenvwrapper.sh','')
+
+def enable_virtualenvwrapper():
+    profile_path = '/'.join([deployment_root(),'.profile'])
+    append('source /usr/local/bin/virtualenvwrapper.sh',profile_path)
+    
+
 def deployment_root():
     """
     deployment root varies per host based on the user
@@ -303,10 +318,9 @@ def set_env(settings=None, setup_dir=''):
     
     #Sites
     env.sites = {}
+    env.shell = '/bin/bash --noprofile -l -c'
+    #output.debug = True
     
-    
-    
-
 def patch_project():
     return env.patch
 
