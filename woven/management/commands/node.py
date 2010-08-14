@@ -38,7 +38,6 @@ class Command(WovenCommand):
         opts = options.get('options')
         command = args[0]
         path = '/home/%s/%s/env/%s/project/%s/'% (env.user,root_domain(),env.project_fullname,env.project_name)
-        print path
         pythonpath = '/home/%s/%s/env/%s/bin/python'% (env.user,env.root_domain,env.project_fullname)
         with cd(path):     
             result = run(' '.join([pythonpath,'manage.py',command,opts]))
