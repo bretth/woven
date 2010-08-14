@@ -81,7 +81,7 @@ def _get_django_sites():
 
     """
     deployed = server_state('deploy_project')
-    if not env.sites and deployed:
+    if not env.sites and 'django.contrib.sites' in env.INSTALLED_APPS and deployed:
         with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_name])):
             venv = '/'.join([deployment_root(),'env',env.project_fullname,'bin','activate'])
             output = run(' '.join(['source',venv,'&&',"./manage.py dumpdata sites"]))
@@ -121,9 +121,7 @@ def deploy_webservers():
             print env.host,"DEPLOYING webservers:"
         if not exists(log_dir):
             run('ln -s /var/log log')
-            #deployed += mkdirs(log_dir)
-            #sudo("chown -R www-data:sudo %s" % log_dir)
-            #sudo("chmod -R ug+w %s"% log_dir)
+
         deployed += _deploy_webserver('/etc/apache2/sites-available','django-apache-template.txt')
         deployed += _deploy_webserver('/etc/nginx/sites-available','nginx-template.txt')
         upload_template('woven/maintenance.html','/var/www/nginx-default/maintenance.html',use_sudo=True)
