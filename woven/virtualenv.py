@@ -95,10 +95,6 @@ def activate():
         if env.verbosity and not env.patch:
             print env.project_fullname,"is the active version"
 
-    #fix virtualenvwrapper permission issue with hook.log
-    with cd('/'.join([deployment_root(),'env'])):
-        sudo('chown %s:sudo hook*'% env.user)
-
     if env.patch or active <> env.project_fullname:
         start_webservices()
         print
@@ -157,7 +153,6 @@ def migration():
         if env.verbosity:
             print output
     return           
-    
 
 @run_once_per_host_version
 def mkvirtualenv():
@@ -178,8 +173,7 @@ def mkvirtualenv():
         sudo('chmod -R g+w egg_cache')
         run(''.join(["echo 'cd ",path,'/','project','/',env.project_name,'/sitesettings',"' > bin/postactivate"]))
         sudo('chmod ugo+rwx bin/postactivate')
-        
-    
+
     #Create a state
     out = State(' '.join([env.host,'virtualenv',path,'created']))
     out.object = dirs_created + ['bin','lib','include']
