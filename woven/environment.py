@@ -15,7 +15,6 @@ from fabric.state import _AttributeDict, env, output
 
 woven_env = _AttributeDict({
 'HOSTS':[], #optional - a list of host strings to setup on as per Fabric
-'DOMAINS':[], #optional a list of domains that will be deployed on the host. The first is the primary domain
 'ROLEDEFS':{}, #optional as per fabric. eg {'staging':['woven@example.com']}
 'HOST_SSH_PORT':10022, #optional - the ssh port to be setup
 'HOST_USER':'', #optional - can be used in place of defining it elsewhere (ie host_string)
@@ -195,10 +194,6 @@ def deployment_root():
     """
     if not env.DEPLOYMENT_ROOT: return '/'.join(['/home',env.user])
     else: return env.DEPLOYMENT_ROOT
-    #hack to get around an issue with virtualenvwrapper logging - I suspect virtualenvwrapper + fabric
-    #with cd('/'.join([env.deployment_root,'env'])):
-    #    if exists('hook.log'):
-    #        sudo("chmod -f ugo+w hook*")
  
 
 def set_env(settings=None, setup_dir=''):
