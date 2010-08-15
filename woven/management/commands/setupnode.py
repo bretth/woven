@@ -17,17 +17,12 @@ class Command(WovenCommand):
     ``python manage.py setupnode woven@host.example.com``
     
     """
-    option_list = WovenCommand.option_list + (
-        make_option('--overwrite', action='store_true', dest='overwrite', default=False,
-            help='Overwrite any existing configuration files'),
-    )
     help = "Setup a baseline Ubuntu host"
     requires_model_validation = False
 
     
     def handle_host(self,*args, **options):
-
-        setupnode(overwrite=options.get('overwrite'))
+        setupnode()
 
 
         
