@@ -59,7 +59,7 @@ Lets go through what this actually does:
 10. Sets the timezone according to your settings file
 
 Of course not all hosts are the same and no two deployments are alike so have a look
-at some of the :doc:`settings` you can use in your Django project.
+at some of the :doc:`settings05` you can use in your Django project.
 
 Woven uses standard Django templates to create configuration files for Apache, Nginx, and ssh.
 If you want to modify them you can copy them from the package into a woven folder in your projects templates folder like any other app.
@@ -94,7 +94,7 @@ Make sure you can login to your default admin site, and if everything is alright
 
     python manage.py deploy [user@host]
 
-The first thing it may ask for is the root domain if it can't guess it from your nodes hostname. This is your SITE_ID = 1 production domain. You can define it as the first domain in the ``DOMAINS`` list setting in your settings.py.
+The first thing it may ask for is the root domain if it can't guess it from your nodes hostname. This is your SITE_ID = 1 production domain.
 
 .. note::
 
@@ -149,7 +149,7 @@ This will use virtualenvwrapper to activate your current virtualenv and drop you
 
 Of course installing packages from a requirements file can be problematic if pypi is down.  To get around this first set your DJANGO_REQUIREMENT setting to file:///path/to/Django-x.x.x.tar.gz to rsync against a local copy. Next make use of  ``manage.py bundle`` command. This will use pip to bundle all the requirements into a dist directory in project. When deploying woven will look in the dist directory first and install from a bundle with the same name as the requirements file.
 
-Have a read of the woven django management :doc:commands to get a better feel of the woven commands. 
+Have a read of the woven django management :doc:commands05 to get a better feel of the woven commands. 
 
 Development
 ===========
