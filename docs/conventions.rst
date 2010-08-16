@@ -18,7 +18,6 @@ Nginx for media is done the same way
 Project Deployment Layout
 -------------------------
 
-Root folder for our installation is the domain '~/example.com/'
 Within the root folder are the following::
    ~/.package_cache (Pip will cache release packages here)
    ~/.staging (all rsynced files are staged here before copying to final destination for network efficiency)
@@ -39,7 +38,7 @@ Within the root folder are the following::
                             |--__init__.py 
                             |--example_com.py (site local settings)
                             |--manage.py (you run this on the node)
-                            |--settings.py (convenience settings for manage.py)
+                            |--settings.py (primary settings file for manage.py)
             |--templates (your project templates go here)
             |--static 
             |--wsgi (web server scripts go here including wsgi)

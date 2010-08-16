@@ -16,7 +16,7 @@ setupnode
 
 Setup Ubuntu host[s]. By default this will just setup a baseline host for django deployment but it can be used to setup other types of host such as postgresql nodes and varnish.
 
-By defining ROLEDEFS in your settings you define packages for those hosts in the ROLE_PACKAGES settings. For example to setup a postgresql server you might define a role ROLEDEFS = {'database':['woven@host.example.com']}, then set ROLE_PACKAGES = {'database':['postgresql']}, and finally set the firewall to ROLE_UFW_RULES = {'database':['allow tcp/5432']}. Finally configuration can be set in the project TEMPLATES_DIR woven/etc subdirectory.
+By defining ROLEDEFS in your settings you define packages for those hosts in the ROLE_PACKAGES settings. For example to setup a postgresql server you might define a role ROLEDEFS = {'database':['woven@db1.example.com']}, then set ROLE_PACKAGES = {'database':['postgresql']}, and finally set the firewall to ROLE_UFW_RULES = {'database':['allow tcp/5432']}. Finally postgresql configuration can be set in the project TEMPLATES_DIR woven/etc subdirectory.
 
 Basic Usage::
 
@@ -67,7 +67,7 @@ You can just patch a part of the deployment with a subcommand.
 
 The possible subcommands are::
 
-    project, templates, static, public, wsgi, webservers
+    project, templates, static, public, wsgi, webconf
 
 Example:
 
@@ -100,6 +100,21 @@ Basic Usage:
 Example:
 
 ``python manage.py node flush woven@host.example.com --options="--noinput"``
+
+startsites
+----------
+
+Create new sitesettings files for new sites, and deploy sitesettings, wsgi, and webconf for the new sites.
+
+Within Django sites are created on the database but use the SITE_ID in the settings file to designate which site is loaded. This command does not create the sites in the database but merely creates and deploys the configuration files needed to serve them.
+
+Basic Usage:
+
+``python manage.py startsites [hoststring] [options]``
+
+
+
+
 
 
 

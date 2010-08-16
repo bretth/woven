@@ -2,6 +2,24 @@
 Changelog
 ==========
 
+Release 0.5.0 (16-Aug-2010)
+---------------------------------
+
+Note: To upgrade from 0.4 to 0.5 you should move your first [your_project].sitesettings.domain.py to [your_project].sitesettings.settings.py and create a new [your_project].sitesettings.domain.py that just imports [your_project].sitesettings.settings
+
+* changed the [project_name].sitesettings.settings file to be the primary settings file for all non-dev sites
+* enable hosts to be setup with different packages through the ROLEDEFS, ROLE_PACKAGES, and ROLE_UFW_RULES settings.
+* added a maintenance.html template for nginx
+* added a default deny all nginx conf to setupnode
+* domains are now determined by dumping sites from the 1st database in the host list being executed against. If the project hasn't deployed we determine from the hostname or ask for it.
+* simplified deployment_root and added back in a django setting to override it.
+* added --noprofile to env.shell to make peace with virtualenvwrapper
+* removed --overwrite option from setupnode
+* fixed an issue with syncdb & migrate using the wrong settings file
+* changed the name of function deploy_webservers to deploy_webconf
+* setupnode now starts/restarts apache2 & nginx at the end of setup
+
+
 Release 0.4.0 (10-Aug-2010)
 ---------------------------------
 

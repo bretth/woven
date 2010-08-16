@@ -154,7 +154,7 @@ Have a read of the woven django management :doc:commands to get a better feel of
 Development
 ===========
 
-At the current version, Woven is under heavy development and may be incompatible between versions until the api matures enough for a beta release. The core highlevel functions setupnode, deploy, patch, and activate will not change.
+At the current version 0.5, Woven has implemented most of it's basic features, and is now aiming to stabilize the api and move from alpha to beta status. There still may be incompatibilities between version 0.5 and 0.6, but will endeavour to provide an upgrade path between versions until the a beta release.  The core highlevel functions setupnode, deploy, patch, and activate will not change.
 
 The woven project is hosted on github at http://github.com/bretth/woven. Feature requests and bug reports are welcome.
 

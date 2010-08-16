@@ -9,8 +9,6 @@ Django settings.py. They are all optional.
 
     #List of hoststrings to setup on as per Fabric.
     HOSTS = [] #eg ['woven@example.com','example.com','10.0.0.1']
-    #List of domains that will be deployed on the host. The first is the primary domain
-    DOMAINS = []
     #You can group collections of servers instead of HOSTS as per fabric
     ROLEDEFS = {} #This would be used instead of HOSTS  eg {'staging':['woven@example.com']}
     #The ssh port to be setup. We change the port for security
@@ -50,6 +48,7 @@ Django settings.py. They are all optional.
     ROLE_PACKAGES = {} #eg ROLE_PACKAGES = {'postgresql':['postgresql']}
         
     #Virtualenv/Pip
+    DEPLOYMENT_ROOT = ''# defaults to /home/$USER. 
     DJANGO_REQUIREMENT = '' #defaults to development django. A pip requirements string for the version of Django to install
     PIP_REQUIREMENTS = [] # list of text pip requirements files (not pybundles). Defaults to any file in the setup.py directory with `req` prefix
     # Note: Woven will look for optional pybundles matching the requirements in the dist directory - you can use the bundle management command to create these.
