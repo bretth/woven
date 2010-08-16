@@ -222,8 +222,7 @@ def install_packages(rollback = False,overwrite=False):
                 sudo("echo '%s' >> /var/local/woven/packages_installed.txt"% package)
                 if package == 'apache2':
                     sudo("a2dissite 000-default")
-                elif package == 'nginx':
-                    sudo('rm -f /etc/nginx/sites-enabled/default')
+
                 if env.verbosity:
                     print ' * installed '+package
             else:
@@ -240,9 +239,11 @@ def install_packages(rollback = False,overwrite=False):
             sudo("easy_install -U virtualenv")
             sudo("easy_install -U pip")
             sudo("easy_install -U virtualenvwrapper")
+            if env.verbosity:
+                print " * easy installed pip, virtualenv, virtualenvwrapper"
             if not contains("source /usr/local/bin/virtualenvwrapper.sh","/home/%s/.profile"% env.user):
                 append("export WORKON_HOME=$HOME/env","/home/%s/.profile"% env.user)
-                append("source /usr/local/bin/virtualenvwrapper.sh")
+                append("source /usr/local/bin/virtualenvwrapper.sh","/home/%s/.profile"% env.user)
 
         #cleanup after easy_install
         sudo("rm -rf build")
