@@ -277,15 +277,16 @@ def set_env(settings=None, setup_dir=''):
     
     #since port is not handled by fabric.main.normalize we'll do it ourselves
     host_list = []
-    for host_string in env.hosts:
-        if not ':' in host_string:
-            host_string += ':%s'% str(woven_env.HOST_SSH_PORT)
-        #not sure that this is necessary but it seems clearer to make full
-        #hoststrings with the correct user
-        if not '@' in host_string:
-            host_string = env.user + '@' + host_string
-        host_list.append(host_string)
-        env.hosts = host_list
+    if 'hosts' in env and isinstance(env['hosts'], list):
+        for host_string in env.hosts:
+            if not ':' in host_string:
+                host_string += ':%s'% str(woven_env.HOST_SSH_PORT)
+            #not sure that this is necessary but it seems clearer to make full
+            #hoststrings with the correct user
+            if not '@' in host_string:
+                host_string = env.user + '@' + host_string
+            host_list.append(host_string)
+            env.hosts = host_list
     
     #Now update the env with any settings that are not defined by woven but may
     #be used by woven or fabric
