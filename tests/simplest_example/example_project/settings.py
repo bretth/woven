@@ -99,3 +99,5 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'woven',
 )
+
+HOSTS = ['woven@example.com']
