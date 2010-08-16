@@ -15,7 +15,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   main05
+   main050
    commands05
    settings05
    conventions05

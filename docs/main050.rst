@@ -88,7 +88,7 @@ First configure the usual necessary project settings.py if they're not already d
     Starting with a sqlite3 database is actually a pretty good idea. It's easy to load up to production, performs well for sites that are mostly reads, and if you like you can dump the database and load it into postgresql or mysql when you need *write* scalability or the extra features of an enterprise database.
 
 Follow the usual django instructions for enabling admin for your site and then run ``python manage.py syncdb``.
-Make sure you can login to your default admin site, and if everything is alright it is time to do your first deployment.
+Make sure you can login to your default admin site using ``python manage.py runserver``, and if everything is alright it is time to do your first deployment.
 
 .. code-block:: bash
 
@@ -104,7 +104,7 @@ The default deploy does the following:
 
 1. For your first deployment it will deploy your sqlite database
 2. Create a virtualenv for the project version
-3. Install django. By default it will install the current version. You can set a pip requirements string DJANGO_REQUIREMENT in your settings.py if you want svn trunk or some other version
+3. Install django. By default it will install the development version. You can set a pip requirements string DJANGO_REQUIREMENT in your settings.py if you want svn trunk or some other specific version
 4. Install dependencies from one or more requirement req* files. eg. req, requirements.txt etc. If one doesn't exist then it will create one locally and add woven in it by default.
 5. Creates a local sitesettings folder and a settings file for your server [domain].py if it doesn't already exist. You can see how woven lays out your project on the server in the sitesettings file.
 6. Deploys your project to the virtualenv on the server
@@ -136,7 +136,7 @@ Patch can also just upload a specific part of your project using a subcommand. F
 
 .. code-block:: bash
 
-    python manage.py patch webservers [user@host] 
+    python manage.py patch webconf [user@host] 
 
 Where to now
 ------------
