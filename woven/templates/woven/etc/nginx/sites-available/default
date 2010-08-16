@@ -1,0 +1,6 @@
+server {
+    listen {{ host_ip }}:80 default; 
+    server_name _;
+    deny all;
+}
+
