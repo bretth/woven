@@ -21,14 +21,14 @@ server {
     {% if media_url %}
     location {{ media_url }} {
             root  {{ deployment_root }}/public/; 
-            #expires 1d;
+
     }
     {% endif %}
     
     {% if static_url %}
     location {{ static_url }} {
             root  {{ deployment_root }}/env/{{ project_name }}/static/; 
-            #expires 1d;
+
     }    
     {% endif %}
     

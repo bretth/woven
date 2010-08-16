@@ -5,11 +5,9 @@ from fabric.context_managers import settings
 
 from woven.api import deploy, activate
 from woven.api import deploy_project, deploy_templates, deploy_static, deploy_public
-from woven.api import deploy_wsgi, deploy_webservers
+from woven.api import deploy_wsgi, deploy_webconf
 
 from woven.management.base import WovenCommand
-
-
 
 class Command(WovenCommand):
     """
@@ -29,7 +27,7 @@ class Command(WovenCommand):
     """
 
     help = "Patch all parts of the current version of your project, or patch part of the project"
-    args = "[project|templates|static|public|wsgi|webservers] [user@hoststring ...]"
+    args = "[project|templates|static|public|wsgi|webconf] [user@hoststring ...]"
     requires_model_validation = False
 
     def parse_host_args(self, *args):
@@ -40,7 +38,7 @@ class Command(WovenCommand):
         new_args = args
         try:
             sub = args[0]
-            if sub in ['project','templates','static','public','wsgi','webservers']:
+            if sub in ['project','templates','static','public','wsgi','webconf']:
                 self.subcommand = args[0]
                 new_args = args[1:]
         except IndexError:

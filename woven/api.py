@@ -18,14 +18,14 @@ from woven.ubuntu import change_ssh_port, set_timezone, ubuntu_version, upload_e
 from woven.virtualenv import activate, active_version
 from woven.virtualenv import mkvirtualenv, rmvirtualenv, pip_install_requirements
 
-from woven.webservers import deploy_wsgi, deploy_webservers, start_webservices, stop_webservices
+from woven.webservers import deploy_wsgi, deploy_webconf, start_webservers, stop_webservers, reload_webservers
 
 
 def deploy():
     """
     deploy a versioned project on the host
     """
-    deploy_funcs = [deploy_project,deploy_templates, deploy_static, deploy_public,  deploy_webservers, deploy_wsgi]
+    deploy_funcs = [deploy_project,deploy_templates, deploy_static, deploy_public,  deploy_webconf, deploy_wsgi]
     if not patch_project():
         deploy_funcs = [deploy_db,mkvirtualenv,pip_install_requirements] + deploy_funcs
     for func in deploy_funcs: func()
@@ -56,6 +56,8 @@ def setupnode(rollback=False, overwrite=False):
         install_packages(overwrite=overwrite)
         upload_etc()
         set_timezone()
+        stop_webservers()
+        start_webservers()
 
         
     else:

@@ -84,6 +84,21 @@ def deploy_project():
     
     return created
 
+def deploy_sitesettings():
+    """
+    Deploy to the project directory in the virtualenv
+    """
+    
+    sitesettings = '/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_name,'sitesettings'])
+    local_dir = os.path.join(os.getcwd(),env.project_name,'sitesettings')
+ 
+    created = deploy_files(local_dir, sitesettings)
+    if env.verbosity and created:
+        print env.host,"DEPLOYING sitesettings"
+        for path in created:
+            tail = path.split('/')[-1]
+            print ' * uploaded',tail
+
 @run_once_per_host_version
 def deploy_templates():
     """

@@ -25,16 +25,17 @@ def _activate_sites(path, filenames):
         if not exists('/etc/apache2/sites-enabled'+ filename):
             sudo("ln -s %s%s %s%s"% (self.deploy_root,filename,self.enabled_path,filename))
 
-def _deploy_webserver(remote_dir,template):
+def _deploy_webconf(remote_dir,template):
     
     if not 'http:' in env.MEDIA_URL: media_url = env.MEDIA_URL
     else: media_url = ''
     if not 'http:' in env.STATIC_URL: static_url = env.STATIC_URL
-    else: static_url = ''    
+    else: static_url = ''
+    if not static_url: static_url = env.ADMIN_MEDIA_PREFIX
     log_dir = '/'.join([deployment_root(),'log'])
     deployed = []
-
-    for d in domain_sites():
+    domains = domain_sites()
+    for d in domains:
 
         u_domain = d.replace('.','_')
 
@@ -74,7 +75,6 @@ def _ls_sites(path):
                 dom_sites.append(s)
     return dom_sites
 
-@runs_once
 def _get_django_sites():
     """
     Get a list of sites as dictionaries {site_id:'domain.name'}
@@ -82,7 +82,7 @@ def _get_django_sites():
     """
     deployed = server_state('deploy_project')
     if not env.sites and 'django.contrib.sites' in env.INSTALLED_APPS and deployed:
-        with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_name])):
+        with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_name,'sitesettings'])):
             venv = '/'.join([deployment_root(),'env',env.project_fullname,'bin','activate'])
             output = run(' '.join(['source',venv,'&&',"./manage.py dumpdata sites"]))
             sites = json.loads(output)
@@ -111,19 +111,19 @@ def domain_sites():
     return env.domains
 
 @run_once_per_host_version
-def deploy_webservers():
+def deploy_webconf():
     """ Deploy apache & nginx site configurations to the host """
     deployed = []
     log_dir = '/'.join([deployment_root(),'log'])
     #TODO - incorrect - check for actual package to confirm installation
     if exists('/etc/apache2/sites-enabled/') and exists('/etc/nginx/sites-enabled'):
         if env.verbosity:
-            print env.host,"DEPLOYING webservers:"
+            print env.host,"DEPLOYING webconf:"
         if not exists(log_dir):
             run('ln -s /var/log log')
 
-        deployed += _deploy_webserver('/etc/apache2/sites-available','django-apache-template.txt')
-        deployed += _deploy_webserver('/etc/nginx/sites-available','nginx-template.txt')
+        deployed += _deploy_webconf('/etc/apache2/sites-available','django-apache-template.txt')
+        deployed += _deploy_webconf('/etc/nginx/sites-available','nginx-template.txt')
         upload_template('woven/maintenance.html','/var/www/nginx-default/maintenance.html',use_sudo=True)
         sudo('chmod ugo+r /var/www/nginx-default/maintenance.html')
     else:
@@ -140,7 +140,8 @@ def deploy_wsgi():
     deployed = []
     if env.verbosity:
         print env.host,"DEPLOYING wsgi", remote_dir
-    for domain in domain_sites():
+    domains = domain_sites()
+    for domain in domains:
         deployed += mkdirs(remote_dir)
         with cd(remote_dir):
             u_domain = domain.replace('.','_')
@@ -163,7 +164,34 @@ def deploy_wsgi():
             run("chmod ug+xr %s"% filename)
     return deployed
 
-def stop_webservices():
+def reload_webservers():
+    """
+    Reload apache2 and nginx
+    """
+    if env.verbosity:
+        print env.host, "RELOADING apache2"
+    with settings(warn_only=True):
+        a = sudo("/etc/init.d/apache2 reload")
+        if env.verbosity:
+            print '',a        
+    if env.verbosity:
+
+        #Reload used to fail on Ubuntu but at least in 10.04 it works
+        print env.host,"RELOADING nginx"
+    with settings(warn_only=True):
+        s = run("/etc/init.d/nginx status")
+        if 'running' in s:
+            n = sudo("/etc/init.d/nginx reload")
+        else:
+            n = sudo("/etc/init.d/nginx start")
+    if env.verbosity:
+        print ' *',n
+    return True    
+
+def stop_webservers():
+    """
+    Stop apache2
+    """
     #TODO - distinguish between a warning and a error on apache
     with settings(warn_only=True):
         if env.verbosity:
@@ -174,7 +202,10 @@ def stop_webservices():
         
     return True
 
-def start_webservices():
+def start_webservers():
+    """
+    Start apache2 and start/reload nginx
+    """
     with settings(warn_only=True):
         if env.verbosity:
             print env.host,"STARTING apache2"
@@ -188,8 +219,6 @@ def start_webservices():
         sys.exit(1)
     if env.verbosity:
         #Reload used to fail on Ubuntu but at least in 10.04 it works
-        
-        #TODO - Check that it is already running
         print env.host,"RELOADING nginx"
     with settings(warn_only=True):
         s = run("/etc/init.d/nginx status")

@@ -15,7 +15,7 @@ from fabric.contrib.console import confirm
 
 from woven.deployment import mkdirs, run_once_per_host_version, deploy_files
 from woven.environment import deployment_root,set_server_state, server_state, State
-from woven.webservers import _ls_sites, stop_webservices, start_webservices, domain_sites
+from woven.webservers import _ls_sites, stop_webservers, start_webservers, domain_sites
 from fabric.contrib.files import append
 
 def active_version():
@@ -48,7 +48,7 @@ def activate():
     active = active_version()
 
     if env.patch or active <> env.project_fullname:
-        stop_webservices()
+        stop_webservers()
         
     if not env.patch and active <> env.project_fullname:
         
@@ -96,7 +96,7 @@ def activate():
             print env.project_fullname,"is the active version"
 
     if env.patch or active <> env.project_fullname:
-        start_webservices()
+        start_webservers()
         print
     return
 
@@ -105,7 +105,7 @@ def sync_db():
     """
     Runs the django syncdb command
     """
-    with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_name])):
+    with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_name,'sitesettings'])):
         venv = '/'.join([deployment_root(),'env',env.project_fullname,'bin','activate'])
         if env.verbosity:
             print " * python manage.py syncdb --noinput"
@@ -139,7 +139,7 @@ def migration():
     """
 
     #activate env        
-    with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_name])):
+    with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_name,'sitesettings'])):
         #migrates all or specific env.migration
         venv = '/'.join([deployment_root(),'env',env.project_fullname,'bin','activate'])
         cmdpt1 = ' '.join(['source',venv,'&&'])
