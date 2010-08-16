@@ -19,9 +19,10 @@ Project Deployment Layout
 -------------------------
 
 Within the root folder are the following::
-   ~/.package_cache (Pip will cache release packages here)
+
+   ~/.package_cache (Pip will cache packages here)
    ~/.staging (all rsynced files are staged here before copying to final destination for network efficiency)
-   ~/--database (for sqlite)
+   ~/--database (for sqlite if it is used)
     |--env (The root directory for all virtual environments)
         |--example_project (symlink to the current virtualenv version)
         |--example_project-0.1 (The virtualenv root for this version)
@@ -31,17 +32,18 @@ Within the root folder are the following::
             |--include 
             |--lib
             |--project
-                |--example_project (package directory)
-                    |--manage.py
-                    |--settings.py (global settings)
+                |--example_project (package directory - symlinked to site-packages)
+                    |--manage.py (your development manage.py)
+                    |--settings.py (global & dev specific settings)
                     |--sitesettings (site local setting files)
                             |--__init__.py 
                             |--example_com.py (site local settings)
                             |--manage.py (you run this on the node)
-                            |--settings.py (primary settings file for manage.py)
+                            |--settings.py (primary settings file for nodes)
             |--templates (your project templates go here)
-            |--static 
-            |--wsgi (web server scripts go here including wsgi)
+            |--static (admin and other app media)
+            |--wsgi (web server scripts go here including modwsgi python file)
+                 |--example_com.py
        |--example_project-0.2 (next release version - as above)
     ...
     |--log (symlinks to /var/log)

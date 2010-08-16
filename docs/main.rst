@@ -12,7 +12,7 @@ Woven provides four core management commands for your Django project:
 
 ``setupnode``, ``deploy``, ``patch``, and ``activate``
 
-They're pretty simple but Lets walk through how they are used to deploy your project.
+They're pretty simple and transparent but Lets walk through how they are used to deploy your project.
 
 Setupnode
 ----------
@@ -100,7 +100,7 @@ The first thing it may ask for is the root domain if it can't guess it from your
 
     Make sure your domain server or /etc/hosts file has an entry for the domain (and on osx, run ``dscacheutil -flushcache``).
     
-The default deploy does the following::
+The default deploy does the following:
 
 1. For your first deployment it will deploy your sqlite database
 2. Create a virtualenv for the project version
