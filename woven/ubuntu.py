@@ -505,7 +505,7 @@ def upload_ssh_key(rollback=False):
         return
     else:
         if exists(auth_keys+'.wovenbak'):
-            _restore_fie('/home/%s/.ssh/authorized_keys'% env.user)
+            _restore_file('/home/%s/.ssh/authorized_keys'% env.user)
         else: #no pre-existing keys remove the .ssh directory
             sudo('rm -rf /home/%s/.ssh')
         return
