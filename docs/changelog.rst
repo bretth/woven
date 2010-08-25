@@ -2,6 +2,13 @@
 Changelog
 ==========
 
+Release 0.5.1 (25-Aug-2010)
+--------------------------------
+
+* fix to setupnode sshd_config rollback
+* fix issue where setupnode fails if TEMPLATE_DIRS has not been set.
+
+
 Release 0.5.0 (16-Aug-2010)
 ---------------------------------
 
