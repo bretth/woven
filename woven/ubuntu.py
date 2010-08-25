@@ -308,7 +308,7 @@ def restrict_ssh(rollback=False):
             sudo('/etc/init.d/ssh restart')
         else: #rollback
             print env.host, 'Rolling back sshd_config to default and proceeding without passwordless login'
-            _restore_fie('/etc/ssh/sshd_config', delete_backup=False)
+            _restore_file('/etc/ssh/sshd_config', delete_backup=False)
             sed('/etc/ssh/sshd_config','Port '+ str(env.DEFAULT_SSH_PORT),'Port '+str(env.HOST_SSH_PORT),use_sudo=True)
             
             sudo('/etc/init.d/ssh restart')
@@ -316,7 +316,7 @@ def restrict_ssh(rollback=False):
         set_server_state('ssh_restricted')
         return True
     else: #Full rollback
-        _restore_fie('/etc/ssh/sshd_config')
+        _restore_file('/etc/ssh/sshd_config')
         if server_state('ssh_port_changed'):
             sed('/etc/ssh/sshd_config','Port '+ str(env.DEFAULT_SSH_PORT),'Port '+str(env.HOST_SSH_PORT),use_sudo=True)
             sudo('/etc/init.d/ssh restart')
@@ -444,7 +444,8 @@ def upload_etc():
     if not hasattr(env, 'project_template_dir'):
         #the normal pattern would mean the shortest path is the main one.
         #its probably the last listed
-        length = 1000   
+        length = 1000
+        env.project_template_dir = ''
         for dir in env.TEMPLATE_DIRS:
             if dir:
                 len_dir = len(dir)
@@ -454,7 +455,8 @@ def upload_etc():
 
     template_dir = os.path.join(os.path.split(os.path.realpath(__file__))[0],'templates','')
     default_templates = _get_template_files(template_dir)
-    user_templates = _get_template_files(os.path.join(env.project_template_dir,''))
+    if env.project_template_dir: user_templates = _get_template_files(os.path.join(env.project_template_dir,''))
+    else: user_templates = set([])
     etc_templates = user_templates | default_templates
     context = {'host_ip':socket.gethostbyname(env.host)}
     for t in etc_templates:
