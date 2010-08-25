@@ -15,12 +15,12 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   main050
-   commands05
-   settings05
-   conventions05
+   main
+   commands
+   settings
+   conventions
    troubleshooting
-   changelog05
+   changelog
    
 
 

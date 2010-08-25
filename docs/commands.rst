@@ -20,7 +20,20 @@ By defining ROLEDEFS in your settings you define packages for those hosts in the
 
 Basic Usage::
 
-``python manage.py setupnode [hoststring] [options] ``
+``python manage.py setupnode [hoststring] [options]``
+
+Lets go through what this actually does:
+
+1. Changes the default ssh port to 10022
+2. Creates the new `user` and disables the `root` user
+3. Uploads your public ssh-key
+4. Restricts ssh login to the ssh-key and adds a few other restrictions
+5. Adds additional sources `universe` to sources.list
+6. Updates and upgrades your packages
+7. Installs UFW firewall
+8. Installs a baseline of Ubuntu packages including Apache, Nginx, and mod-wsgi
+9. Install any etc templates/files sourced from the woven or project woven/etc template directories
+10. Sets the timezone according to your settings file
 
 
 bundle
@@ -50,7 +63,27 @@ deploy integrates with south if it is installed. By default *all* migrations are
 
 ``--nomigration`` Do not migrate
 
-``--manualmigration`` Manage the database migration manually. With this option you can drop out of the current deployment to migrate the database manually, or pause the deployment while migrating in a separate shell. To migrate the database you could login to your host and then run ``workon [yourproject-version]`` to drop into the new versions environment and migrate your database using south, then logout and re-run deploy or continue the existing deploy. 
+``--manualmigration`` Manage the database migration manually. With this option you can drop out of the current deployment to migrate the database manually, or pause the deployment while migrating in a separate shell. To migrate the database you could login to your host and then run ``workon [yourproject-version]`` to drop into the new versions environment and migrate your database using south, then logout and re-run deploy or continue the existing deploy.
+
+The deploy command does the following:
+
+1. For your first deployment it will deploy your sqlite database
+2. Create a virtualenv for the project version
+3. Install django. By default it will install the development version. You can set a pip requirements string DJANGO_REQUIREMENT in your settings.py if you want svn trunk or some other specific version
+4. Install dependencies from one or more requirement req* files. eg. req, requirements.txt etc. If one doesn't exist then it will create one locally and add woven in it by default.
+5. Creates a local sitesettings folder and a settings file for your server [domain].py if it doesn't already exist. You can see how woven lays out your project on the server in the sitesettings file.
+6. Deploys your project to the virtualenv on the server
+7. Deploys your root (shortest path) TEMPLATE_DIR into a templates directory on the server.
+8. Deploys admin media or STATIC_ROOT setting (if you use django-staticfiles) into a virtualenv static directory.
+9. Deploys anything at MEDIA_ROOT into a non-virtualenv public directory.
+10. Deploys your domain wsgi file into a virtualenv wsgi directory as [domain].wsgi
+11. Renders your apache and nginx templates and deploys them into the sites-available with the version in the name.
+12. Stops the webservices
+13. Syncs the database
+14. Runs South migrate if you have South installed
+15. Symlinks the webserver conf versions into sites-enabled
+16. Symlinks the project virtualenv version to the active virtualenv.
+17. Starts the webservices
 
 
 patch
