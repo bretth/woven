@@ -53,6 +53,8 @@ Django settings.py. They are all optional.
     PIP_REQUIREMENTS = [] # list of text pip requirements files (not pybundles). Defaults to any file in the setup.py directory with `req` prefix
     # Note: Woven will look for optional pybundles matching the requirements in the dist directory - you can use the bundle management command to create these.
     
+    PROJECT_APPS_PATH = '' #a relative path from the project package directory for any local apps. See also the wsgi template.
+    
     #Application media - as per build_static app
     STATIC_URL = '' #by default this is set to the ADMIN_MEDIA_PREFIX
     STATIC_ROOT = '' #by default this gets set to the admin media directory if admin is used

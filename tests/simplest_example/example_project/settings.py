@@ -101,3 +101,5 @@ INSTALLED_APPS = (
 )
 
 HOSTS = ['woven@example.com']
+
+PROJECT_APPS_PATH = 'apps'

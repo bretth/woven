@@ -5,7 +5,7 @@ import json
 from fabric.state import env
 from fabric.operations import run, sudo
 from fabric.context_managers import cd, settings
-from fabric.contrib.files import exists
+from fabric.contrib.files import append, contains, exists
 from fabric.decorators import runs_once
 #Required for a bug in 0.9
 from fabric.version import get_version
@@ -138,6 +138,19 @@ def deploy_wsgi():
     """
     remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'wsgi'])
     deployed = []
+    
+    #ensure path is also added to environment variables as well as wsgi
+    if env.PROJECT_APPS_PATH:
+        pap = '/'.join([deployment_root(),'env',
+                        env.project_name,'project',env.project_name,env.PROJECT_APPS_PATH])
+        pap = ''.join(['export PYTHONPATH=$PYTHONPATH:',pap])
+        postactivate = '/'.join([deployment_root(),'env','postactivate'])
+        if not exists(postactivate):
+            append('#!/bin/bash', postactivate)
+            run('chmod +x %s'% postactivate)
+        if not contains('PYTHONPATH',postactivate):
+            append(pap,postactivate)
+        
     if env.verbosity:
         print env.host,"DEPLOYING wsgi", remote_dir
     domains = domain_sites()
@@ -151,6 +164,7 @@ def deploy_wsgi():
                        "project_name": env.project_name,
                        "u_domain":u_domain,
                        "root_domain":env.root_domain,
+                       "project_apps_path":env.PROJECT_APPS_PATH,
                        }
             upload_template('/'.join(['woven','django-wsgi-template.txt']),
                                 filename,

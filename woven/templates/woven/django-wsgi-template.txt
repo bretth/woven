@@ -2,6 +2,11 @@
 import site
 site.addsitedir('{{ deployment_root }}/env/{{ project_name }}/lib/python2.6/site-packages')
 
+# Add in any optional local apps directly into the site-packages
+{% if project_apps_path %}
+site.addsitedir('{{ deployment_root }}/env/{{ project_name }}/project/{{ project_name }}/{{ project_apps_path }}')
+{% endif %}
+
 import sys, os
 
 os.environ['PATH'] = '{{ deployment_root }}/env/{{ project_name }}/bin:%s' % os.environ.get('PATH', '/bin:/usr/bin')
@@ -12,6 +17,7 @@ activate_this = '{{ deployment_root }}/env/{{ project_name }}/bin/activate_this.
 execfile(activate_this, dict(__file__=activate_this))
 
 # Set the DJANGO_SETTINGS_MODULE environment variable.
+# The project itself is symlinked into site-packages
 os.environ['DJANGO_SETTINGS_MODULE'] = "{{ project_name }}.sitesettings.{{ u_domain }}"
 
 import django.core.handlers.wsgi

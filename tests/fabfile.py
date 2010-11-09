@@ -417,7 +417,6 @@ def test_deploy_project():
     
 def test_deploy_static():
     deploy_teardown()
-
     
     #Test simple with no app media
     with settings(INSTALLED_APPS=[]):
