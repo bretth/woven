@@ -2,6 +2,15 @@
 Changelog
 ==========
 
+Release 0.6
+------------
+* added new setting PROJECT_APPS_PATH for local apps, so that you can put an apps folder in your project somewhere.
+
+Release 0.5.3 (9-Nov-2010)
+---------------------------
+* fix missing dist directory
+* fix trailing / in manifest
+
 Release 0.5.2 (7-Nov-2010)
 ----------------------------
 * fix missing import
