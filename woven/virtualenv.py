@@ -266,7 +266,8 @@ def pip_install_requirements():
     #deploy bundles and any local copy of django
     local_dir = os.path.join(os.getcwd(),'dist')
     remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'dist'])
-    if file_patterns: deployed += deploy_files(local_dir, remote_dir, pattern=file_patterns)
+    if os.path.exists(local_dir):  
+        if file_patterns: deployed += deploy_files(local_dir, remote_dir, pattern=file_patterns)
     
     #deploy any requirement files
     deployed +=  deploy_files(os.getcwd(), remote_dir, pattern = 'req*') 
