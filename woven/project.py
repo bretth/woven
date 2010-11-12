@@ -130,14 +130,14 @@ def deploy_static():
     Deploy static (application) versioned media
     """
     if (not env.STATIC_ROOT and not env.ADMIN_MEDIA_PREFIX) or 'http://' in env.STATIC_URL: return
+    elif 'http://' in env.ADMIN_MEDIA_PREFIX: return
         
     remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'static'])
     
     #if app media is not handled by django-staticfiles we can install admin media by default
     if 'django.contrib.admin' in env.INSTALLED_APPS and not env.STATIC_ROOT:
         if env.MEDIA_URL in env.ADMIN_MEDIA_PREFIX:
-            print "ERROR: Your ADMIN_MEDIA_PREFIX must not be on the same path as your MEDIA_URL"
-            print "for example you cannot use MEDIA_URL = /media/ and ADMIN_MEDIA_PREFIX = /media/admin/"
+            print "ERROR: Your ADMIN_MEDIA_PREFIX (Application media) must not be on the same path as your MEDIA_URL (User media)"
             sys.exit(1)
         env.STATIC_URL = env.ADMIN_MEDIA_PREFIX    
         admin = AdminMediaHandler('DummyApp')
@@ -145,8 +145,7 @@ def deploy_static():
         remote_dir =  ''.join([remote_dir,env.ADMIN_MEDIA_PREFIX])
     else:
         if env.MEDIA_URL in env.STATIC_URL:
-            print "ERROR: Your STATIC_URL must not be on the same path as your MEDIA_URL"
-            print "for example you cannot use MEDIA_URL = /media/ and STATIC_URL = /media/static/"
+            print "ERROR: Your STATIC_URL (Application media) must not be on the same path as your MEDIA_URL (User media)"
             sys.exit(1)
         elif env.STATIC_ROOT:
             local_dir = env.STATIC_ROOT
@@ -184,18 +183,35 @@ def deploy_db(rollback=False):
     """
     Deploy a sqlite database from development
     """
-    db_name = ''.join([env.project_name,'.db'])
-    db_dir = '/'.join([deployment_root(),'database'])
-    db_path = '/'.join([db_dir,db_name])
     if not rollback:
-        if env.DEFAULT_DATABASE_ENGINE=='django.db.backends.sqlite3' and not exists(db_path):
+
+        if env.DEFAULT_DATABASE_ENGINE=='django.db.backends.sqlite3':
             if env.verbosity:
-                print env.host,"DEPLOYING DEFAULT SQLITE DATABASE",db_path
-            if not os.path.exists(env.DEFAULT_DATABASE_NAME) or not env.DEFAULT_DATABASE_NAME:
-                print "ERROR: the database does not exist. Run python manage.py syncdb to create your database first."
+                print env.host,"DEPLOYING DEFAULT SQLITE DATABASE"
+            if not env.DEFAULT_DATABASE_NAME:
+                print "ERROR: A database engine has not been defined in your Django settings file"
                 sys.exit(1)
+            elif env.DEFAULT_DATABASE_ENGINE=='django.db.backends.':
+                print "ERROR: The default database engine has not been defined in your Django settings file"
+                sys.exit(1)
+            if env.DEFAULT_DATABASE_NAME[0] not in [os.path.sep,'.']: #relative path
+                db_path = os.path.join(os.getcwd(),env.project_name,env.DEFAULT_DATABASE_NAME)
+                print db_path
+            elif env.DEFAULT_DATABASE_NAME[:2] == '..':
+                print "ERROR: Use a full expanded path to the database in your Django settings"
+                sys.exit(1)
+            else:
+                db_path = env.DEFAULT_DATABASE_NAME
+
+            if not db_path or not os.path.exists(db_path):
+                print "ERROR: the database %s does not exist. \nRun python manage.py syncdb to create your database locally first, or check your settings."% db_path
+                sys.exit(1)
+            db_dir = '/'.join([deployment_root(),'database'])
+            db_name = os.path.split(db_path)[1]
+            dest_db_path = '/'.join([db_dir,env.project_name+'.db'])
+                
             run('mkdir -p '+db_dir)
-            put(env.DEFAULT_DATABASE_NAME,db_path)
+            put(db_path,dest_db_path)
             #directory and file must be writable by webserver
             sudo("chown -R %s:www-data %s"% (env.user,db_dir))
             sudo("chmod -R ug+w %s"% db_dir)
