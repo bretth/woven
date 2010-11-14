@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os,socket, sys
+import os, socket, sys
 
 from fabric.state import env, connections
 from fabric.context_managers import settings
@@ -35,143 +35,134 @@ def apt_get_purge(package):
     """
     sudo('apt-get purge -qqy %s'% package, pty=True)
     
-def change_ssh_port(rollback=False):
+def change_ssh_port():
     """
-    This would be the first function to be run to setup a server.
-    By changing the ssh port first we can test it to see if it has been
-    changed, and thus can reasonably assume that root has also been disabled
-    in a previous setupserver execution
+    For security woven changes the default ssh port.
     
-    Returns success or failure
     """
-    if env.ROOT_DISABLED: return
-    if not rollback:
-        after = env.port
-        before = str(env.DEFAULT_SSH_PORT)
-    else:
-        after = str(env.DEFAULT_SSH_PORT)
-        before = env.port
     host = normalize(env.host_string)[1]
-    host_string=join_host_strings('root',host,before)
+    host_state_path = os.path.join(os.getcwd(),'.woven',host)
+    with open(host_state_path,"r") as f:
+        ssh_state = f.read()
 
-    with settings(host_string=host_string, user='root', password=env.ROOT_PASSWORD):
+    after = env.port
+    before = str(env.DEFAULT_SSH_PORT)
+    if ssh_state == before: return
+    
+    host_string=join_host_strings(env.user,host,before)
+    with settings(host_string=host_string, user=env.user, password=env.ROOT_PASSWORD):
         if env.verbosity:
             print env.host, "CHANGING SSH PORT TO: "+str(after)
-        if not rollback:
-                try:
-                    #Both test the port and also the ubuntu version.
-                    distribution, version = ubuntu_version()
-                    #    print env.host, distribution, version
-                    if version < 9.10:
-                        print env.host, 'Woven is only compatible with Ubuntu versions 9.10 and greater'
-                        sys.exit(1)
-                except KeyboardInterrupt:
-                    if env.verbosity:
-                        print >> sys.stderr, "\nStopped."
-                    sys.exit(1)
-                except: #No way to catch the failing connection without catchall? 
-                    print env.host, "Warning: Default port not responding.\n * Setupnode may already have been run previously or the host is down. Skipping ssh port.."
-                    return False
-                sed('/etc/ssh/sshd_config','Port '+ str(before),'Port '+str(after),use_sudo=True)
-                if env.verbosity:
-                    print env.host, "RESTARTING SSH on",after
-                sudo('/etc/init.d/ssh restart')
-                set_server_state('ssh_port_changed',object=str(before))
-                return True
-        else:
-            port = server_state('ssh_port_changed')
-            if port:
-                sed('/etc/ssh/sshd_config','Port '+ str(before),'Port '+str(after),use_sudo=True)
-                set_server_state('ssh_port_changed',delete=True)
-                sudo('/etc/init.d/ssh restart')
-                return True
-            return False
-        
+        sed('/etc/ssh/sshd_config','Port '+ str(before),'Port '+str(after),use_sudo=True)
+        if env.verbosity:
+            print env.host, "RESTARTING SSH on",after
+        with open(host_state_path,"w") as f:
+            f.write(before) 
+        sudo('/etc/init.d/ssh restart')
+        return True
 
-def disable_root(rollback=False):
+def disable_root():
     """
     Disables root and creates a new sudo user as specified by HOST_USER in your
     settings or your host_string
     
     The normal pattern for hosting is to get a root account which is then disabled.
-    If root is disabled as it is in the default ubuntu install then set
-    ROOT_DISABLED:True in your settings
     
     returns True on success
     """
-    if env.ROOT_DISABLED: return
+    
+    local_state = os.path.join(os.getcwd(),'.woven')
+    
     def enter_password():
-        password1 = prompt('Enter the password for %s:'% original_username)
+        password1 = prompt('Enter the password for %s:'% sudo_user)
         password2 = prompt('Re-enter the password:')
         if password1 <> password2:
             print env.host, 'The password was not the same'
             enter_password()
         return password1
-    if not rollback:
-        #TODO write a test in paramiko to see whether root has already been disabled
-        #Fabric doesn't have a way of detecting a login fail which would be the best way
-        #that we could assume that root has been disabled
-        #print env.host, 'settings:', env.host_string, env.user, env.port
-        original_username = env.user
-        original_password = env.get('HOST_PASSWORD','')
-        (olduser,host,port) = normalize(env.host_string)
-        host_string=join_host_strings('root',host,str(port))
-        with settings(host_string=host_string,  password=env.ROOT_PASSWORD):
-            if not contains('sudo','/etc/group',use_sudo=True):
-                sudo('groupadd sudo')
-                set_server_state('sudo-added')
-            home_path = '/home/%s'% original_username
-            if not exists(home_path, use_sudo=True):
-                if env.verbosity:
-                    print env.host, 'CREATING A NEW ACCOUNT: %s'% original_username
-                
-                if not original_password:
 
-                    original_password = enter_password()
-                
-                add_user(username=original_username, password=original_password,group='sudo')
-                #adm group used by Ubuntu logs
-                sudo('usermod -a -G adm %s'% original_username)
-                #add user to /etc/sudoers
-                if not exists('/etc/sudoers.wovenbak',use_sudo=True):
-                    sudo('cp -f /etc/sudoers /etc/sudoers.wovenbak')
-                sudo('cp -f /etc/sudoers /tmp/sudoers.tmp')
-                append("# Members of the sudo group may gain root privileges", '/tmp/sudoers.tmp', use_sudo=True)
-                append("%sudo ALL=(ALL) ALL", '/tmp/sudoers.tmp', use_sudo=True)
-                sudo('visudo -c -f /tmp/sudoers.tmp')
-                sudo('cp -f /tmp/sudoers.tmp /etc/sudoers')
-                sudo('rm -rf /tmp/sudoers.tmp')
-            #Add existing user to sudo group
-            else:
-                sudo('adduser %s sudo'% original_username)
-        env.password = original_password
-        #finally disable root
+    #first we need to make sure this host has not already been done.
+    (olduser,host,port) = normalize(env.host_string)
+    #We'll use a directory of host files to store local state
+    #This should simplify multi-process implementation when fabric gets it
+    if not os.path.exists(local_state):
+        os.mkdir(local_state)
+    host_state={}
+    host_state_path = os.path.join(local_state,host)
+    #a created file means root disabled and user created
+    if os.path.exists(host_state_path): return 
+    if env.verbosity and not (env.HOST_USER or env.ROLEDEFS):
+    
+        print "\nWOVEN will walk through setting up your node (host)."
+        print " * A local folder in your project '.woven' will be created."
+        print " * Inside the folder a file for each host will be created."
+        if env.INTERACTIVE:
+            root_user = prompt("\nWhat is the default administrator account for your node?", default=env.ROOT_USER)
+        else: root_user = env.ROOT_USER
+        if root_user == 'root': sudo_user = env.user
+        else: sudo_user = root_user
+        if env.INTERACTIVE:
+            sudo_user = prompt("What is the new or existing account you wish to use to setup and deploy to your node?", default=sudo_user)
+           
+    else:
+        root_user = env.ROOT_USER
+        sudo_user = env.user
+        
+
+    original_password = env.get('HOST_PASSWORD','')
+    
+    host_string=join_host_strings(root_user,host,str(env.DEFAULT_SSH_PORT))
+    with settings(host_string=host_string,  password=env.ROOT_PASSWORD):
+        distribution, version = ubuntu_version()
+        #    print env.host, distribution, version
+        if version < 9.10:
+            print env.host, 'ERROR: Woven is only compatible with Ubuntu versions 9.10 and greater'
+            sys.exit(1)
         if env.verbosity:
-            print env.host, 'DISABLING ROOT'
-        sudo("usermod -L %s"% 'root')
-        return True
-    else: #rollback to root
-        if not env.ROOT_PASSWORD:
-            env.ROOT_PASSWORD = enter_password()
-        run('echo %s:%s > /tmp/root_user.txt'% ('root',env.ROOT_PASSWORD))
-        sudo('chpasswd < /tmp/root_user.txt')
-        sudo('rm -rf /tmp/root_user.txt')
-        print "Closing connection %s"% env.host_string
-        connections[env.host_string].close()
-        original_username = env.user
-        (olduser,host,port) = normalize(env.host_string)
-        host_string=join_host_strings('root',host,str(env.port))
-        with settings(host_string=host_string,  password=env.ROOT_PASSWORD):
+            print "You will now be asked to re-enter your password to run administrative tasks."
+        if not contains('sudo','/etc/group',use_sudo=True):
+            sudo('groupadd sudo')
+            #set_server_state('sudo-added')
+        home_path = '/home/%s'% sudo_user
+        if not exists(home_path):
+            if env.verbosity:
+                print env.host, 'CREATING A NEW ACCOUNT WITH SUDO PRIVILEGE: %s'% sudo_user
+            
+            if not original_password:
+
+                original_password = enter_password()
+            
+            add_user(username=sudo_user, password=original_password,group='sudo')
+            #adm group used by Ubuntu logs
+            sudo('usermod -a -G adm %s'% sudo_user)
+            #add user to /etc/sudoers
+            if not exists('/etc/sudoers.wovenbak',use_sudo=True):
+                sudo('cp -f /etc/sudoers /etc/sudoers.wovenbak')
+            sudo('cp -f /etc/sudoers /tmp/sudoers.tmp')
+            append("# Members of the sudo group may gain root privileges", '/tmp/sudoers.tmp', use_sudo=True)
+            append("%sudo ALL=(ALL) ALL", '/tmp/sudoers.tmp', use_sudo=True)
+            sudo('visudo -c -f /tmp/sudoers.tmp')
+            sudo('cp -f /tmp/sudoers.tmp /etc/sudoers')
+            sudo('rm -rf /tmp/sudoers.tmp')
+        #Add existing user to sudo group
+        else:
+            sudo('adduser %s sudo'% sudo_user)
+    env.password = original_password
+    #finally disable root
+    host_string=join_host_strings(sudo_user,host,str(env.DEFAULT_SSH_PORT))
+    with settings(host_string=host_string):
+        if sudo_user <> root_user and root_user == 'root':
             if env.INTERACTIVE:
-                c_text = 'CAUTION: Woven will now delete the user %s and the home directory. \n'% original_username
-                c_text = 'Please ensure you can login as root before continuing.\n'
-                c_text += 'Do you wish to continue:'
-                proceed = confirm(c_text,default=False)
-            if not env.INTERACTIVE or proceed:
-                sudo('deluser --remove-home '+original_username)
-                if server_state('sudo-added'): #never true on default installation
-                    sudo('groupdel sudo')
-                    set_server_state('sudo-added',delete=True)
+                d_root = confirm("Disable the root account", default=True)
+            else: d_root = env.DISABLE_ROOT
+            if d_root:
+                if env.verbosity:
+                    print env.host, 'DISABLING ROOT'
+                sudo("usermod -L %s"% 'root')
+    
+    if env.verbosity and not os.path.exists(host_state_path):
+        open(host_state_path,"w").close()
+    return True
 
 def ubuntu_version():
     """
