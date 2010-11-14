@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-import json, os, string, sys
+import json, os, string, sys, tempfile
 from contextlib import nested
+from distutils.core import run_setup
 
 from django.utils.importlib import import_module
 
@@ -9,7 +10,7 @@ from fabric.contrib.files import exists, comment, contains, sed, append
 from fabric.decorators import runs_once, hosts
 from fabric.main import find_fabfile
 from fabric.network import normalize
-from fabric.operations import local, run, sudo, prompt
+from fabric.operations import local, run, sudo, prompt, get, put
 from fabric.state import _AttributeDict, env, output
         
 
@@ -21,9 +22,8 @@ woven_env = _AttributeDict({
 'HOST_PASSWORD':'',#optional
 
 #The first setup task is usually disabling the default root account and changing the ssh port.
-#If root is already disabled and the port changed. we assume the host_string user is already created and has sudo permissions
-
-'ROOT_DISABLED': False, #optional - also means the port has been changed to a new port.
+'ROOT_USER':'root', #optional - mostly the default administrative account is root
+'DISABLE_ROOT': False, #optional - disable the default administrative account
 'ROOT_PASSWORD':'', #optional - blank by default
 'DEFAULT_SSH_PORT':22, #optional - The default ssh port, prior to woven changing it. Defaults to 22
 'UFW_DISABLED':False, #optional - If some alternative firewall is already pre-installed
@@ -225,12 +225,15 @@ def set_env(settings=None, setup_dir=''):
     local_working_dir = os.path.split(fabfile_path)[0]
     env.fabfile = original_fabfile
     os.chdir(local_working_dir)
-
+    
+    setup = run_setup('setup.py',stop_after="init")
+    
     #project env variables for deployment
-    env.project_name = project_name()
-    env.project_full_version = local('python setup.py --version').rstrip()
+    env.project_name = setup.get_name() #project_name()
+    env.project_full_version = setup.get_version()#local('python setup.py --version').rstrip()
     env.project_version = _parse_project_version(env.project_full_version)
     env.project_fullname = '-'.join([env.project_name,env.project_version])
+    env.project_package_name = setup.packages[0]
     env.patch = False
 
     #We'll assume that if the settings aren't passed in we're running from a fabfile
@@ -307,6 +310,7 @@ def set_env(settings=None, setup_dir=''):
     
     #noinput
     if not hasattr(env,'INTERACTIVE'): env.INTERACTIVE=True
+    if not hasattr(env,'verbosity'): env.verbosity=1
     
     #South integration defaults
     env.nomigration = False
@@ -320,18 +324,6 @@ def set_env(settings=None, setup_dir=''):
     
 def patch_project():
     return env.patch
-
-def project_name():
-    """
-    Get the project name from the setup.py
-    """
-    project_name = local('python setup.py --name').rstrip()
-    return project_name
-
-def project_fullname(version=''):
-    project_fullname = project_name() + '-' + _parse_project_version(version)
-    return project_fullname
-
 
 def project_version(full_version):
     """
@@ -395,7 +387,13 @@ def set_server_state(name,object=None,delete=False):
     if not delete:
         sudo('touch /var/local/woven/%s'% state_name)
         if object:
-            sudo("echo '%s' > /var/local/woven/%s"% (json.dumps(object),state_name))
+            fd, file_path = tempfile.mkstemp()
+            f = os.fdopen(fd,'w')
+            f.write(json.dumps(object))
+            f.close()
+            put(file_path,'/tmp/%s'% state_name)
+            os.remove(file_path)
+            sudo('cp /tmp/%s /var/local/woven/%s'% (state_name,state_name))
     else:
         sudo('rm -f /var/local/woven/%s'% state_name)
     return state_name
@@ -411,14 +409,20 @@ def server_state(name, prefix=False):
     if not hasattr(env,'project_version'): env.project_version = ''
     full_name = '-'.join([name,env.project_name,env.project_version])
     state = State(full_name)
+    state_path = '/var/local/woven/%s'% full_name
     state.content = None
     state.failed = True
-    if not prefix and exists('/var/local/woven/%s'% full_name, use_sudo=True):
-        content = sudo('cat /var/local/woven/%s'% full_name).strip()
+    if not prefix and exists(state_path, use_sudo=True):
+        content = int(sudo('ls -s %s'% state_path).split()[0]) #get size
         state.name = full_name
         state.failed = False
         if content:
-            state.object = json.loads(content)
+            fd, file_path = tempfile.mkstemp()
+            os.close(fd)
+            get(state_path,file_path)
+            with open(file_path, "r") as f:
+                content = f.read()
+                state.object = json.loads(content)
     elif prefix:
         with settings(warn_only=True):
             current_state = sudo('ls /var/local/woven/%s*'% name)
