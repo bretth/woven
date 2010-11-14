@@ -10,8 +10,6 @@ from fabric.operations import run, sudo, put
 from fabric.context_managers import cd, settings, hide
 from fabric.contrib.files import exists
 from fabric.contrib.project import rsync_project
-#Required for a bug in 0.9
-from fabric.version import get_version
 
 from woven.environment import server_state, set_server_state
 
@@ -123,10 +121,7 @@ def deploy_files(local_dir, remote_dir, pattern = '',rsync_exclude=['*.pyc','.*'
         run(' '.join(['mkdir -pv',remote_staging_dir])).split('\n')
         created_list = [remote_staging_dir]
     
-    #bug in fabric 0.9 on rsync on alternate port fixed in 1.0
-    fab_vers = int(get_version(form='short')[0])
-    if fab_vers < 1: extra_opts = '--rsh="ssh -p%s"'% env.port
-    else: extra_opts = None
+    extra_opts = None
     
     #upload into remote staging
     rsync_project(local_dir=staging_dir,remote_dir=remote_staging_dir,extra_opts=extra_opts,exclude=rsync_exclude,delete=True)
