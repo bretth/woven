@@ -43,13 +43,18 @@ class Command(WovenCommand):
             default=False,
             help="Manage the database migration manually"
         ),
+        make_option('--overwrite',
+            action='store_true',
+            default=False,
+            help="Overwrite an existing installation"
+        ),
         
     )
     help = "Deploy the current version of your project"
     requires_model_validation = False
     
     def handle_host(self,*args, **options):
-        deploy()
+        deploy(overwrite=options.get('overwrite'))
         with settings(nomigration = options.get('nomigration'),
                       migration = options.get('migration'),
                       manualmigration = options.get('manualmigration')):
