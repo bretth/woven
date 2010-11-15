@@ -90,7 +90,11 @@ def disable_root():
     host_state={}
     host_state_path = os.path.join(local_state,host)
     #a created file means root disabled and user created
-    if os.path.exists(host_state_path): return 
+    if os.path.exists(host_state_path):
+        if env.verbosity:
+            print "%s detected for this host. \nSkipping user setup.."% host_state_path
+            print "Note: If you are setting up a host/node for the first time you should delete this file first"
+        return 
     if env.verbosity and not (env.HOST_USER or env.ROLEDEFS):
     
         print "\nWOVEN will walk through setting up your node (host)."
@@ -287,23 +291,14 @@ def restrict_ssh(rollback=False):
         sudo('/etc/init.d/ssh restart')
         
         # The user can modify the sshd_config file directly but we save
-        if env.INTERACTIVE and contains('#PasswordAuthentication no','/etc/ssh/sshd_config',use_sudo=True):
-            c_text = 'Woven will now remove password login from ssh, and use only your ssh key. \n'
-            c_text = c_text + 'CAUTION: please confirm that you can ssh %s@%s -p%s from a terminal without requiring a password before continuing.\n'% (env.user, env.host, env.port)
-            c_text += 'If you cannot login, press enter to rollback your sshd_config file'
+        if (env.DISABLE_SSH_PASSWORD or env.INTERACTIVE) and contains('#PasswordAuthentication no','/etc/ssh/sshd_config',use_sudo=True):
+            c_text = 'Would you like to disable password login and use only ssh key authentication'
             proceed = confirm(c_text,default=False)
     
-        if not env.INTERACTIVE or proceed:
+        if not env.INTERACTIVE or proceed or env.DISABLE_SSH_PASSWORD:
             #uncomments PasswordAuthentication no and restarts
             uncomment(sshd_config,'#(\s?)PasswordAuthentication(\s*)no',use_sudo=True)
             sudo('/etc/init.d/ssh restart')
-        else: #rollback
-            print env.host, 'Rolling back sshd_config to default and proceeding without passwordless login'
-            _restore_file('/etc/ssh/sshd_config', delete_backup=False)
-            sed('/etc/ssh/sshd_config','Port '+ str(env.DEFAULT_SSH_PORT),'Port '+str(env.HOST_SSH_PORT),use_sudo=True)
-            
-            sudo('/etc/init.d/ssh restart')
-            return False
         set_server_state('ssh_restricted')
         return True
     else: #Full rollback
