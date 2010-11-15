@@ -23,6 +23,7 @@ Within the root folder are the following::
    ~/.package_cache (Pip will cache packages here)
    ~/.staging (all rsynced files are staged here before copying to final destination for network efficiency)
    ~/--database (for sqlite if it is used)
+    |   |--example_project.db (will always be deployed as the [project-name].db)
     |--env (The root directory for all virtual environments)
         |--example_project (symlink to the current virtualenv version)
         |--example_project-0.1 (The virtualenv root for this version)
@@ -61,6 +62,11 @@ Woven keeps track of server state and other housekeeping functions using the
 
 Currently state is stored as a filename with or without content. This may change.
 
+Client-side state
+--------------------
 
+Woven keeps track of the initial setup of your node (host) using a client side file.
+A .woven folder is created in the project directory and a file with the name of the host is created.
 
+This behaviour will be deprecated when http://code.fabfile.org/issues/show/189 is implemented.
 

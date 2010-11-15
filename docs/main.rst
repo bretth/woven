@@ -17,7 +17,7 @@ They're pretty simple and transparent but Lets walk through some of the commands
 Starting the project
 --------------------
 
-This first bit doesn't have much to do with woven, and is more about personal preference in  setting up your development environment but lets walk through how I like to do it anyway. You must have git, pip, virtualenv and virtualenvwrapper installed and working before you can begin.
+This first bit of this feincms install doesn't have much to do with woven, and is more about personal preference in  setting up your development environment but lets walk through how I like to do it anyway. For this project you'll need git, pip, virtualenv and virtualenvwrapper installed and working before you can begin.
 
 ``mkvirtalenv pony-cms --no-site-packages``
 
@@ -172,6 +172,19 @@ Development
 ===========
 
 At the current version 0.5, Woven has implemented most of it's basic features, and is now aiming to stabilize the api and move from alpha to beta status. There still may be incompatibilities between version 0.5 and 0.6, but will endeavour to provide an upgrade path between versions until the a beta release.  The core highlevel functions setupnode, deploy, patch, and activate will not change.
+
+Testing
+--------
+Fabric doesn't appear to be compatible with standard python tests. Instead woven stores tests in a fabfile.py in the tests directory.
+
+Individual tests are split across multiple modules corresponding to the module they are testing.
+
+Tests require a vm to be setup with ``root`` login and password ``root`` on 192.168.188.10
+
+Tests can be run by ``fab test`` to run all tests or ``fab test_[modulename]`` to run all tests in the given test module (eg ``fab test_env``), or ``fab [full_test_name]`` to run an individual test from any test module.
+
+Contact
+=======
 
 The woven project is hosted on github at http://github.com/bretth/woven. Feature requests and bug reports are welcome.
 

@@ -19,14 +19,13 @@ Django settings.py. They are all optional.
     #for just ssh key security per host
     HOST_PASSWORD = '' 
     
-    #The first setup task is usually disabling the default root account and
-    #changing the ssh port. If root is already disabled and the port changed
-    #we assume the host_string user is already created and has sudo permissions
-    
-    ROOT_DISABLED = False #default 
-    ROOT_PASSWORD = ''
+    #The first setup task is usually disabling the default root account and changing the ssh port.
+    ROOT_USER = 'root', #optional - mostly the default administrative account is root
+    DISABLE_ROOT = False, #optional - disable the default administrative account
+    ROOT_PASSWORD = '', #optional - blank by default
     #The default ssh port, prior to woven changing it. Defaults to 22
     DEFAULT_SSH_PORT = 22 #default
+    DISABLE_SSH_PASSWORD = #optional - setting this to true will disable password login and use ssh keys only.
     #Firewall rules (note HOST_SSH_PORT/tcp is always allowed)
     UFW_RULES = ['allow 80/tcp','allow 443/tcp'] #default  
     ROLE_UFW_RULES = {} # eg {'postgresql':['allow 5432/tcp']}
@@ -49,9 +48,9 @@ Django settings.py. They are all optional.
         
     #Virtualenv/Pip
     DEPLOYMENT_ROOT = ''# defaults to /home/$USER. 
-    DJANGO_REQUIREMENT = '' #defaults to development django. A pip requirements string for the version of Django to install
+    DJANGO_REQUIREMENT = '' #defaults to your current django version. A pip requirements string for the version of Django to install
     PIP_REQUIREMENTS = [] # list of text pip requirements files (not pybundles). Defaults to any file in the setup.py directory with `req` prefix
-    # Note: Woven will look for optional pybundles matching the requirements in the dist directory - you can use the bundle management command to create these.
+    # Note: Woven will also look for pybundles matching the requirements in the dist directory - you can use the bundle management command to create these.
     
     PROJECT_APPS_PATH = '' #a relative path from the project package directory for any local apps. See also the wsgi template.
     
