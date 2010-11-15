@@ -195,10 +195,10 @@ def rmvirtualenv():
 @run_once_per_host_version    
 def pip_install_requirements():
     """
-    Install on current installed virtualenv version from a [dist/project name-version].pybundles or pip ``req.txt``|``requirements.txt``
+    Install on current installed virtualenv version from a pip bundle [dist/project name-version].zip or pip ``req.txt``|``requirements.txt``
     or a env.pip_requirements list.
     
-    By default it will look for a pybundle in the dist directory first then a requirements file.
+    By default it will look for a zip bundle in the dist directory first then a requirements file.
 
     
     The limitations of installing requirements are that you cannot point directly to packages
@@ -221,7 +221,7 @@ def pip_install_requirements():
         req_files = {}.fromkeys(env.PIP_REQUIREMENTS)
     
     for key in req_files:
-        bundle = ''.join([key.split('.')[0],'.pybundle'])
+        bundle = ''.join([key.split('.')[0],'.zip'])
         if os.path.exists(os.path.join('dist',bundle)):
             req_files[key] = bundle
 
@@ -256,7 +256,7 @@ def pip_install_requirements():
     req_files_list.insert(0,django_req)
     
     #patterns for bundles
-    if req_files: file_patterns = '|'.join([file_patterns,'req*.pybundle'])
+    if req_files: file_patterns = '|'.join([file_patterns,'req*.zip'])
 
     #create a pip cache & src directory
     cache =  '/'.join(['/home',env.user,'.package-cache'])
@@ -282,7 +282,7 @@ def pip_install_requirements():
                 if bundle: req=bundle
                 if env.verbosity:
                     print ' * installing',req
-                if '.pybundle' in req.lower():
+                if '.zip' in req.lower():
                     install = run('pip install %s -q --environment=%s --log=/home/%s/.pip/%s_pip_log.txt'%
                                   (req, python_path, env.user, req.replace('.','_')))
                 elif 'django' in req.lower():

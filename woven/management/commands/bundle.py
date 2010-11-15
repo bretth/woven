@@ -43,7 +43,7 @@ class Command(BaseCommand):
         if not os.path.exists(dist_dir):
             os.mkdir(dist_dir)
         for r in req_files:
-            bundle = ''.join([r.split('.')[0],'.pybundle'])
+            bundle = ''.join([r.split('.')[0],'.zip'])
             command = 'pip bundle -r %s %s/%s'% (r,dist_dir,bundle)
             if state.env.verbosity: print command
             if int(state.env.verbosity) < 2:
