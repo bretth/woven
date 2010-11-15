@@ -123,7 +123,7 @@ def disable_root():
             print env.host, 'ERROR: Woven is only compatible with Ubuntu versions 9.10 and greater'
             sys.exit(1)
         if env.verbosity:
-            print "You will now be asked to re-enter your password to run administrative tasks."
+            print "You may be asked to re-enter your password to run administrative tasks."
         if not contains('sudo','/etc/group',use_sudo=True):
             sudo('groupadd sudo')
             #set_server_state('sudo-added')
@@ -192,10 +192,10 @@ def install_packages(rollback = False,overwrite=False):
         packages = env.ROLE_PACKAGES.get(r,[])
         u = u | set(packages)
     if not u:
-        if env.verbosity and env.roles:
+        if env.verbosity and not packages:
             print "No custom packages defined for this role"
         u = env.HOST_BASE_PACKAGES + env.HOST_EXTRA_PACKAGES
-    if env.verbosity and env.roles:
+    if env.verbosity and packages:
         print "Role defines custom packages:",','.join(u)
     if not rollback:
         if env.verbosity:
