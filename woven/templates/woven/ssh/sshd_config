@@ -54,7 +54,7 @@ PermitEmptyPasswords no
 ChallengeResponseAuthentication no
 
 # Change to no to disable tunnelled clear text passwords
-# Woven changed default from yes to no
+# Woven uncomments this on demand
 #PasswordAuthentication no
 
 # Kerberos options
