@@ -121,10 +121,8 @@ def deploy_files(local_dir, remote_dir, pattern = '',rsync_exclude=['*.pyc','.*'
         run(' '.join(['mkdir -pv',remote_staging_dir])).split('\n')
         created_list = [remote_staging_dir]
     
-    extra_opts = None
-    
     #upload into remote staging
-    rsync_project(local_dir=staging_dir,remote_dir=remote_staging_dir,extra_opts=extra_opts,exclude=rsync_exclude,delete=True)
+    rsync_project(local_dir=staging_dir,remote_dir=remote_staging_dir,exclude=rsync_exclude,delete=True)
 
     #create the final destination
     created_dir_list = mkdirs(remote_dir, use_sudo)
