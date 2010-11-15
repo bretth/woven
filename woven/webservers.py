@@ -84,7 +84,17 @@ def _get_django_sites():
     if not env.sites and 'django.contrib.sites' in env.INSTALLED_APPS and deployed:
         with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_package_name,'sitesettings'])):
             venv = '/'.join([deployment_root(),'env',env.project_fullname,'bin','activate'])
-            output = run(' '.join(['source',venv,'&&',"./manage.py dumpdata sites"]))
+            #since this is the first time we run ./manage.py on the server it can be
+            #a point of failure for installations
+            with settings(warn_only=True):
+                output = run(' '.join(['source',venv,'&&',"./manage.py dumpdata sites"]))
+                if output.failed:
+                    print "ERROR: There was an error running ./manage.py on the node"
+                    print "See the troubleshooting docs for hints on how to diagnose deployment issues"
+                    if hasattr(output, 'stderr'):
+                        print output.stderr
+                    sys.exit(1)
+                    
             sites = json.loads(output)
             env.sites = {}
             for s in sites:
@@ -139,7 +149,7 @@ def deploy_wsgi():
     remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'wsgi'])
     deployed = []
     
-    #ensure path is also added to environment variables as well as wsgi
+    #ensure project apps path is also added to environment variables as well as wsgi
     if env.PROJECT_APPS_PATH:
         pap = '/'.join([deployment_root(),'env',
                         env.project_name,'project',env.project_package_name,env.PROJECT_APPS_PATH])
