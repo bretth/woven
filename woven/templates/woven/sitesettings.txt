@@ -1,11 +1,17 @@
+#Created from the sitesettings.txt template
+
 #Import global project settings
-from {{ project_name }}.settings import *
+from {{ project_package_name }}.settings import *
 
 #This module is the base for all production/staging sites
 
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
+#By default woven will deploy your development sqlite3 db using the name of the project.
+
+#If you would like to use another backend you should define the default settings
+#in your own sitesettings.txt template
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
@@ -20,7 +26,8 @@ DATABASES = {
 #Amend this if required
 SITE_ID = {{ site_id }}
 
-#Normally you won't need to amend these settings
+#Normally you shouldn't amend these settings.
+
 MEDIA_ROOT = '{{ deployment_root }}/public/'
 STATIC_ROOT = '{{ deployment_root }}/env/{{ project_name }}/static/'
 TEMPLATE_DIRS = ('{{ deployment_root }}/env/{{ project_name }}/templates/',

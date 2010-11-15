@@ -82,7 +82,7 @@ def _get_django_sites():
     """
     deployed = server_state('deploy_project')
     if not env.sites and 'django.contrib.sites' in env.INSTALLED_APPS and deployed:
-        with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_name,'sitesettings'])):
+        with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_package_name,'sitesettings'])):
             venv = '/'.join([deployment_root(),'env',env.project_fullname,'bin','activate'])
             output = run(' '.join(['source',venv,'&&',"./manage.py dumpdata sites"]))
             sites = json.loads(output)
@@ -102,7 +102,7 @@ def domain_sites():
         site_ids.sort()
         domains = []
         for id in site_ids:
-            sitesetting_path = os.path.join(env.project_name,'sitesettings',''.join([sites[id].replace('.','_'),'.py']))
+            sitesetting_path = os.path.join(env.project_package_name,'sitesettings',''.join([sites[id].replace('.','_'),'.py']))
             if os.path.exists(sitesetting_path):
                 domains.append(sites[id])
         env.domains = domains
@@ -142,7 +142,7 @@ def deploy_wsgi():
     #ensure path is also added to environment variables as well as wsgi
     if env.PROJECT_APPS_PATH:
         pap = '/'.join([deployment_root(),'env',
-                        env.project_name,'project',env.project_name,env.PROJECT_APPS_PATH])
+                        env.project_name,'project',env.project_package_name,env.PROJECT_APPS_PATH])
         pap = ''.join(['export PYTHONPATH=$PYTHONPATH:',pap])
         postactivate = '/'.join([deployment_root(),'env','postactivate'])
         if not exists(postactivate):
@@ -162,6 +162,7 @@ def deploy_wsgi():
             context = {"deployment_root":deployment_root(),
                        "user": env.user,
                        "project_name": env.project_name,
+                       "project_package_name": env.project_package_name,
                        "u_domain":u_domain,
                        "root_domain":env.root_domain,
                        "project_apps_path":env.PROJECT_APPS_PATH,

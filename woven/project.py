@@ -20,7 +20,7 @@ from woven.environment import deployment_root, _root_domain
 
 @runs_once
 def _make_local_sitesettings(overwrite=False):
-    local_settings_dir = os.path.join(os.getcwd(),env.project_name,'sitesettings')
+    local_settings_dir = os.path.join(os.getcwd(),env.project_package_name,'sitesettings')
     if not os.path.exists(local_settings_dir) or overwrite:
         if overwrite:
             shutil.rmtree(local_settings_dir,ignore_errors=True)
@@ -37,6 +37,7 @@ def _make_local_sitesettings(overwrite=False):
                 "site_id":"1",
                 "project_name": env.project_name,
                 "project_fullname": env.project_fullname,
+                "project_package_name": env.project_package_name,
                 "u_domain":u_domain,
                 "domain":root_domain,
                 "user":env.user},
@@ -50,12 +51,12 @@ def _make_local_sitesettings(overwrite=False):
         settings_file_path = os.path.join(local_settings_dir,''.join([u_domain,'.py']))
         if not os.path.exists(settings_file_path):
             f = open(settings_file_path, "w+")
-            f.write("from %s.sitesettings.settings import *"% env.project_name)
+            f.write("from %s.sitesettings.settings import *"% env.project_package_name)
             f.write("\nSITE_ID=1\n")
             f.close()
             #copy manage.py into that directory
-            manage_path = os.path.join(os.getcwd(),env.project_name,'manage.py')
-            dest_manage_path = os.path.join(os.getcwd(),env.project_name,'sitesettings','manage.py')
+            manage_path = os.path.join(os.getcwd(),env.project_package_name,'manage.py')
+            dest_manage_path = os.path.join(os.getcwd(),env.project_package_name,'sitesettings','manage.py')
             shutil.copy(manage_path, dest_manage_path)
     return
 
@@ -78,8 +79,8 @@ def deploy_project():
     created = deploy_files(local_dir, project_root, rsync_exclude=rsync_exclude)
     if not env.patch:
         #hook the project into sys.path - #TODO make the python version not fixed
-        link_name = '/'.join([deployment_root(),'env',env.project_fullname,'lib/python2.6/site-packages',env.project_name])
-        target = '/'.join([project_root,env.project_name])
+        link_name = '/'.join([deployment_root(),'env',env.project_fullname,'lib/python2.6/site-packages',env.project_package_name])
+        target = '/'.join([project_root,env.project_package_name])
         run(' '.join(['ln -s',target,link_name]))
     
     return created
@@ -89,8 +90,8 @@ def deploy_sitesettings():
     Deploy to the project directory in the virtualenv
     """
     
-    sitesettings = '/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_name,'sitesettings'])
-    local_dir = os.path.join(os.getcwd(),env.project_name,'sitesettings')
+    sitesettings = '/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_package_name,'sitesettings'])
+    local_dir = os.path.join(os.getcwd(),env.project_package_name,'sitesettings')
  
     created = deploy_files(local_dir, sitesettings)
     if env.verbosity and created:
@@ -186,17 +187,19 @@ def deploy_db(rollback=False):
     if not rollback:
 
         if env.DEFAULT_DATABASE_ENGINE=='django.db.backends.sqlite3':
+            db_dir = '/'.join([deployment_root(),'database'])
+            
+            dest_db_path = '/'.join([db_dir,env.project_name+'.db'])
+            if exists(dest_db_path): return
             if env.verbosity:
                 print env.host,"DEPLOYING DEFAULT SQLITE DATABASE"
             if not env.DEFAULT_DATABASE_NAME:
-                print "ERROR: A database engine has not been defined in your Django settings file"
+                print "ERROR: A database name has not been defined in your Django settings file"
                 sys.exit(1)
-            elif env.DEFAULT_DATABASE_ENGINE=='django.db.backends.':
-                print "ERROR: The default database engine has not been defined in your Django settings file"
-                sys.exit(1)
+
             if env.DEFAULT_DATABASE_NAME[0] not in [os.path.sep,'.']: #relative path
-                db_path = os.path.join(os.getcwd(),env.project_name,env.DEFAULT_DATABASE_NAME)
-                print db_path
+                db_path = os.path.join(os.getcwd(),env.project_package_name,env.DEFAULT_DATABASE_NAME)
+
             elif env.DEFAULT_DATABASE_NAME[:2] == '..':
                 print "ERROR: Use a full expanded path to the database in your Django settings"
                 sys.exit(1)
@@ -206,15 +209,18 @@ def deploy_db(rollback=False):
             if not db_path or not os.path.exists(db_path):
                 print "ERROR: the database %s does not exist. \nRun python manage.py syncdb to create your database locally first, or check your settings."% db_path
                 sys.exit(1)
-            db_dir = '/'.join([deployment_root(),'database'])
-            db_name = os.path.split(db_path)[1]
-            dest_db_path = '/'.join([db_dir,env.project_name+'.db'])
-                
+
+            db_name = os.path.split(db_path)[1]  
             run('mkdir -p '+db_dir)
             put(db_path,dest_db_path)
             #directory and file must be writable by webserver
             sudo("chown -R %s:www-data %s"% (env.user,db_dir))
             sudo("chmod -R ug+w %s"% db_dir)
+        
+        elif env.DEFAULT_DATABASE_ENGINE=='django.db.backends.':
+            print "ERROR: The default database engine has not been defined in your Django settings file"
+            print "At a minimum you must define an sqlite3 database for woven to deploy, or define a database that is managed outside of woven."
+            sys.exit(1)
     elif rollback and env.DEFAULT_DATABASE_ENGINE=='django.db.backends.sqlite3':
         if env.INTERACTIVE:
             delete = confirm('DELETE the database on the host?',default=False)

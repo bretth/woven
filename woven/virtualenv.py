@@ -105,7 +105,7 @@ def sync_db():
     """
     Runs the django syncdb command
     """
-    with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_name,'sitesettings'])):
+    with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_package_name,'sitesettings'])):
         venv = '/'.join([deployment_root(),'env',env.project_fullname,'bin','activate'])
         if env.verbosity:
             print " * python manage.py syncdb --noinput"
@@ -139,7 +139,7 @@ def migration():
     """
 
     #activate env        
-    with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_name,'sitesettings'])):
+    with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_package_name,'sitesettings'])):
         #migrates all or specific env.migration
         venv = '/'.join([deployment_root(),'env',env.project_fullname,'bin','activate'])
         cmdpt1 = ' '.join(['source',venv,'&&'])
@@ -171,7 +171,7 @@ def mkvirtualenv():
         dirs_created += mkdirs('egg_cache')
         sudo('chown -R %s:www-data egg_cache'% env.user)
         sudo('chmod -R g+w egg_cache')
-        run(''.join(["echo 'cd ",path,'/','project','/',env.project_name,'/sitesettings',"' > bin/postactivate"]))
+        run(''.join(["echo 'cd ",path,'/','project','/',env.project_package_name,'/sitesettings',"' > bin/postactivate"]))
         sudo('chmod ugo+rwx bin/postactivate')
 
     #Create a state
