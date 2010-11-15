@@ -40,7 +40,9 @@ def _make_local_sitesettings(overwrite=False):
                 "project_package_name": env.project_package_name,
                 "u_domain":u_domain,
                 "domain":root_domain,
-                "user":env.user},
+                "user":env,
+                "MEDIA_URL":env.MEDIA_URL,
+                "STATIC_URL":env.STATIC_URL}
             )
                     
         f = open(settings_file_path,"w+")

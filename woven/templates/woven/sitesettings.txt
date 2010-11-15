@@ -28,7 +28,7 @@ SITE_ID = {{ site_id }}
 
 #Normally you shouldn't amend these settings.
 
-MEDIA_ROOT = '{{ deployment_root }}/public/'
-STATIC_ROOT = '{{ deployment_root }}/env/{{ project_name }}/static/'
+MEDIA_ROOT = '{{ deployment_root }}/public/{{ MEDIA_URL|slice:"1:" }}'
+STATIC_ROOT = '{{ deployment_root }}/env/{{ project_name }}/static/{{ STATIC_URL|slice:"1:" }}'
 TEMPLATE_DIRS = ('{{ deployment_root }}/env/{{ project_name }}/templates/',
                 '{{ deployment_root }}/env/{{ project_name }}/templates/{{ domain }}',)
