@@ -26,6 +26,7 @@ woven_env = _AttributeDict({
 'DISABLE_ROOT': False, #optional - disable the default administrative account
 'ROOT_PASSWORD':'', #optional - blank by default
 'DEFAULT_SSH_PORT':22, #optional - The default ssh port, prior to woven changing it. Defaults to 22
+'DISABLE_SSH_PASSWORD': False, #optional - setting this to true will disable password login and use ssh keys only.
 'UFW_DISABLED':False, #optional - If some alternative firewall is already pre-installed
 'UFW_RULES':['allow 80/tcp','allow 443/tcp'], #optional - the default firewall rules (note ssh is always allowed)
 'ROLE_UFW_RULES':{},
@@ -219,7 +220,7 @@ def set_env(settings=None, setup_dir=''):
     else:
         fabfile_path = find_fabfile()
     if not fabfile_path:
-        print 'Error: You must have a setup.py file above your project directory'
+        print 'Error: You must create a setup.py file above your project/package directory'
         sys.exit(1)
         
     local_working_dir = os.path.split(fabfile_path)[0]
