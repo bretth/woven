@@ -2,7 +2,7 @@
 import os, socket, sys
 
 from fabric.state import env, connections
-from fabric.context_managers import settings
+from fabric.context_managers import settings, hide
 from fabric.operations import prompt, run, sudo, get, put
 from fabric.contrib.files import comment, uncomment, contains, exists, append, sed
 from fabric.contrib.console import confirm
@@ -41,14 +41,10 @@ def change_ssh_port():
     
     """
     host = normalize(env.host_string)[1]
-    host_state_path = os.path.join(os.getcwd(),'.woven',host)
-    with open(host_state_path,"r") as f:
-        ssh_state = f.read()
 
     after = env.port
     before = str(env.DEFAULT_SSH_PORT)
-    if ssh_state == before: return
-    
+
     host_string=join_host_strings(env.user,host,before)
     with settings(host_string=host_string, user=env.user, password=env.ROOT_PASSWORD):
         if env.verbosity:
@@ -56,10 +52,29 @@ def change_ssh_port():
         sed('/etc/ssh/sshd_config','Port '+ str(before),'Port '+str(after),use_sudo=True)
         if env.verbosity:
             print env.host, "RESTARTING SSH on",after
-        with open(host_state_path,"w") as f:
-            f.write(before) 
+
         sudo('/etc/init.d/ssh restart')
         return True
+
+def port_is_open():
+    """
+    Determine if the default port and user is open for business.
+    """
+    with settings(hide('aborts'), warn_only=True ):
+        try:
+            if env.verbosity:
+                print "Testing node for previous installation on port %s:"% env.port
+            distribution, version = ubuntu_version()
+        except KeyboardInterrupt:
+            if env.verbosity:
+                print >> sys.stderr, "\nStopped."
+            sys.exit(1)
+        except: #No way to catch the failing connection without catchall? 
+            return False
+        if version < 9.10:
+            print env.host, 'ERROR: Woven is only compatible with Ubuntu versions 9.10 and greater'
+            sys.exit(1)
+    return True
 
 def disable_root():
     """
@@ -71,8 +86,6 @@ def disable_root():
     returns True on success
     """
     
-    local_state = os.path.join(os.getcwd(),'.woven')
-    
     def enter_password():
         password1 = prompt('Enter the password for %s:'% sudo_user)
         password2 = prompt('Re-enter the password:')
@@ -81,26 +94,12 @@ def disable_root():
             enter_password()
         return password1
 
-    #first we need to make sure this host has not already been done.
     (olduser,host,port) = normalize(env.host_string)
-    #We'll use a directory of host files to store local state
-    #This should simplify multi-process implementation when fabric gets it
-    if not os.path.exists(local_state):
-        os.mkdir(local_state)
-    host_state={}
-    host_state_path = os.path.join(local_state,host)
-    
-    #a created file means root disabled and user created
-    if os.path.exists(host_state_path):
-        if env.verbosity:
-            print "%s detected for this host. \nSkipping user setup.."% host_state_path
-            print "Note: If you are setting up a host/node for the first time you should delete this file first"
-        return 
+ 
     if env.verbosity and not (env.HOST_USER or env.ROLEDEFS):
     
-        print "\nWOVEN will walk through setting up your node (host)."
-        print " * A local folder in your project '.woven' will be created."
-        print " * Inside the folder a file for each host will be created."
+        print "\nWOVEN will now walk through setting up your node (host).\n"
+
         if env.INTERACTIVE:
             root_user = prompt("\nWhat is the default administrator account for your node?", default=env.ROOT_USER)
         else: root_user = env.ROOT_USER
@@ -118,18 +117,7 @@ def disable_root():
     
     host_string=join_host_strings(root_user,host,str(env.DEFAULT_SSH_PORT))
     with settings(host_string=host_string,  password=env.ROOT_PASSWORD):
-        try:
-            distribution, version = ubuntu_version()
-        except KeyboardInterrupt:
-            if env.verbosity:
-                print >> sys.stderr, "\nStopped."
-            sys.exit(1)
-        except: #No way to catch the failing connection without catchall? 
-            print env.host, "Warning: Default port not responding.\n * Setupnode may already have been run previously or the host is down."
-            return False
-        if version < 9.10:
-            print env.host, 'ERROR: Woven is only compatible with Ubuntu versions 9.10 and greater'
-            sys.exit(1)
+
             
         if env.verbosity:
             print "You may be asked to re-enter your password to run administrative tasks."
@@ -172,10 +160,11 @@ def disable_root():
                 if env.verbosity:
                     print env.host, 'DISABLING ROOT'
                 sudo("usermod -L %s"% 'root')
-    
-    if env.verbosity and not os.path.exists(host_state_path):
-        open(host_state_path,"w").close()
+
     return True
+
+def skip_disable_root():
+    return env.root_disabled
 
 def _isOpen(host,port):
     """
@@ -210,6 +199,7 @@ def install_packages(rollback = False,overwrite=False):
     overwrite will allow existing configurations to be overwritten
     """
     u = set([])
+    packages = []
     for r in env.roles:
         packages = env.ROLE_PACKAGES.get(r,[])
         u = u | set(packages)
@@ -314,6 +304,7 @@ def restrict_ssh(rollback=False):
         
         # The user can modify the sshd_config file directly but we save
         if (env.DISABLE_SSH_PASSWORD or env.INTERACTIVE) and contains('#PasswordAuthentication no','/etc/ssh/sshd_config',use_sudo=True):
+            print "WARNING: You may want to test your node ssh login at this point ssh %s@%s -p%s"% (env.user, env.host, env.port)
             c_text = 'Would you like to disable password login and use only ssh key authentication'
             proceed = confirm(c_text,default=False)
     
