@@ -51,8 +51,8 @@ woven_env = _AttributeDict({
 'DJANGO_REQUIREMENT':'',#A pip requirements string for the version of Django to install
 
 #Application media
-'STATIC_URL':'', #optional
-'STATIC_ROOT':'', #optional
+'STATICFILES_URL':'', #optional
+'STATICFILES_ROOT':'', #optional
 
 #Database migrations
 'MANUAL_MIGRATION':False, #optional Manage database migrations manually
@@ -172,6 +172,25 @@ def _root_domain():
         env.root_domain = domain
     return env.root_domain
 
+def check_settings():
+    """
+    Validate the users settings conf prior to deploy
+    """
+    valid=True
+    if not env.MEDIA_ROOT or not env.MEDIA_URL:
+        print "MEDIA ERROR: You must define a MEDIA_ROOT & MEDIA_URL in your settings.py"
+        print "even if plan to deploy your media separately to your project"
+        valid = False
+    if not env.TEMPLATE_DIRS:
+        print "TEMPLATES_DIRS ERROR: You must define a TEMPLATES_DIRS in your settings.py"
+        valid=False
+    if env.DEFAULT_DATABASE_ENGINE in ['django.db.backends.','django.db.backends.dummy']:
+        print "DATABASE SETTINGS ERROR: The default database engine has not been defined in your settings.py file"
+        print "At a minimum you must define an sqlite3 database for woven to deploy,"
+        print "or define a database backend is managed outside of woven."    
+        valid=False
+    if not valid: sys.exit(1)
+
 def disable_virtualenvwrapper():
     """
     Hack to workaround an issue with virtualenvwrapper logging caused by Fabric sudo
@@ -206,14 +225,16 @@ def set_env(settings=None, setup_dir=''):
     integrate woven project django.conf settings into fabric, and set the local current
     working directory to the distribution root (where setup.py lives).
     
-    ``settings`` is your optional django.conf imported settings.
+    ``settings`` is your django settings module to pass in
+    if you want to call this from a fabric script.
     
     ``setup_dir`` is an optional path to the directory containing setup.py
     This would be used in instances where setup.py was not above the cwd
     
     This function is used to set the environment for all hosts
-
+   
     """
+
     #switch the working directory to the distribution root where setup.py is
     original_fabfile = env.fabfile
     env.fabfile = 'setup.py'
@@ -239,6 +260,7 @@ def set_env(settings=None, setup_dir=''):
     env.project_package_name = setup.packages[0]
     env.patch = False
 
+    #django settings are passed in by the command
     #We'll assume that if the settings aren't passed in we're running from a fabfile
     if not settings:
         sys.path.insert(0,local_working_dir)
@@ -246,17 +268,18 @@ def set_env(settings=None, setup_dir=''):
         #import global settings
         project_settings = import_module(env.project_name+'.settings')
     else:
+
         project_settings = settings
     
     #overwrite with main sitesettings module
-    #just for MEDIA_URL, ADMIN_MEDIA_PREFIX, and STATIC_URL
+    #just for MEDIA_URL, ADMIN_MEDIA_PREFIX, and STATICFILES_URL
     #if this settings file exists
     try:
         site_settings = import_module('.'.join([env.project_name,'sitesettings.settings']))
         project_settings.MEDIA_URL = site_settings.MEDIA_URL
         project_settings.ADMIN_MEDIA_PREFIX = site_settings.ADMIN_MEDIA_PREFIX
-        if hasattr(site_settings,'STATIC_URL'):
-            project_settings.STATIC_URL = site_settings.STATIC_URL
+        if hasattr(site_settings,'STATICFILES_URL'):
+            project_settings.STATICFILES_URL = site_settings.STATICFILES_URL
     except ImportError:
         pass
 
@@ -319,6 +342,8 @@ def set_env(settings=None, setup_dir=''):
     env.nomigration = False
     env.manualmigration = False
     env.migration = ''
+    
+    env.root_disabled = False
     
     #Sites
     env.sites = {}

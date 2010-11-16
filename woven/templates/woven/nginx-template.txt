@@ -18,15 +18,15 @@ server {
     }
     
 
-    {% if media_url %}
-    location {{ media_url }} {
+    {% if MEDIA_URL %}
+    location {{ MEDIA_URL }} {
             root  {{ deployment_root }}/public/; 
 
     }
     {% endif %}
     
-    {% if static_url %}
-    location {{ static_url }} {
+    {% if STATICFILES_URL %}
+    location {{ STATICFILES_URL }} {
             root  {{ deployment_root }}/env/{{ project_name }}/static/; 
 
     }    

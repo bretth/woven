@@ -26,9 +26,10 @@ DATABASES = {
 #Amend this if required
 SITE_ID = {{ site_id }}
 
-#Normally you shouldn't amend these settings.
-
+#Normally you shouldn't amend these settings, unless you have changed your local media settings
 MEDIA_ROOT = '{{ deployment_root }}/public/{{ MEDIA_URL|slice:"1:" }}'
-STATIC_ROOT = '{{ deployment_root }}/env/{{ project_name }}/static/{{ STATIC_URL|slice:"1:" }}'
+STATICFILES_ROOT = '{{ deployment_root }}/env/{{ project_name }}/static/{{ STATICFILES_URL|slice:"1:" }}'
+
+#The default layout allows for global templates with local site override
 TEMPLATE_DIRS = ('{{ deployment_root }}/env/{{ project_name }}/templates/',
                 '{{ deployment_root }}/env/{{ project_name }}/templates/{{ domain }}',)

@@ -42,7 +42,7 @@ def _make_local_sitesettings(overwrite=False):
                 "domain":root_domain,
                 "user":env,
                 "MEDIA_URL":env.MEDIA_URL,
-                "STATIC_URL":env.STATIC_URL}
+                "STATICFILES_URL":env.STATICFILES_URL}
             )
                     
         f = open(settings_file_path,"w+")
@@ -132,27 +132,27 @@ def deploy_static():
     """
     Deploy static (application) versioned media
     """
-    if (not env.STATIC_ROOT and not env.ADMIN_MEDIA_PREFIX) or 'http://' in env.STATIC_URL: return
+    if (not env.STATICFILES_ROOT and not env.ADMIN_MEDIA_PREFIX) or 'http://' in env.STATICFILES_URL: return
     elif 'http://' in env.ADMIN_MEDIA_PREFIX: return
         
     remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'static'])
     
     #if app media is not handled by django-staticfiles we can install admin media by default
-    if 'django.contrib.admin' in env.INSTALLED_APPS and not env.STATIC_ROOT:
-        if env.MEDIA_URL in env.ADMIN_MEDIA_PREFIX:
+    if 'django.contrib.admin' in env.INSTALLED_APPS and not env.STATICFILES_ROOT:
+        if env.MEDIA_URL and env.MEDIA_URL in env.ADMIN_MEDIA_PREFIX:
             print "ERROR: Your ADMIN_MEDIA_PREFIX (Application media) must not be on the same path as your MEDIA_URL (User media)"
             sys.exit(1)
-        env.STATIC_URL = env.ADMIN_MEDIA_PREFIX    
+        env.STATICFILES_URL = env.ADMIN_MEDIA_PREFIX    
         admin = AdminMediaHandler('DummyApp')
         local_dir = admin.media_dir
         remote_dir =  ''.join([remote_dir,env.ADMIN_MEDIA_PREFIX])
     else:
-        if env.MEDIA_URL in env.STATIC_URL:
-            print "ERROR: Your STATIC_URL (Application media) must not be on the same path as your MEDIA_URL (User media)"
+        if env.MEDIA_URL and env.MEDIA_URL in env.STATICFILES_URL:
+            print "ERROR: Your STATICFILES_URL (Application media) must not be on the same path as your MEDIA_URL (User media)"
             sys.exit(1)
-        elif env.STATIC_ROOT:
-            local_dir = env.STATIC_ROOT
-            static_url = env.STATIC_URL[1:]
+        elif env.STATICFILES_ROOT:
+            local_dir = env.STATICFILES_ROOT
+            static_url = env.STATICFILES_URL[1:]
             if static_url:
                 remote_dir = '/'.join([remote_dir,static_url])
         else: return
@@ -161,11 +161,11 @@ def deploy_static():
     return deploy_files(local_dir,remote_dir)
 
 @run_once_per_host_version       
-def deploy_public():
+def deploy_media():
     """
     Deploy MEDIA_ROOT unversioned on host
     """
-    if not env.MEDIA_ROOT or 'http://' in env.MEDIA_URL: return
+    if not env.MEDIA_URL or not env.MEDIA_ROOT or 'http://' in env.MEDIA_URL: return
     local_dir = env.MEDIA_ROOT
     
     remote_dir = '/'.join([deployment_root(),'public']) 
@@ -173,7 +173,7 @@ def deploy_public():
     if media_url:
         remote_dir = '/'.join([remote_dir,media_url])
     if env.verbosity:
-        print env.host,"DEPLOYING public",remote_dir    
+        print env.host,"DEPLOYING media",remote_dir    
     deployed = deploy_files(local_dir,remote_dir)
     
     #make writable for www-data for file uploads

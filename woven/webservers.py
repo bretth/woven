@@ -29,9 +29,9 @@ def _deploy_webconf(remote_dir,template):
     
     if not 'http:' in env.MEDIA_URL: media_url = env.MEDIA_URL
     else: media_url = ''
-    if not 'http:' in env.STATIC_URL: static_url = env.STATIC_URL
-    else: static_url = ''
-    if not static_url: static_url = env.ADMIN_MEDIA_PREFIX
+    if not 'http:' in env.STATICFILES_URL: staticfiles_url = env.STATICFILES_URL
+    else: staticfiles_url = ''
+    if not staticfiles_url: staticfiles_url = env.ADMIN_MEDIA_PREFIX
     log_dir = '/'.join([deployment_root(),'log'])
     deployed = []
     domains = domain_sites()
@@ -47,8 +47,8 @@ def _deploy_webconf(remote_dir,template):
                     "root_domain":env.root_domain,
                     "user":env.user,
                     "host_ip":socket.gethostbyname(env.host),
-                    "media_url":media_url,
-                    "static_url":static_url,
+                    "MEDIA_URL":media_url,
+                    "STATICFILES_URL":staticfiles_url,
                     }
 
         upload_template('/'.join(['woven',template]),
