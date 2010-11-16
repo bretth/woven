@@ -131,7 +131,8 @@ def deploy_webconf():
             print env.host,"DEPLOYING webconf:"
         if not exists(log_dir):
             run('ln -s /var/log log')
-
+        #deploys confs for each domain based on sites app
+        #Uses the default sitesettings.settings file default database to determine the sites
         deployed += _deploy_webconf('/etc/apache2/sites-available','django-apache-template.txt')
         deployed += _deploy_webconf('/etc/nginx/sites-available','nginx-template.txt')
         upload_template('woven/maintenance.html','/var/www/nginx-default/maintenance.html',use_sudo=True)
