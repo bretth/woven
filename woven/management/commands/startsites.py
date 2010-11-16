@@ -36,6 +36,7 @@ class Command(WovenCommand):
                 sitesetting_path = os.path.join(state.env.project_name,'sitesettings',''.join([sites[id].replace('.','_'),'.py']))
                 if not os.path.exists(sitesetting_path):
                     f = open(sitesetting_path, "w+")
+                    f.write("#Any site specific settings should be stored here \n")
                     f.write("from %s.sitesettings.settings import *"% state.env.project_name)
                     f.write("\nSITE_ID=%s\n"% str(id))
                     f.close()
