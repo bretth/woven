@@ -307,7 +307,6 @@ def pip_install_requirements():
                 else:
                     install = run('pip install -q --environment=%s --src=%s --download-cache=%s --requirement=%s --log=/home/%s/.pip/%s_pip_log.txt'%
                                   (python_path,src,cache,req, env.user,req.replace('.','_')))
-
                 if install.failed:
                     out.failed =True
                     out.stderr += ' '.join([env.host, "ERROR INSTALLING",req,'\n'])
@@ -318,7 +317,7 @@ def pip_install_requirements():
     
     out.object = deployed
               
-    if install.failed:
+    if out.failed:
         print out.stderr
         sys.exit(1)
     return out
