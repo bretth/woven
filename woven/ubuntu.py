@@ -89,6 +89,7 @@ def disable_root():
         os.mkdir(local_state)
     host_state={}
     host_state_path = os.path.join(local_state,host)
+    
     #a created file means root disabled and user created
     if os.path.exists(host_state_path):
         if env.verbosity:
@@ -117,11 +118,19 @@ def disable_root():
     
     host_string=join_host_strings(root_user,host,str(env.DEFAULT_SSH_PORT))
     with settings(host_string=host_string,  password=env.ROOT_PASSWORD):
-        distribution, version = ubuntu_version()
-        #    print env.host, distribution, version
+        try:
+            distribution, version = ubuntu_version()
+        except KeyboardInterrupt:
+            if env.verbosity:
+                print >> sys.stderr, "\nStopped."
+            sys.exit(1)
+        except: #No way to catch the failing connection without catchall? 
+            print env.host, "Warning: Default port not responding.\n * Setupnode may already have been run previously or the host is down."
+            return False
         if version < 9.10:
             print env.host, 'ERROR: Woven is only compatible with Ubuntu versions 9.10 and greater'
             sys.exit(1)
+            
         if env.verbosity:
             print "You may be asked to re-enter your password to run administrative tasks."
         if not contains('sudo','/etc/group',use_sudo=True):
@@ -167,6 +176,19 @@ def disable_root():
     if env.verbosity and not os.path.exists(host_state_path):
         open(host_state_path,"w").close()
     return True
+
+def _isOpen(host,port):
+    """
+    Determine if a host port is open
+    """
+    ip = socket.gethostbyname(host)
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.connect((ip, int(port)))
+        s.shutdown(2)
+        return True
+    except:
+        return False
 
 def ubuntu_version():
     """
