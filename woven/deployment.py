@@ -126,6 +126,9 @@ def deploy_files(local_dir, remote_dir, pattern = '',rsync_exclude=['*.pyc','.*'
 
     #create the final destination
     created_dir_list = mkdirs(remote_dir, use_sudo)
+    
+    #
+    if not os.listdir(staging_dir): return created_list
 
     func = use_sudo and sudo or run
     #cp recursively -R from the staging to the destination and keep a list
