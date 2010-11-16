@@ -24,8 +24,8 @@ Basic Usage::
 
 Lets go through what this actually does:
 
-1. Changes the default ssh port to 10022
-2. Creates the new `user` and disables the `root` user
+1. Creates the new `user` and disables the `root` user
+2. Changes the default ssh port to 10022
 3. Uploads your public ssh-key
 4. Restricts ssh login to the ssh-key and adds a few other restrictions
 5. Adds additional sources `universe` to sources.list
@@ -39,7 +39,7 @@ Lets go through what this actually does:
 bundle
 ------
 
-Pip bundle your requirements into .pybundles for efficient deployment
+Pip bundle your requirements into pip zip bundles for efficient deployment
 
 ``python manage.py bundle``
 
