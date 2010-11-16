@@ -200,17 +200,6 @@ def deployment_root():
 def get_project_version():
     return env.project_version
 
-def project_version_remove(version):
-    """
-    remove state for a given project or the full virtual env
-    """
-    virtualenv_path = '/'.join([deployment_root(),'env',env.project_fullname])
-    package_symlink = '/'.join([virtualenv_path,'lib/python2.6/site-packages',env.project_package_name])
-
-    sudo('rm -f /var/local/woven/*%s'% version)
-    run('rm -f %s'% package_symlink)
-    run('rm -rf %s'% virtualenv_path)
-
 def set_env(settings=None, setup_dir=''):
     """
     Used in management commands or at the module level of a fabfile to

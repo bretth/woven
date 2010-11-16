@@ -15,7 +15,7 @@ from fabric.contrib.console import confirm
 
 from woven.deployment import mkdirs, run_once_per_host_version, deploy_files
 from woven.environment import deployment_root,set_server_state, server_state, State
-from woven.webservers import _ls_sites, stop_webservers, start_webservers, domain_sites
+from woven.webservers import _get_django_sites, _ls_sites, stop_webservers, start_webservers, domain_sites
 from fabric.contrib.files import append
 
 def active_version():
@@ -107,11 +107,18 @@ def sync_db():
     """
     with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_package_name,'sitesettings'])):
         venv = '/'.join([deployment_root(),'env',env.project_fullname,'bin','activate'])
-        if env.verbosity:
-            print " * python manage.py syncdb --noinput"
-        output = run(' '.join(['source',venv,'&&',"./manage.py syncdb --noinput"]))
-        if env.verbosity:
-            print output
+        sites = _get_django_sites()
+        site_ids = sites.keys()
+        site_ids.sort()
+        for site in site_ids:
+            site_settings = '.'.join([env.project_package_name,'sitesettings',sites[site].replace('.','_')])
+            site_settings_py = '.'.join([sites[site].replace('.','_'),'py'])
+            if not exists(site_settings_py): continue
+            if env.verbosity:
+                print " * python manage.py syncdb --noinput --settings=%s"% site_settings
+            output = run(' '.join(['source',venv,'&&',"./manage.py syncdb --noinput --settings=%s"% site_settings]))
+            if env.verbosity:
+                print output
 
 @runs_once
 def manual_migration():
@@ -143,13 +150,21 @@ def migration():
         #migrates all or specific env.migration
         venv = '/'.join([deployment_root(),'env',env.project_fullname,'bin','activate'])
         cmdpt1 = ' '.join(['source',venv,'&&'])
-        cmdpt2 = ' '.join(["python manage.py migrate",env.migration])
         
-        if hasattr(env,"fakemigration"):
-            cmdpt2 = ' '.join([cmdpt2,'--fake'])
-        if env.verbosity:
-            print " *", cmdpt2
-        output = run(' '.join([cmdpt1,cmdpt2]))
+        sites = _get_django_sites()
+        site_ids = sites.keys()
+        site_ids.sort()
+        for site in site_ids:
+            site_settings = '.'.join([env.project_package_name,'sitesettings',sites[site].replace('.','_')])
+            site_settings_py = '.'.join([sites[site].replace('.','_'),'py'])
+            if not exists(site_settings_py): continue
+            cmdpt2 = ' '.join(["python manage.py migrate",env.migration])
+            if hasattr(env,"fakemigration"):
+                cmdpt2 = ' '.join([cmdpt2,'--fake'])
+            cmdpt2 = ''.join([cmdpt2,'--settings=',site_settings])
+            if env.verbosity:
+                print " *", cmdpt2
+            output = run(' '.join([cmdpt1,cmdpt2]))
         if env.verbosity:
             print output
     return           
@@ -185,12 +200,13 @@ def rmvirtualenv():
     Remove the current or ``env.project_version`` environment and all content in it
     """
     path = '/'.join([deployment_root(),'env',env.project_fullname])
+    link = '/'.join([deployment_root(),'env',env.project_name])
     if server_state('mkvirtualenv'):
         sudo(' '.join(['rm -rf',path]))
+        sudo(' '.join(['rm -f',link]))
+        sudo('rm -f /var/local/woven/*%s'% env.project_fullname)
         set_server_state('mkvirtualenv',delete=True)
-    #If there are no further remaining envs we'll delete the home directory to effectively teardown the project
-    if not server_state('mkvirtualenv',prefix=True):
-        sudo('rm -rf '+deployment_root())        
+      
 
 @run_once_per_host_version    
 def pip_install_requirements():

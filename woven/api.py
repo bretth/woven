@@ -5,7 +5,7 @@ The full public woven api
 from woven.deployment import deploy_files, mkdirs
 from woven.deployment import upload_template, run_once_per_host_version
 
-from woven.environment import deployment_root, set_env, patch_project, get_project_version, project_version_remove, server_state, set_server_state
+from woven.environment import deployment_root, set_env, patch_project, get_project_version, server_state, set_server_state
 
 from woven.project import deploy_static, deploy_public, deploy_project, deploy_db, deploy_templates
 
@@ -25,7 +25,7 @@ def deploy(overwrite=False):
     deploy a versioned project on the host
     """
     if overwrite:
-        project_version_remove(get_project_version())
+        rmvirtualenv()
     deploy_funcs = [deploy_project,deploy_templates, deploy_static, deploy_public,  deploy_webconf, deploy_wsgi]
     if not patch_project() or overwrite:
         deploy_funcs = [deploy_db,mkvirtualenv,pip_install_requirements] + deploy_funcs
