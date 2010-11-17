@@ -254,7 +254,7 @@ def pip_install_requirements():
         
     #determine the django version
     file_patterns =''
-    if 'file://' in env.DJANGO_REQUIREMENT:
+    if 'file://' in env.DJANGO_REQUIREMENT: 
         django_req = os.path.split(env.DJANGO_REQUIREMENT.replace('file://',''))[1]
         file_patterns = ''.join([django_req])
 
@@ -298,26 +298,25 @@ def pip_install_requirements():
                 if bundle: req=bundle
                 if env.verbosity:
                     print ' * installing',req
-                if '.zip' in req.lower():
+                if 'django' in req.lower():
+                    install = run('pip install %s -q --environment=%s --src=%s --download-cache=%s --log=/home/%s/.pip/django_pip_log.txt'%
+                                  (req, python_path, src, cache, env.user))  
+
+                elif '.zip' in req.lower():
                     install = run('pip install %s -q --environment=%s --log=/home/%s/.pip/%s_pip_log.txt'%
                                   (req, python_path, env.user, req.replace('.','_')))
-                elif 'django' in req.lower():
-                    install = run('pip install %s -q --environment=%s --src=%s --download-cache=%s --log=/home/%s/.pip/django_pip_log.txt'%
-                                  (req, python_path, src, cache, env.user))                    
+                  
                 else:
                     install = run('pip install -q --environment=%s --src=%s --download-cache=%s --requirement=%s --log=/home/%s/.pip/%s_pip_log.txt'%
                                   (python_path,src,cache,req, env.user,req.replace('.','_')))
                 if install.failed:
                     out.failed =True
                     out.stderr += ' '.join([env.host, "ERROR INSTALLING",req,'\n'])
-                    
-                    #fabric 1.0
-                    if hasattr(install,'stderr'):
-                        out.stderr = '\n'.join([out.stderr,install.stderr])
     
     out.object = deployed
               
     if out.failed:
         print out.stderr
+        print "Review the pip install logs at %s/.pip and re-deploy"% deployment_root()
         sys.exit(1)
     return out
