@@ -42,7 +42,7 @@ def _make_local_sitesettings(overwrite=False):
                 "domain":root_domain,
                 "user":env,
                 "MEDIA_URL":env.MEDIA_URL,
-                "STATICFILES_URL":env.STATICFILES_URL}
+                "STATIC_URL":env.STATIC_URL}
             )
                     
         f = open(settings_file_path,"w+")
@@ -132,27 +132,27 @@ def deploy_static():
     """
     Deploy static (application) versioned media
     """
-    if (not env.STATICFILES_ROOT and not env.ADMIN_MEDIA_PREFIX) or 'http://' in env.STATICFILES_URL: return
+    if (not env.STATIC_ROOT and not env.ADMIN_MEDIA_PREFIX) or 'http://' in env.STATIC_URL: return
     elif 'http://' in env.ADMIN_MEDIA_PREFIX: return
         
     remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'static'])
     
     #if app media is not handled by django-staticfiles we can install admin media by default
-    if 'django.contrib.admin' in env.INSTALLED_APPS and not env.STATICFILES_ROOT:
+    if 'django.contrib.admin' in env.INSTALLED_APPS and not env.STATIC_ROOT:
         if env.MEDIA_URL and env.MEDIA_URL in env.ADMIN_MEDIA_PREFIX:
             print "ERROR: Your ADMIN_MEDIA_PREFIX (Application media) must not be on the same path as your MEDIA_URL (User media)"
             sys.exit(1)
-        env.STATICFILES_URL = env.ADMIN_MEDIA_PREFIX    
+        env.STATIC_URL = env.ADMIN_MEDIA_PREFIX    
         admin = AdminMediaHandler('DummyApp')
         local_dir = admin.media_dir
         remote_dir =  ''.join([remote_dir,env.ADMIN_MEDIA_PREFIX])
     else:
-        if env.MEDIA_URL and env.MEDIA_URL in env.STATICFILES_URL:
-            print "ERROR: Your STATICFILES_URL (Application media) must not be on the same path as your MEDIA_URL (User media)"
+        if env.MEDIA_URL and env.MEDIA_URL in env.STATIC_URL:
+            print "ERROR: Your STATIC_URL (Application media) must not be on the same path as your MEDIA_URL (User media)"
             sys.exit(1)
-        elif env.STATICFILES_ROOT:
-            local_dir = env.STATICFILES_ROOT
-            static_url = env.STATICFILES_URL[1:]
+        elif env.STATIC_ROOT:
+            local_dir = env.STATIC_ROOT
+            static_url = env.STATIC_URL[1:]
             if static_url:
                 remote_dir = '/'.join([remote_dir,static_url])
         else: return

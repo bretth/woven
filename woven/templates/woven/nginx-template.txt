@@ -25,8 +25,8 @@ server {
     }
     {% endif %}
     
-    {% if STATICFILES_URL %}
-    location {{ STATICFILES_URL }} {
+    {% if STATIC_URL %}
+    location {{ STATIC_URL }} {
             root  {{ deployment_root }}/env/{{ project_name }}/static/; 
 
     }    
