@@ -7,8 +7,6 @@ from fabric.operations import run, sudo
 from fabric.context_managers import cd, settings
 from fabric.contrib.files import append, contains, exists
 from fabric.decorators import runs_once
-#Required for a bug in 0.9
-from fabric.version import get_version
 
 from woven.deployment import deploy_files, mkdirs, run_once_per_host_version, upload_template
 from woven.environment import deployment_root, server_state, _root_domain
