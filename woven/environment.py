@@ -103,6 +103,7 @@ def _parse_project_version(version=''):
         return (finalvers,stage,stage_sep)
         
     v = version.split('.')
+    if len(v)==1: return v[0]
     major = v[0]
     minor = v[1]
     maint = ''
@@ -243,7 +244,7 @@ def set_env(settings=None, setup_dir=''):
     else:
         fabfile_path = find_fabfile()
     if not fabfile_path:
-        print 'Error: You must create a setup.py file above your project/package directory'
+        print 'Error: You must create a setup.py file in your distribution'
         sys.exit(1)
         
     local_working_dir = os.path.split(fabfile_path)[0]
@@ -251,6 +252,10 @@ def set_env(settings=None, setup_dir=''):
     os.chdir(local_working_dir)
     
     setup = run_setup('setup.py',stop_after="init")
+    print setup.get_version()
+    if setup.get_name() == 'UNKNOWN' or setup.get_version()=='0.0.0' or not setup.packages:
+        print "ERROR: You must define a minimum of name, version and packages in your setup.py"
+        sys.exit(1)
     
     #project env variables for deployment
     env.project_name = setup.get_name() #project_name()
