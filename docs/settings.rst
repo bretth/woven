@@ -17,7 +17,10 @@ Django settings.py. They are all optional.
     HOST_USER = ''
     #Since password login will normally be disabled you can define it here
     #for just ssh key security per host
-    HOST_PASSWORD = '' 
+    HOST_PASSWORD = ''
+    
+    #As per fabric KEY_FILENAME option to specify a path to an ssh key to use
+    SSH_KEY_FILENAME  = ''
     
     #The first setup task is usually disabling the default root account and changing the ssh port.
     ROOT_USER = 'root', #optional - mostly the default administrative account is root
