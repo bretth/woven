@@ -20,6 +20,7 @@ woven_env = _AttributeDict({
 'HOST_SSH_PORT':10022, #optional - the ssh port to be setup
 'HOST_USER':'', #optional - can be used in place of defining it elsewhere (ie host_string)
 'HOST_PASSWORD':'',#optional
+'SSH_KEY_FILENAME':'',#optional - as per fabric, a path to a key to use in place your local .ssh key 
 
 #The first setup task is usually disabling the default root account and changing the ssh port.
 'ROOT_USER':'root', #optional - mostly the default administrative account is root
@@ -341,6 +342,9 @@ def set_env(settings=None, setup_dir=''):
     env.TIME_ZONE = project_settings.TIME_ZONE
     #Used to detect certain apps eg South, static_builder
     env.INSTALLED_APPS = project_settings.INSTALLED_APPS
+    
+    #SSH key
+    if project_settings.SSH_KEY_FILENAME: env.KEY_FILENAME = project_settings.SSH_KEY_FILENAME
     
     #noinput
     if not hasattr(env,'INTERACTIVE'): env.INTERACTIVE=True
