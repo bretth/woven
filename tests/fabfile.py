@@ -25,7 +25,7 @@ from fabric.state import commands, env
 from woven.environment import set_env
 
 #import tests
-from env import test_env_server_state, test_env_parse_project_version, test_env_root_domain
+from env import test_env_set_env, test_env_server_state, test_env_parse_project_version, test_env_root_domain
 from ubu import test_ubu_disable_root, test_ubu_change_ssh_port
 
 #Set the environ for Django
