@@ -53,6 +53,10 @@ Basic Usage:
 
 ``python manage.py deploy [hoststring] [options]``
 
+*options*
+
+The ``--overwrite`` option will remove and re-deploy the entire project.
+
 *South migration options*
 
 deploy integrates with south if it is installed. By default *all* migrations are run.

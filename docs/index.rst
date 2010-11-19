@@ -16,9 +16,11 @@ Contents:
    :maxdepth: 2
 
    main
+   tutorial
    commands
    settings
    conventions
+   fabric
    troubleshooting
    changelog
    
