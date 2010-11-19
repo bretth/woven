@@ -236,7 +236,9 @@ def install_packages(rollback = False,overwrite=False):
                 preinstalled = True
 
             if package == 'apache2':
-                 sed('/etc/apache2/apache2.conf',before='KeepAlive On',after='KeepAlive Off',use_sudo=True)
+                sed('/etc/apache2/apache2.conf',before='KeepAlive On',after='KeepAlive Off',use_sudo=True)
+            elif package == 'nginx':
+                sudo("rm -f /etc/nginx/sites-enabled/default")
  
         #Install base python packages
         #We'll use easy_install at this stage since it doesn't download if the package
