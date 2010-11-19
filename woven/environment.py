@@ -51,8 +51,8 @@ woven_env = _AttributeDict({
 'DJANGO_REQUIREMENT':'',#A pip requirements string for the version of Django to install
 
 #Application media
-'STATICFILES_URL':'', #optional
-'STATICFILES_ROOT':'', #optional
+'STATIC_URL':'', #optional
+'STATIC_ROOT':'', #optional
 
 #Database migrations
 'MANUAL_MIGRATION':False, #optional Manage database migrations manually
@@ -252,7 +252,7 @@ def set_env(settings=None, setup_dir=''):
     os.chdir(local_working_dir)
     
     setup = run_setup('setup.py',stop_after="init")
-    print setup.get_version()
+
     if setup.get_name() == 'UNKNOWN' or setup.get_version()=='0.0.0' or not setup.packages:
         print "ERROR: You must define a minimum of name, version and packages in your setup.py"
         sys.exit(1)
@@ -277,14 +277,16 @@ def set_env(settings=None, setup_dir=''):
         project_settings = settings
     
     #overwrite with main sitesettings module
-    #just for MEDIA_URL, ADMIN_MEDIA_PREFIX, and STATICFILES_URL
+    #just for MEDIA_URL, ADMIN_MEDIA_PREFIX, and STATIC_URL
     #if this settings file exists
     try:
         site_settings = import_module('.'.join([env.project_name,'sitesettings.settings']))
         project_settings.MEDIA_URL = site_settings.MEDIA_URL
         project_settings.ADMIN_MEDIA_PREFIX = site_settings.ADMIN_MEDIA_PREFIX
-        if hasattr(site_settings,'STATICFILES_URL'):
-            project_settings.STATICFILES_URL = site_settings.STATICFILES_URL
+        if hasattr(site_settings,'STATIC_URL'):
+            project_settings.STATIC_URL = site_settings.STATIC_URL
+        else:
+            project_settings.STATIC_URL = project_settings.ADMIN_MEDIA_PREFIX
     except ImportError:
         pass
 
@@ -328,6 +330,7 @@ def set_env(settings=None, setup_dir=''):
     env.MEDIA_ROOT = project_settings.MEDIA_ROOT
     env.MEDIA_URL = project_settings.MEDIA_URL
     env.ADMIN_MEDIA_PREFIX = project_settings.ADMIN_MEDIA_PREFIX
+    if not env.STATIC_URL: env.STATIC_URL = project_settings.ADMIN_MEDIA_PREFIX
     env.TEMPLATE_DIRS = project_settings.TEMPLATE_DIRS
    
     #If sqlite is used we can manage the database on deployment
