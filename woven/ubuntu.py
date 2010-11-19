@@ -490,7 +490,13 @@ def upload_ssh_key(rollback=False):
     
         ssh_dsa = os.path.join(home,'.ssh/id_dsa.pub')
         ssh_rsa =  os.path.join(home,'.ssh/id_rsa.pub')
-        if os.path.exists(ssh_dsa):
+        if env.KEY_FILENAME:
+            if not os.path.exists(env.KEY_FILENAME):
+                print "ERROR: The specified KEY_FILENAME (or SSH_KEY_FILENAME) %s does not exist"% env.KEY_FILENAME
+                sys.exit(1)
+            else:
+                ssh_key = env.KEY_FILENAME
+        elif os.path.exists(ssh_dsa):
             ssh_key = ssh_dsa
         elif os.path.exists(ssh_rsa):
             ssh_key = ssh_rsa
