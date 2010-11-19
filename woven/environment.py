@@ -33,7 +33,7 @@ woven_env = _AttributeDict({
 'ROLE_UFW_RULES':{},
     
 #The default ubuntu packages that are setup. It is NOT recommended you change these:
-'HOST_BASE_PACKAGES':[
+'HOST_BASE_PACKAGES':['ufw', #firewall
         'subversion','git-core','mercurial','bzr', #version control
         'gcc','build-essential', 'python-dev', 'python-setuptools', #build
         'apache2','libapache2-mod-wsgi','nginx', #webservers
@@ -344,7 +344,7 @@ def set_env(settings=None, setup_dir=''):
     env.INSTALLED_APPS = project_settings.INSTALLED_APPS
     
     #SSH key
-    if project_settings.SSH_KEY_FILENAME: env.KEY_FILENAME = project_settings.SSH_KEY_FILENAME
+    if env.SSH_KEY_FILENAME: env.KEY_FILENAME = env.SSH_KEY_FILENAME
     
     #noinput
     if not hasattr(env,'INTERACTIVE'): env.INTERACTIVE=True
