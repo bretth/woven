@@ -28,7 +28,7 @@ woven_env = _AttributeDict({
 'ROOT_PASSWORD':'', #optional - blank by default
 'DEFAULT_SSH_PORT':22, #optional - The default ssh port, prior to woven changing it. Defaults to 22
 'DISABLE_SSH_PASSWORD': False, #optional - setting this to true will disable password login and use ssh keys only.
-'UFW_DISABLED':False, #optional - If some alternative firewall is already pre-installed
+'ENABLE_UFW':True, #optional - If some alternative firewall is already pre-installed
 'UFW_RULES':['allow 80/tcp','allow 443/tcp'], #optional - the default firewall rules (note ssh is always allowed)
 'ROLE_UFW_RULES':{},
     

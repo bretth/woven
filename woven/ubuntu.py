@@ -353,7 +353,8 @@ def setup_ufw(rollback=False):
     
     See Ubuntu Server documentation for more about UFW.
     """
-    if not rollback:
+    if not rollback and env.ENABLE_UFW:
+        
         #TODO - Optimize to store & compare existing rules to stop unecessary reloads
         #Should be able to do something with the ufw status command to store the rules
         #ufw_rules = sudo("ufw status | awk '/tcp|udp/ {print $1,$2,$3}'").split('\n')
