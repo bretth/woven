@@ -1,4 +1,4 @@
-<VirtualHost {{ host_ip }}:10080>
+<VirtualHost *:10080>
 
     #ServerAdmin 
 
