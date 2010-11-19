@@ -1,7 +1,7 @@
 Tutorial
 ========
 
-The very simplest project is the best way to illustrate how to get started with woven.
+A simple project is the best way to illustrate how to get started with woven.
 
 Starting the project
 --------------------
