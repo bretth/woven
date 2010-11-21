@@ -185,7 +185,7 @@ def run_once_per_host_version(func):
           
     return decorated
 
-def upload_template(filename,  destination,  context={},  use_sudo=False):
+def upload_template(filename,  destination,  context={},  use_sudo=False, backup=True):
     """
     Render and upload a template text file to a remote host using the Django
     template api. 
@@ -222,13 +222,14 @@ def upload_template(filename,  destination,  context={},  use_sudo=False):
 
     func = use_sudo and sudo or run
     # Back up any original file (need to do figure out ultimate destination)
-    to_backup = destination
-    with settings(hide('everything'), warn_only=True):
-        # Is destination a directory?
-        if func('test -f %s' % to_backup).failed:
-            # If so, tack on the filename to get "real" destination
-            to_backup = destination + '/' + basename
-    if exists(to_backup):
-        _backup_file(to_backup)
+    if backup:
+        to_backup = destination
+        with settings(hide('everything'), warn_only=True):
+            # Is destination a directory?
+            if func('test -f %s' % to_backup).failed:
+                # If so, tack on the filename to get "real" destination
+                to_backup = destination + '/' + basename
+        if exists(to_backup):
+            _backup_file(to_backup)
     # Actually move uploaded template to destination
     func("mv %s %s" % (temp_destination, destination))
