@@ -26,7 +26,9 @@ from woven.environment import set_env
 
 #import tests
 from env import test_env_set_env, test_env_server_state, test_env_parse_project_version, test_env_root_domain
+
 from ubu import test_ubu_disable_root, test_ubu_change_ssh_port, test_ubu_port_is_open
+from ubu import test_ubu_setup_ufw
 
 #Set the environ for Django
 settings_module = os.environ['DJANGO_SETTINGS_MODULE'] = 'example_project.settings'

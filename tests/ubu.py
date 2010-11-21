@@ -2,10 +2,13 @@ import os
 
 from fabric.api import *
 from fabric.contrib.files import uncomment, exists, comment, contains, append, sed
-from fabric.state import connections
+from fabric.state import connections, env
 from fabric.network import join_host_strings, normalize
 
-from woven.ubuntu import disable_root, change_ssh_port, port_is_open
+from woven.ubuntu import disable_root, change_ssh_port, port_is_open, setup_ufw
+from woven.ubuntu import apt_get_purge
+
+from woven.environment import server_state, set_server_state
 
 #Step 1 in Server setup process
 
@@ -83,15 +86,48 @@ def test_ubu_change_ssh_port():
     return
 
 def test_ubu_port_is_open():
-    result = port_is_open()
-    assert result
+    with settings(host_string='root@192.168.188.10:10022', user='root',password=env.ROOT_PASSWORD):
+        result = port_is_open()
+        assert result
+        
+        sudo("echo 'Debian vers \n \l'> /etc/issue.new")
+        sudo('cp -f /etc/issue /tmp/issue.bak')
+        sudo('mv -f /etc/issue.new /etc/issue')
+        
+        result = port_is_open()
+        
+        sudo ('cp -f /tmp/issue.bak /etc/issue')
     
-    sudo("echo 'Debian vers \n \l'> /etc/issue.new")
-    sudo('cp -f /etc/issue /tmp/issue.bak')
-    sudo('mv -f /etc/issue.new /etc/issue')
+def test_ubu_setup_ufw():
+    with settings(host_string='root@192.168.188.10', user='root',password='root'):
+
+        #tests
+        env.HOST_SSH_PORT = '22'
+        setup_ufw()
+        r = sudo('ufw status').strip()
+        assert 'woven' in r
+        assert 'ALLOW' in r
+        
+        with settings(warn_only=True):
+
+            sudo('ufw disable')
+            sudo('rm -f /etc/ufw/applications.d/woven')
+            sudo('rm -f /etc/ufw/applications.d/woven_project')
+            apt_get_purge('ufw')
+            set_server_state('ufw_installed',delete=True)
+        
+        #test change port
+        print "CHANGE PORT to add 10022"
+        env.HOST_SSH_PORT='22,10022'
+        setup_ufw()
+        r = sudo('ufw status verbose')
+        assert '22,10022' in r
+        assert '80,443' in r
+        #teardown
+        sudo('ufw disable')
+        sudo('rm -f /etc/ufw/applications.d/woven')
+        apt_get_purge('ufw')
+        set_server_state('ufw_installed',delete=True)
     
-    result = port_is_open()
-    
-    sudo ('cp -f /tmp/issue.bak /etc/issue')
     
     
