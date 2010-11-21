@@ -345,6 +345,7 @@ def set_env(settings=None, setup_dir=''):
     
     #SSH key
     if env.SSH_KEY_FILENAME: env.KEY_FILENAME = env.SSH_KEY_FILENAME
+    else: env.KEY_FILENAME = ''
     
     #noinput
     if not hasattr(env,'INTERACTIVE'): env.INTERACTIVE=True
