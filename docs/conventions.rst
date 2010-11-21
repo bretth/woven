@@ -1,7 +1,7 @@
 Conventions 
 ===========
 
-Woven will use the following conventions to layout your project on the target host, and uses some basic coventions on the local development machine
+Woven will use the following conventions to layout your project on the target host, and uses some basic coventions on the local development machine.
 
 In the following examples we are deploying a distribution ``example_distribution`` with the django project ``example_project`` to a site ``example.com``
 
@@ -51,10 +51,55 @@ While woven tries to be agnostic about your project layout there are some conven
         |--static  (actual location as defined in settings)
         |   |--(any application media here)
         |--templates (actual location as defined in settings)
-            |--template.html (global templates here)
+            |  #woven comes with a number of default templates in the distribution
+            |  #you can copy them and override them in your template directory.
+            |--woven 
+                 |--etc (optional - copy and override from woven package)
+                     |--apache2
+                         |--ports.conf
+                     |--init.d
+                         |--nginx
+                     |--nginx
+                         |--nginx.conf 
+                         |--proxy.conf
+                     |--ufw
+                         |--applications.d
+                             |--woven_project (optional - see notes*)
+                     |--ssh
+                         |--sshd_config
+                 |--django-apache-template.txt (sites conf)          
+                 |--django-wsgi-template.txt 
+                 |--maintenance.html
+                 |--nginx-template.txt (sites conf)
+                 |--requirements.txt
+                 |--sitesettings.txt (default sitesetting)
+                 |--ufw.txt (ssh firewall rules)
+                 |--ufw-woven_project.txt (project firewall rules)
+            |--[template.html] (global projecttemplates here)
             |--example.com
-                |--template.html (site override templates here)
+                |--[template.html] (site override templates here)
 
+**Notes:**
+
+*etc templates*
+
+Templates in the etc folder are uploaded using the following rules:
+
+- templates are uploaded from the project directory first, and if they don't exist the woven package installed templates as per the standard django template loader
+
+- If an etc package subdirectory exists on the node (eg apache2), all templates in the folder are uploaded.
+
+- If an etc subdirectory is not package related (eg init.d) the template will only be uploaded to overwrite an existing template.
+
+etc templates are uploaded each time setupnode is run
+
+*UFW firewall rules*
+
+UFW uses app templates defined in the `/etc/ufw/applications.d` directory. Woven uploads `ufw.txt` as `woven` in this directory to set the SSH firewall rules. Woven also uploads the `ufw-woven_project.txt` template as `woven_project` to define the application rules only ONCE when the node is setup. You can change this file prior to running setupnode for the first time.
+
+If you wish to override the firewall post setupnode you can either set UFW rules in your settings file or define a woven_project template in the applications.d folder. Use the existing woven_project template and change the ports as required.
+
+A current limitation is that you cannot delete rules through woven.
 
 Project Deployment Layout
 -------------------------

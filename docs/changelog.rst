@@ -14,11 +14,16 @@ Release 0.6
 * added new setting PROJECT_APPS_PATH for local apps, so that you can put an apps folder under your project folder. 
 * can now name your distribution differently from your project name
 * --overwrite option in deploy to completely remove an existing virtualenv
-* handles simple multi database, multi site migrations 
+* handles simple multi database, multi site migrations
+* added new setting SSH_KEY_FILENAME which maps to fabrics KEY_FILENAME
+* default webconf templates now listen on any ip (not fixed to one)
+* can set ufw port rules in a template `woven_project`
+* added ENABLE_UFW setting - defaults to true
 
 **Bug fixes**
 * fix an issue where you had to name your database after your project
-* fix an issue when there is no files in a directory to deploy 
+* fix an issue when there is no files in a directory to deploy
+* corrected the sitesettings template MEDIA_ROOT and STATIC_ROOT paths 
 
 Release 0.5.3 (9-Nov-2010)
 ---------------------------

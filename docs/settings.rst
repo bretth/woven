@@ -30,7 +30,8 @@ Django settings.py. They are all optional.
     DEFAULT_SSH_PORT = 22 #default
     DISABLE_SSH_PASSWORD = #optional - setting this to true will disable password login and use ssh keys only.
     #Firewall rules (note HOST_SSH_PORT/tcp is always allowed)
-    UFW_RULES = ['allow 80/tcp','allow 443/tcp'] #default  
+    ENABLE_UFW = True #default - setting this to false will disable UFW
+    UFW_RULES = ['80,443/tcp'] #default  
     ROLE_UFW_RULES = {} # eg {'postgresql':['allow 5432/tcp']}
     
     #The default ubuntu packages that are setup. It is NOT recommended you overwrite these
