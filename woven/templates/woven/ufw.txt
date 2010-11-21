@@ -1,0 +1,4 @@
+[woven]
+title=Woven
+description=Django deployment app
+ports={{ HOST_SSH_PORT }}/tcp
