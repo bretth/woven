@@ -2,8 +2,8 @@
 Changelog
 ==========
 
-Release 0.6
-------------
+Release 0.6 (22-Nov-2010)
+-----------------------
 
 **Changes from 0.5**
 * Bundles are now just .zip files instead of .pybundles. Just rename any existing .pybundles or re-run bundle
@@ -15,7 +15,7 @@ Release 0.6
 * can now name your distribution differently from your project name
 * --overwrite option in deploy to completely remove an existing virtualenv
 * handles simple multi database, multi site migrations
-* added new setting SSH_KEY_FILENAME which maps to fabrics KEY_FILENAME
+* added new setting SSH_KEY_FILENAME which maps to fabric's KEY_FILENAME
 * default webconf templates now listen on any ip (not fixed to one)
 * can set ufw port rules in a template `woven_project`
 * added ENABLE_UFW setting - defaults to true
