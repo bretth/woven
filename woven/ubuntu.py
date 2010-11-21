@@ -185,6 +185,7 @@ def ubuntu_version():
     """
     Get the version # of Ubuntu as a float
     """
+    if not exists('/etc/issue'): return 'UNKNOWN',0
     version = run('cat /etc/issue').split(' ')[:2]
     try:
         version[1] = float(version[1])
