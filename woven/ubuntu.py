@@ -71,9 +71,11 @@ def port_is_open():
             sys.exit(1)
         except: #No way to catch the failing connection without catchall? 
             return False
-        if version < 9.10:
+        if version < 9.10 and 'Ubuntu' in distribution:
             print env.host, 'ERROR: Woven is only compatible with Ubuntu versions 9.10 and greater'
             sys.exit(1)
+        elif distribution <> 'Ubuntu':
+            print env.host, 'WARNING: Woven has only been tested on Ubuntu >= 9.10. It may not work as expected on',distribution, version
     return True
 
 def disable_root():
