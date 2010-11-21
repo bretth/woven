@@ -465,6 +465,7 @@ def upload_etc():
     context = {'host_ip':socket.gethostbyname(env.host)}
     for t in etc_templates:
         dest = t.replace('woven','')
+        dest = t.replace('woven','',1)
         directory = os.path.split(dest)[0]
         if directory in ['/etc','/etc/init.d','/etc/init','/etc/logrotate.d','/etc/rsyslog.d']:
             #must be replacing an existing file
