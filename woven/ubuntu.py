@@ -347,7 +347,7 @@ def set_timezone(rollback=False):
         sudo('dpkg-reconfigure --frontend noninteractive tzdata')
     return True
 
-def setup_ufw(rollback=False):
+def setup_ufw():
     """
     Setup ufw and apply rules from settings UFW_RULES
     You can add rules and re-run setup_ufw but cannot delete rules or reset by script
@@ -355,42 +355,72 @@ def setup_ufw(rollback=False):
     
     See Ubuntu Server documentation for more about UFW.
     """
-    if not rollback and env.ENABLE_UFW:
-        
-        #TODO - Optimize to store & compare existing rules to stop unecessary reloads
-        #Should be able to do something with the ufw status command to store the rules
-        #ufw_rules = sudo("ufw status | awk '/tcp|udp/ {print $1,$2,$3}'").split('\n')
-        ufw = run("dpkg -l | grep '%s' | awk '{print $2}'").strip()
-        #It would be nice to handle an existing installation but until ufw can easily
-        #predefine rules in a conf we'll need to just mark it if woven installs it
-        if not ufw:
-            if env.verbosity:
-                print env.host, "INSTALLING & ENABLING FIREWALL ufw"
-            apt_get_install('ufw')
-            set_server_state('ufw_installed')
-        sudo('ufw allow %s/tcp'% env.port) #ssh port
-        u = set([])
-        if env.roles:
-            for r in env.roles:
-                u = u | set(env.ROLE_UFW_RULES.get(r,[]))
-            if not u: u = env.UFW_RULES
-        else:
-            u = env.UFW_RULES
-            
-        for rule in u:
-            if rule:
-                if env.verbosity:
-                    print ' *',rule
-                sudo('ufw '+rule)
+    if not env.ENABLE_UFW:
+        if env.verbosity:
+            print env.host, "ENABLE_UFW = False, skipping firewall setup..."
+        return
+    
+    #check for actual package
+    ufw = run("dpkg -l | grep 'ufw' | awk '{print $2}'").strip()
+    if not ufw:
+        if env.verbosity:
+            print env.host, "INSTALLING & ENABLING FIREWALL ufw"
+        apt_get_install('ufw')
+    ufw_state = server_state('ufw_installed')
+    if not ufw_state or ufw_state <> env.HOST_SSH_PORT:
+        if env.verbosity:
+            print env.host, "CONFIGURING FIREWALL ufw"
+        #upload basic woven (ssh) ufw app config
+        upload_template('/'.join(['woven','ufw.txt']),
+            '/etc/ufw/applications.d/woven',
+            {'HOST_SSH_PORT':env.HOST_SSH_PORT},
+            use_sudo=True,
+            backup=False)
+        sudo('chown root:root /etc/ufw/applications.d/woven')
+        with settings(warn_only=True):
+            if not ufw_state:
+                sudo('ufw allow woven')
+            else:
+                sudo('ufw app update woven')
         _backup_file('/etc/ufw/ufw.conf')
+        
+        #enable ufw
         sed('/etc/ufw/ufw.conf','ENABLED=no','ENABLED=yes',use_sudo=True)
-        sudo('ufw reload')
+        
+        #upload project component
+        upload_template('/'.join(['woven','ufw-woven_project.txt']),
+            '/etc/ufw/applications.d/woven_project',
+            use_sudo=True,
+            backup=False)
+        sudo('chown root:root /etc/ufw/applications.d/woven_project')
+        with settings(warn_only=True):
+            if not ufw_state:
+                sudo('ufw allow woven_project')
+            else:
+                sudo('ufw app update woven_project')
+        
+        set_server_state('ufw_installed',str(env.HOST_SSH_PORT))
+
+    u = set([])
+    if env.roles:
+        for r in env.roles:
+            u = u | set(env.ROLE_UFW_RULES.get(r,[]))
+        if not u: u = env.UFW_RULES
     else:
-        #if it was installed by woven remove it else leave it the hell alone
-        if server_state('ufw_installed'): 
-            sudo('ufw disable')
-            apt_get_purge('ufw')
-            set_server_state('ufw_installed',delete=True)
+        u = env.UFW_RULES
+
+    #ufw seems to spit error when you 'allow' an existing rule
+    with settings(warn_only = True):
+        if server_state('ufw_rules')<> u:
+            for rule in u:
+                if rule:
+                    if env.verbosity:
+                        print ' *',rule
+                    sudo('ufw '+rule)
+            sudo('ufw app update all')
+            set_server_state('ufw_rules',u)
+    sudo('ufw reload')
+
 
 def uncomment_sources(rollback=False):
     """
@@ -462,9 +492,9 @@ def upload_etc():
     if env.project_template_dir: user_templates = _get_template_files(os.path.join(env.project_template_dir,''))
     else: user_templates = set([])
     etc_templates = user_templates | default_templates
+
     context = {'host_ip':socket.gethostbyname(env.host)}
     for t in etc_templates:
-        dest = t.replace('woven','')
         dest = t.replace('woven','',1)
         directory = os.path.split(dest)[0]
         if directory in ['/etc','/etc/init.d','/etc/init','/etc/logrotate.d','/etc/rsyslog.d']:
