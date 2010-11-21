@@ -5,7 +5,7 @@ from fabric.contrib.files import uncomment, exists, comment, contains, append, s
 from fabric.state import connections
 from fabric.network import join_host_strings, normalize
 
-from woven.ubuntu import disable_root, change_ssh_port
+from woven.ubuntu import disable_root, change_ssh_port, port_is_open
 
 #Step 1 in Server setup process
 
@@ -81,3 +81,17 @@ def test_ubu_change_ssh_port():
         sudo('/etc/init.d/ssh restart')
     local('rm -rf .woven')
     return
+
+def test_ubu_port_is_open():
+    result = port_is_open()
+    assert result
+    
+    sudo("echo 'Debian vers \n \l'> /etc/issue.new")
+    sudo('cp -f /etc/issue /tmp/issue.bak')
+    sudo('mv -f /etc/issue.new /etc/issue')
+    
+    result = port_is_open()
+    
+    sudo ('cp -f /tmp/issue.bak /etc/issue')
+    
+    
