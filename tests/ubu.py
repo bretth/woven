@@ -123,11 +123,18 @@ def test_ubu_setup_ufw():
         r = sudo('ufw status verbose')
         assert '22,10022' in r
         assert '80,443' in r
+        
+        #test add an allow
+        env.UFW_RULES = ['allow 5432/tcp']
+        setup_ufw()
+        r = sudo('ufw status verbose')
+        assert '5432' in r
+        
         #teardown
         sudo('ufw disable')
         sudo('rm -f /etc/ufw/applications.d/woven')
         apt_get_purge('ufw')
         set_server_state('ufw_installed',delete=True)
     
-    
+
     
