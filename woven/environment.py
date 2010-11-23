@@ -333,8 +333,6 @@ def set_env(settings=None, setup_dir=''):
         packages = env.ROLE_PACKAGES.get(r,[])
         u = u | set(packages)
     if not u:
-        if env.verbosity and not packages:
-            print "No custom packages defined for this role"
         u = env.HOST_BASE_PACKAGES + env.HOST_EXTRA_PACKAGES
     env.packages = list(u)
     #Now update the env with any settings that are not defined by woven but may
