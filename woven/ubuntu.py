@@ -136,6 +136,10 @@ def disable_root():
                 original_password = enter_password()
             
             add_user(username=sudo_user, password=original_password,group='sudo')
+
+        #Add existing user to sudo group
+        else:
+            sudo('adduser %s sudo'% sudo_user)
             #adm group used by Ubuntu logs
             sudo('usermod -a -G adm %s'% sudo_user)
             #add user to /etc/sudoers
@@ -147,9 +151,7 @@ def disable_root():
             sudo('visudo -c -f /tmp/sudoers.tmp')
             sudo('cp -f /tmp/sudoers.tmp /etc/sudoers')
             sudo('rm -rf /tmp/sudoers.tmp')
-        #Add existing user to sudo group
-        else:
-            sudo('adduser %s sudo'% sudo_user)
+            
     env.password = original_password
     #finally disable root
     host_string=join_host_strings(sudo_user,host,str(env.DEFAULT_SSH_PORT))
