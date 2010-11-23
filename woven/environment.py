@@ -12,6 +12,7 @@ from fabric.main import find_fabfile
 from fabric.network import normalize
 from fabric.operations import local, run, sudo, prompt, get, put
 from fabric.state import _AttributeDict, env, output
+from fabric.version import get_version
         
 
 woven_env = _AttributeDict({
@@ -180,6 +181,9 @@ def check_settings():
     Validate the users settings conf prior to deploy
     """
     valid=True
+    if not get_version() < '1.0':
+        print "FABRIC ERROR: Woven is only compatible with Fabric < 1.0"
+        valid = False
     if not env.MEDIA_ROOT or not env.MEDIA_URL:
         print "MEDIA ERROR: You must define a MEDIA_ROOT & MEDIA_URL in your settings.py"
         print "even if plan to deploy your media separately to your project"
