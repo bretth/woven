@@ -201,17 +201,7 @@ def install_packages(rollback = False,overwrite=False):
     
     overwrite will allow existing configurations to be overwritten
     """
-    u = set([])
-    packages = []
-    for r in env.roles:
-        packages = env.ROLE_PACKAGES.get(r,[])
-        u = u | set(packages)
-    if not u:
-        if env.verbosity and not packages:
-            print "No custom packages defined for this role"
-        u = env.HOST_BASE_PACKAGES + env.HOST_EXTRA_PACKAGES
-    if env.verbosity and packages:
-        print "Role defines custom packages:",','.join(u)
+
     if not rollback:
         if env.verbosity:
             print env.host, "INSTALLING & CONFIGURING HOST PACKAGES:"
@@ -225,7 +215,7 @@ def install_packages(rollback = False,overwrite=False):
         #The principle we will use is to only install configurations and packages
         #if they do not already exist (ie not manually installed or other method)
         
-        for package in u:
+        for package in env.packages:
             if not package in p:
                 preinstalled = False
                 apt_get_install(package)
@@ -247,7 +237,7 @@ def install_packages(rollback = False,overwrite=False):
         #We'll use easy_install at this stage since it doesn't download if the package
         #is current whereas pip always downloads.
         #Once both these packages mature we'll move to using the standard Ubuntu packages
-        if 'python-setuptools' in u:
+        if 'python-setuptools' in env.packages:
             sudo("easy_install -U virtualenv")
             sudo("easy_install -U pip")
             sudo("easy_install -U virtualenvwrapper")
@@ -261,7 +251,7 @@ def install_packages(rollback = False,overwrite=False):
         sudo("rm -rf build")
     else: #rollback
         p = sudo('cat /var/local/woven/packages_installed.txt').split('\n')
-        for package in u:
+        for package in env.packages:
             if package in p:
                 apt_get_purge(package)
                 p.remove(package)
@@ -290,7 +280,6 @@ def restrict_ssh(rollback=False):
 
     if not rollback:
         if server_state('ssh_restricted'):
-            print env.host, 'Warning: sshd_config has already been modified. Skipping..'
             return False
 
         sshd_config = '/etc/ssh/sshd_config'
@@ -401,7 +390,7 @@ def setup_ufw():
                 sudo('ufw app update woven_project')
         
         set_server_state('ufw_installed',str(env.HOST_SSH_PORT))
-    
+
     u = set([])
     if env.roles:
         for r in env.roles:

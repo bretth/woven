@@ -188,6 +188,16 @@ def deploy_wsgi():
             run("chmod ug+xr %s"% filename)
     return deployed
 
+def has_webservers():
+    """
+    simple test for webserver packages
+    """
+    p = set(env.packages)
+    w = set(['apache','nginx'])
+    installed = p & w
+    if installed: return True
+    else: return False
+    
 def reload_webservers():
     """
     Reload apache2 and nginx

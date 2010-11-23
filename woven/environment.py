@@ -30,7 +30,7 @@ woven_env = _AttributeDict({
 'DISABLE_SSH_PASSWORD': False, #optional - setting this to true will disable password login and use ssh keys only.
 'ENABLE_UFW':True, #optional - If some alternative firewall is already pre-installed
 #optional - the default firewall rules (note ssh is always allowed)
-'UFW_RULES':[], 
+'UFW_RULES':['allow woven_project'], 
 'ROLE_UFW_RULES':{},
     
 #The default ubuntu packages that are setup. It is NOT recommended you change these:
@@ -326,7 +326,17 @@ def set_env(settings=None, setup_dir=''):
                 host_string = env.user + '@' + host_string
             host_list.append(host_string)
             env.hosts = host_list
-    
+    #packages
+    u = set([])
+    packages = []
+    for r in env.roles:
+        packages = env.ROLE_PACKAGES.get(r,[])
+        u = u | set(packages)
+    if not u:
+        if env.verbosity and not packages:
+            print "No custom packages defined for this role"
+        u = env.HOST_BASE_PACKAGES + env.HOST_EXTRA_PACKAGES
+    env.packages = list(u)
     #Now update the env with any settings that are not defined by woven but may
     #be used by woven or fabric
     env.MEDIA_ROOT = project_settings.MEDIA_ROOT
@@ -334,6 +344,7 @@ def set_env(settings=None, setup_dir=''):
     env.ADMIN_MEDIA_PREFIX = project_settings.ADMIN_MEDIA_PREFIX
     if not env.STATIC_URL: env.STATIC_URL = project_settings.ADMIN_MEDIA_PREFIX
     env.TEMPLATE_DIRS = project_settings.TEMPLATE_DIRS
+   
    
     #If sqlite is used we can manage the database on deployment
     env.DEFAULT_DATABASE_ENGINE = project_settings.DATABASES['default']['ENGINE']
