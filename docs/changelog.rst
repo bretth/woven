@@ -2,15 +2,22 @@
 Changelog
 ==========
 
+Release 0.6.1
+------------------------
+
+* Fix UFW rules
+
 Release 0.6 (22-Nov-2010)
------------------------
+-------------------------
 
 **Changes from 0.5**
+
 * Bundles are now just .zip files instead of .pybundles. Just rename any existing .pybundles or re-run bundle
 * ROOT_DISABLED setting has been named DISABLE_ROOT instead.
 * changed the name of the function deploy_public to deploy_media
 
 **New Features**
+
 * added new setting PROJECT_APPS_PATH for local apps, so that you can put an apps folder under your project folder. 
 * can now name your distribution differently from your project name
 * --overwrite option in deploy to completely remove an existing virtualenv
@@ -21,17 +28,20 @@ Release 0.6 (22-Nov-2010)
 * added ENABLE_UFW setting - defaults to true
 
 **Bug fixes**
+
 * fix an issue where you had to name your database after your project
 * fix an issue when there is no files in a directory to deploy
 * corrected the sitesettings template MEDIA_ROOT and STATIC_ROOT paths 
 
 Release 0.5.3 (9-Nov-2010)
 ---------------------------
+
 * fix missing dist directory
 * fix trailing / in manifest
 
 Release 0.5.2 (7-Nov-2010)
 ----------------------------
+
 * fix missing import
 
 Release 0.5.1 (25-Aug-2010)
