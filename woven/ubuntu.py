@@ -401,7 +401,7 @@ def setup_ufw():
                 sudo('ufw app update woven_project')
         
         set_server_state('ufw_installed',str(env.HOST_SSH_PORT))
-
+    
     u = set([])
     if env.roles:
         for r in env.roles:
@@ -412,14 +412,14 @@ def setup_ufw():
 
     #ufw seems to spit error when you 'allow' an existing rule
     with settings(warn_only = True):
-        if server_state('ufw_rules')<> u:
+        if server_state('ufw_rules')<> list(u):
             for rule in u:
                 if rule:
                     if env.verbosity:
                         print ' *',rule
                     sudo('ufw '+rule)
             sudo('ufw app update all')
-            set_server_state('ufw_rules',u)
+            set_server_state('ufw_rules',list(u))
     sudo('ufw reload')
 
 
