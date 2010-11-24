@@ -492,7 +492,8 @@ def upload_etc():
         if directory in ['/etc','/etc/init.d','/etc/init','/etc/logrotate.d','/etc/rsyslog.d']:
             #must be replacing an existing file
             if exists(dest): upload = True
-        elif exists(directory, use_sudo=True): upload = False
+            else: upload = False
+        elif exists(directory, use_sudo=True): upload = True
         else: upload = False
         if upload:
             upload_template(t,dest,context=context,use_sudo=True)
