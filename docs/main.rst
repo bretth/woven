@@ -14,7 +14,7 @@ Woven provides six management commands for your Django project:
 
 ``setupnode``, ``deploy``, ``patch``, ``activate``, ``bundle``, ``startsites``
 
-You can walk through some of the commands in a simple example django project :doc:`tutorial` or read the :doc:`commands` documentation.
+You can walk through some of the commands in a simple example django project :doc:`tutorial` or read the :doc:`commands` documentation. You'll also want to have a look at the :doc:`settings` and the project :doc:`conventions`.  
 
 Integrating with Fabric
 =======================
