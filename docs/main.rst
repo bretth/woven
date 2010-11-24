@@ -1,4 +1,27 @@
+Woven
+========
 
+* utilizes Pip, Virtualenv, Fabric and Django templates to simplify deployment making *release early and often* a reality.
+
+* provides six Django commands/functions; ``setupnode``, ``deploy``, ``patch``, ``activate``, ``bundle``, ``startsites``
+    
+* provides a standard Apache & Nginx webserver configuration that you can change as required.
+    
+* enables you to define custom Ubuntu etc configuration files in your project
+
+* enable you to define roles for your servers with combinations of Ubuntu packages
+    
+* integrates into standard Fabric fabfile.py scripts as projects grow.
+    
+* integrates with South for migrations
+    
+* basic multi-site multi-db capabilities
+
+**Woven currently doesn't:**
+
+* Create and launch your node from any cloud providers - it just does the setup of a baseline installation with setupnode
+    
+* bring you beer
 
 Installation
 ============
@@ -14,7 +37,7 @@ Woven provides six management commands for your Django project:
 
 ``setupnode``, ``deploy``, ``patch``, ``activate``, ``bundle``, ``startsites``
 
-You can walk through some of the commands in a simple example django project :doc:`tutorial` or read the :doc:`commands` documentation. You'll also want to have a look at the :doc:`settings` and the project :doc:`conventions`.  
+You can walk through some of the commands in a simple example django project :doc:`tutorial` or read the :doc:`commands` docs. You'll also want to have a look at the :doc:`settings` and the project :doc:`conventions`.  
 
 Integrating with Fabric
 =======================
