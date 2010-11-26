@@ -74,7 +74,7 @@ def deploy_project():
     if env.verbosity:
         print env.host,"DEPLOYING project", env.project_fullname
     #Exclude a few things that we don't want deployed as part of the project folder
-    rsync_exclude = ['local_settings*','*.pyc','*.log','.*','/build','/dist','/media*','/static*','/www','/public','/templates']
+    rsync_exclude = ['local_settings*','*.pyc','*.log','.*','/build','/dist','/media*','/static*','/www','/public','/template*']
 
     #make site local settings if they don't already exist
     _make_local_sitesettings()
