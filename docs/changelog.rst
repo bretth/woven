@@ -2,10 +2,14 @@
 Changelog
 ==========
 
-Release 0.6.1
-------------------------
+Release 0.6.1 26-Nov-2010
+---------------------------
 
 * Fix UFW rules
+* Don't try and restart webservers if they don't exist.
+* Fixed problem with upload_etc logic
+* added very basic templates for postgresql
+* don't upload local_settings.py
 
 Release 0.6 (22-Nov-2010)
 -------------------------
