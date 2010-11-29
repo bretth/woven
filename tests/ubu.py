@@ -6,7 +6,7 @@ from fabric.state import connections, env
 from fabric.network import join_host_strings, normalize
 
 from woven.ubuntu import disable_root, change_ssh_port, port_is_open, setup_ufw
-from woven.ubuntu import apt_get_purge
+from woven.ubuntu import apt_get_purge, post_install_packages, post_setupnode
 
 from woven.environment import server_state, set_server_state
 
@@ -77,7 +77,7 @@ def test_ubu_change_ssh_port():
     with settings(user='root',password=env.ROOT_PASSWORD):
         result = change_ssh_port()
         print result
-        assert not result  
+        assert result  
     #teardown
     with settings(host_string='root@192.168.188.10:10022', user='root',password=env.ROOT_PASSWORD):
         sed('/etc/ssh/sshd_config','Port 10022','Port 22',use_sudo=True)
@@ -86,7 +86,7 @@ def test_ubu_change_ssh_port():
     return
 
 def test_ubu_port_is_open():
-    with settings(host_string='root@192.168.188.10:10022', user='root',password=env.ROOT_PASSWORD):
+    with settings(host_string='root@192.168.188.10:22', user='root',password=env.ROOT_PASSWORD):
         result = port_is_open()
         assert result
         
@@ -97,7 +97,15 @@ def test_ubu_port_is_open():
         result = port_is_open()
         
         sudo ('cp -f /tmp/issue.bak /etc/issue')
+
+
+def test_ubu_post_install_packages():
+    env.installed_packages = ['postgresql','somepackage']
+    post_install_packages()
     
+def test_ubu_post_setupnode():
+    post_setupnode()
+        
 def test_ubu_setup_ufw():
     with settings(host_string='root@192.168.188.10', user='root',password='root'):
 
