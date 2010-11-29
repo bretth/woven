@@ -339,6 +339,7 @@ def set_env(settings=None, setup_dir=''):
     if not u:
         u = env.HOST_BASE_PACKAGES + env.HOST_EXTRA_PACKAGES
     env.packages = list(u)
+    env.installed_packages = []
     #Now update the env with any settings that are not defined by woven but may
     #be used by woven or fabric
     env.MEDIA_ROOT = project_settings.MEDIA_ROOT

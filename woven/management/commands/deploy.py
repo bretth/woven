@@ -4,7 +4,7 @@ from optparse import make_option
 from fabric.context_managers import settings
 
 from woven.api import deploy
-from woven.virtualenv import activate
+from woven.virtualenv import activate, post_deploy
 from woven.management.base import WovenCommand
 
 
@@ -55,6 +55,7 @@ class Command(WovenCommand):
     
     def handle_host(self,*args, **options):
         deploy(overwrite=options.get('overwrite'))
+        
         with settings(nomigration = options.get('nomigration'),
                       migration = options.get('migration'),
                       manualmigration = options.get('manualmigration')):

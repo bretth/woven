@@ -5,6 +5,7 @@ import site
 
 from django import get_version
 from django.template.loader import render_to_string
+from django.utils import importlib
 
 from fabric.decorators import runs_once
 from fabric.state import env 
@@ -86,6 +87,9 @@ def activate():
         #delete existing symlink
         ln_path = '/'.join([deployment_root(),'env',env.project_name])
         run('rm -f '+ln_path)
+        #run post deploy hooks
+        post_deploy()
+        #activate
         run('ln -s %s %s'% (env_path,ln_path))
 
   
@@ -320,3 +324,30 @@ def pip_install_requirements():
         print "Review the pip install logs at %s/.pip and re-deploy"% deployment_root()
         sys.exit(1)
     return out
+
+def post_deploy():
+    """
+    A post_deploy func can be defined in a deploy.py in the project or in an app
+    """
+    #post_setupnode hook
+    module_name = '.'.join([env.project_package_name,'deploy'])
+    
+    try:
+        imported = importlib.import_module(module_name)
+        func = vars(imported).get('post_deploy')
+        if func: func()
+    except ImportError:
+        return
+    
+    #run per app
+    for app in env.INSTALLED_APPS:
+        if app == 'woven': continue
+        module_name = '.'.join([app,'deploy'])
+        try:
+            imported = importlib.import_module(module_name)
+            func = vars(imported).get('post_deploy')
+            if func: func()
+        except ImportError:
+            pass
+    
+    

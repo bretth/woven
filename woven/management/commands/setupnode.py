@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 from optparse import make_option
 
+from django.utils import importlib
+
 from fabric import state
-from woven.api import setupnode
-from woven.management.base import WovenCommand
 from fabric.context_managers import settings
+from fabric.main import is_task
+
+from woven.api import setupnode, post_setupnode
+from woven.management.base import WovenCommand
 
 class Command(WovenCommand):
     """
@@ -29,10 +33,12 @@ class Command(WovenCommand):
     help = "Setup a baseline Ubuntu host"
     requires_model_validation = False
     
-    
     def handle_host(self,*args, **options):
         state.env.root_disabled = options.get('root_disabled')
         setupnode()
+        post_setupnode()
+        
+
 
 
         

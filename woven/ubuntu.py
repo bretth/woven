@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import os, socket, sys
 
+from django.utils import importlib
+
 from fabric.state import env, connections
 from fabric.context_managers import settings, hide
 from fabric.operations import prompt, run, sudo, get, put
@@ -227,6 +229,7 @@ def install_packages(rollback = False,overwrite=False):
 
                 if env.verbosity:
                     print ' * installed '+package
+                env.installed_packages += package
             else:
                 preinstalled = True
 
@@ -269,6 +272,64 @@ def install_packages(rollback = False,overwrite=False):
             set_server_state('unattended_config_created',delete=True)
         #Finally remove any unneeded packages
         sudo('apt-get autoremove -qqy')
+
+def post_install_packages():
+    """
+    Run any functions post install a matching Ubuntu package.
+    Hook functions are in the form post_install_[package name] and are
+    defined in a deploy.py file
+    
+    Should be executed post install_packages and upload_etc
+    """
+
+    module_name = '.'.join([env.project_package_name,'deploy'])
+    try:
+        imported = importlib.import_module(module_name)
+        funcs = vars(imported)
+        for f in env.installed_packages:
+            func = funcs.get(''.join(['post_install_',f]))
+            if func: func()
+    except ImportError:
+        pass
+    
+    #run per app
+    for app in env.INSTALLED_APPS:
+        if app == 'woven': continue
+        module_name = '.'.join([app,'deploy'])
+        try:
+            imported = importlib.import_module(module_name)
+            funcs = vars(imported)
+            for f in env.installed_packages:
+                func = funcs.get(''.join(['post_install_',f]))
+                if func: func()
+        except ImportError:
+            pass
+
+def post_setupnode():
+    """
+    Runs a post_setupnode function defined in a deploy.py file
+    """
+    #post_setupnode hook
+    module_name = '.'.join([env.project_package_name,'deploy'])
+    
+    try:
+        imported = importlib.import_module(module_name)
+        func = vars(imported).get('post_setupnode')
+        if func: func()
+    except ImportError:
+        return
+
+   #run per app
+    for app in env.INSTALLED_APPS:
+        if app == 'woven': continue
+        module_name = '.'.join([app,'deploy'])
+        try:
+            imported = importlib.import_module(module_name)
+            func = vars(imported).get('post_setupnode')
+            if func: func()
+        except ImportError:
+            pass
+    
 
 def restrict_ssh(rollback=False):
     """

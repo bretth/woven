@@ -10,12 +10,14 @@ from woven.environment import check_settings, deployment_root, set_env, patch_pr
 from woven.project import deploy_static, deploy_media, deploy_project, deploy_db, deploy_templates
 
 from woven.ubuntu import add_user, apt_get_install, apt_get_purge, port_is_open, skip_disable_root
-from woven.ubuntu import install_packages, upgrade_ubuntu, setup_ufw, disable_root
+from woven.ubuntu import install_packages, post_install_packages, post_setupnode
+from woven.ubuntu import upgrade_ubuntu, setup_ufw, disable_root
 from woven.ubuntu import uncomment_sources, restrict_ssh, upload_ssh_key
 from woven.ubuntu import change_ssh_port, set_timezone, ubuntu_version, upload_etc
 
 from woven.virtualenv import activate, active_version
 from woven.virtualenv import mkvirtualenv, rmvirtualenv, pip_install_requirements
+from woven.virtualenv import post_deploy
 
 from woven.webservers import deploy_wsgi, deploy_webconf, start_webservers, stop_webservers, reload_webservers
 from woven.webservers import has_webservers
@@ -50,6 +52,8 @@ def setupnode(overwrite=False):
     setup_ufw()
     install_packages(overwrite=overwrite)
     upload_etc()
+    post_install_packages()
+    
     set_timezone()
     if has_webservers():
         stop_webservers()
