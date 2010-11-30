@@ -2,7 +2,7 @@
 import os,socket, sys
 import json
 
-from fabric.state import env
+from fabric.state import _AttributeDict, env
 from fabric.operations import run, sudo
 from fabric.context_managers import cd, settings
 from fabric.contrib.files import append, contains, exists
@@ -10,6 +10,7 @@ from fabric.decorators import runs_once
 
 from woven.deployment import deploy_files, mkdirs, run_once_per_host_version, upload_template
 from woven.environment import deployment_root, server_state, _root_domain
+from woven.ubuntu import add_user
 
 def _activate_sites(path, filenames):
     enabled_sites = _ls_sites(path)            
@@ -32,19 +33,23 @@ def _deploy_webconf(remote_dir,template):
     if not static_url: static_url = env.ADMIN_MEDIA_PREFIX
     log_dir = '/'.join([deployment_root(),'log'])
     deployed = []
+    users_added = []
+    
     domains = domain_sites()
     for d in domains:
-
-        u_domain = d.replace('.','_')
-
+        u_domain = d.name.replace('.','_')
+        wsgi_filename = d.settings.replace('.py','.wsgi')
+        site_user = ''.join(['site_',str(d.site_id)])
         filename = ''.join([remote_dir,'/',u_domain,'-',env.project_version,'.conf'])
         context = {"project_name": env.project_name,
                    "deployment_root":deployment_root(),
                     "u_domain":u_domain,
-                    "domain":d,
+                    "domain":d.name,
                     "root_domain":env.root_domain,
                     "user":env.user,
+                    "site_user":site_user,
                     "host_ip":socket.gethostbyname(env.host),
+                    "wsgi_filename":wsgi_filename,
                     "MEDIA_URL":media_url,
                     "STATIC_URL":static_url,
                     }
@@ -55,8 +60,24 @@ def _deploy_webconf(remote_dir,template):
                         use_sudo=True)
         if env.verbosity:
             print " * uploaded", filename
+            
+        #add site users if necessary
+        site_users = _site_users()
+        if site_user not in users_added and site_user not in site_users:
+            add_user(username=site_user,group='www-data',site_user=True)
+            users_added.append(site_user)
+            if env.verbosity:
+                print " * useradded",site_user
 
     return deployed
+
+def _site_users():
+    """
+    Get a list of site_n users
+    """
+    userlist = sudo("cat /etc/passwd | awk '/site/'").split('\n')
+    siteuserlist = [user.split(':')[0] for user in userlist if 'site_' in user]
+    return siteuserlist
 
 def _ls_sites(path):
     """
@@ -64,7 +85,7 @@ def _ls_sites(path):
     """
     with cd(path):
         sites = run('ls').split('\n')
-        doms =  domain_sites()
+        doms =  [d.name for d in domain_sites()]
         dom_sites = []
         for s in sites:
             ds = s.split('-')[0]
@@ -72,6 +93,27 @@ def _ls_sites(path):
             if ds in doms and s not in dom_sites:
                 dom_sites.append(s)
     return dom_sites
+
+
+
+def _sitesettings_files():
+    """
+    Get a list of sitesettings files
+    
+    settings.py can be prefixed with a subdomain and underscore so with example.com site:
+    sitesettings/settings.py would be the example.com settings file and
+    sitesettings/admin_settings.py would be the admin.example.com settings file
+    """
+    settings_files = []
+    sitesettings_path = os.path.join(env.project_package_name,'sitesettings')
+    if os.path.exists(sitesettings_path):
+        sitesettings = os.listdir(sitesettings_path)
+        for file in sitesettings:
+            if file == 'settings.py':
+                settings_files.append(file)
+            elif len(file)>12 and file[-12:]=='_settings.py': #prefixed settings
+                settings_files.append(file)
+    return settings_files
 
 def _get_django_sites():
     """
@@ -101,7 +143,9 @@ def _get_django_sites():
 
 def domain_sites():
     """
-    Get a list of the domains that have settings files
+    Get a list of domains
+    
+    Each domain is an attribute dict with name, site_id and settings
     """
 
     if not hasattr(env,'domains'):
@@ -109,13 +153,28 @@ def domain_sites():
         site_ids = sites.keys()
         site_ids.sort()
         domains = []
+        
         for id in site_ids:
-            sitesetting_path = os.path.join(env.project_package_name,'sitesettings',''.join([sites[id].replace('.','_'),'.py']))
-            if os.path.exists(sitesetting_path):
-                domains.append(sites[id])
+
+            for file in _sitesettings_files():
+                domain = _AttributeDict({})
+
+                if file == 'settings.py':
+                    domain.name = sites[id]
+                else: #prefix indicates subdomain
+                    subdomain = file[:-12].replace('_','.')
+                    domain.name = ''.join([subdomain,sites[id]])
+
+                domain.settings = file
+                domain.site_id = id
+                domains.append(domain)
+                
         env.domains = domains
-        if env.domains: env.root_domain = env.domains[0]
-        else: env.domains = [_root_domain()]
+        if env.domains: env.root_domain = env.domains[0].name
+        else:
+            domain.name = _root_domain(); domain.site_id = 1; domain.settings='settings.py'
+            env.domains = [domain]
+            
     return env.domains
 
 @run_once_per_host_version
@@ -130,7 +189,6 @@ def deploy_webconf():
         if not exists(log_dir):
             run('ln -s /var/log log')
         #deploys confs for each domain based on sites app
-        #Uses the default sitesettings.settings file default database to determine the sites
         deployed += _deploy_webconf('/etc/apache2/sites-available','django-apache-template.txt')
         deployed += _deploy_webconf('/etc/nginx/sites-available','nginx-template.txt')
         upload_template('woven/maintenance.html','/var/www/nginx-default/maintenance.html',use_sudo=True)
@@ -162,19 +220,17 @@ def deploy_wsgi():
         
     if env.verbosity:
         print env.host,"DEPLOYING wsgi", remote_dir
-    domains = domain_sites()
-    for domain in domains:
+
+    for file in _sitesettings_files(): 
         deployed += mkdirs(remote_dir)
         with cd(remote_dir):
-            u_domain = domain.replace('.','_')
-            filename = "%s.wsgi"% u_domain
+            filename = file.replace('.py','.wsgi')
             context = {"deployment_root":deployment_root(),
                        "user": env.user,
                        "project_name": env.project_name,
                        "project_package_name": env.project_package_name,
-                       "u_domain":u_domain,
-                       "root_domain":env.root_domain,
                        "project_apps_path":env.PROJECT_APPS_PATH,
+                       "settings": filename.replace('.wsgi',''),
                        }
             upload_template('/'.join(['woven','django-wsgi-template.txt']),
                                 filename,

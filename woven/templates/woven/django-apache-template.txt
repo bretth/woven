@@ -6,9 +6,9 @@
     
     #Stack size reduces the amount of virtual memory available per thread to a much more sensible limit than 8MB
     #This setting is especially useful for small servers
-    WSGIDaemonProcess {{ domain }} processes=2 maximum-requests=1000 threads=15 stack-size=524288 
+    WSGIDaemonProcess {{ domain }} user={{ site_user}} processes=2 maximum-requests=1000 threads=15 stack-size=524288 display-name={{ site_user }}
     WSGIProcessGroup {{ domain }}
-    WSGIScriptAlias / {{ deployment_root }}/env/{{ project_name }}/wsgi/{{ u_domain }}.wsgi
+    WSGIScriptAlias / {{ deployment_root }}/env/{{ project_name }}/wsgi/{{ wsgi_filename }}
     
     
     <Directory {{ deployment_root }}/env/{{ project_name }}/wsgi>

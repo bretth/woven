@@ -48,18 +48,11 @@ def _make_local_sitesettings(overwrite=False):
         f = open(settings_file_path,"w+")
         f.writelines(output)
         f.close()
-        
-        #create a convenience settings file link for the first site
-        settings_file_path = os.path.join(local_settings_dir,''.join([u_domain,'.py']))
-        if not os.path.exists(settings_file_path):
-            f = open(settings_file_path, "w+")
-            f.write("from %s.sitesettings.settings import *"% env.project_package_name)
-            f.write("\nSITE_ID=1\n")
-            f.close()
-            #copy manage.py into that directory
-            manage_path = os.path.join(os.getcwd(),env.project_package_name,'manage.py')
-            dest_manage_path = os.path.join(os.getcwd(),env.project_package_name,'sitesettings','manage.py')
-            shutil.copy(manage_path, dest_manage_path)
+        #copy manage.py into that directory
+        manage_path = os.path.join(os.getcwd(),env.project_package_name,'manage.py')
+        dest_manage_path = os.path.join(os.getcwd(),env.project_package_name,'sitesettings','manage.py')
+        shutil.copy(manage_path, dest_manage_path)
+
     return
 
 @run_once_per_host_version
@@ -188,8 +181,8 @@ def deploy_db(rollback=False):
 
         if env.DEFAULT_DATABASE_ENGINE=='django.db.backends.sqlite3':
             db_dir = '/'.join([deployment_root(),'database'])
-            
-            dest_db_path = '/'.join([db_dir,env.project_name+'.db'])
+            db_name = ''.join([env.project_name,'_','site_1','.db'])
+            dest_db_path = '/'.join([db_dir,db_name])
             if exists(dest_db_path): return
             if env.verbosity:
                 print env.host,"DEPLOYING DEFAULT SQLITE DATABASE"

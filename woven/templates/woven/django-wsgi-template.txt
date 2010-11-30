@@ -7,8 +7,11 @@ site.addsitedir('{{ deployment_root }}/env/{{ project_name }}/lib/python2.6/site
 site.addsitedir('{{ deployment_root }}/env/{{ project_name }}/project/{{ project_package_name }}/{{ project_apps_path }}')
 {% endif %}
 
-import sys, os
+#uncomment to allow print statements output to error logs for debugging
+#import sys
+#sys.stdout = sys.stderr
 
+import os
 os.environ['PATH'] = '{{ deployment_root }}/env/{{ project_name }}/bin:%s' % os.environ.get('PATH', '/bin:/usr/bin')
 os.environ['VIRTUAL_ENV'] = '{{ deployment_root }}/env/{{ project_name }}' 
 os.environ['PYTHON_EGG_CACHE'] = '{{ deployment_root }}/env/{{ project_name }}/egg_cache'
@@ -18,7 +21,7 @@ execfile(activate_this, dict(__file__=activate_this))
 
 # Set the DJANGO_SETTINGS_MODULE environment variable.
 # The project package itself is symlinked into site-packages
-os.environ['DJANGO_SETTINGS_MODULE'] = "{{ project_package_name }}.sitesettings.{{ u_domain }}"
+os.environ['DJANGO_SETTINGS_MODULE'] = "{{ project_package_name }}.sitesettings.{{ settings }}"
 
 import django.core.handlers.wsgi
 application = django.core.handlers.wsgi.WSGIHandler()

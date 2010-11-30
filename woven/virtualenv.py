@@ -66,7 +66,7 @@ def activate():
         if env.manualmigration or env.MANUAL_MIGRATION: manual_migration()
       
         #activate sites
-        activate_sites = [''.join([d.replace('.','_'),'-',env.project_version,'.conf']) for d in domain_sites()]
+        activate_sites = [''.join([d.name.replace('.','_'),'-',env.project_version,'.conf']) for d in domain_sites()]
         site_paths = ['/etc/apache2','/etc/nginx']
         
         #disable existing sites

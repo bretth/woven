@@ -27,27 +27,11 @@ class Command(WovenCommand):
     requires_model_validation = False
 
     def handle_host(self,*args, **options):
-        if not hasattr(state.env,'sites_created'):
-            local_settings_dir = os.path.join(os.getcwd(),state.env.project_name,'sitesettings')
-            sites = _get_django_sites()
-            site_ids = sites.keys()
-            site_ids.sort()
-            for id in site_ids:
-                sitesetting_path = os.path.join(state.env.project_name,'sitesettings',''.join([sites[id].replace('.','_'),'.py']))
-                if not os.path.exists(sitesetting_path):
-                    f = open(sitesetting_path, "w+")
-                    f.write("#Any site specific settings should be stored here \n")
-                    f.write("from %s.sitesettings.settings import *"% state.env.project_name)
-                    f.write("\nSITE_ID=%s\n"% str(id))
-                    f.close()
-            state.env.sites_created = True
-        created = deploy_sitesettings()
         with settings(patch=True):
             deploy_wsgi()
             deploy_webconf()
         
-        #activate sites
-        activate_sites = [''.join([d.replace('.','_'),'-',state.env.project_version,'.conf']) for d in domain_sites()]
+        activate_sites = [''.join([d.name.replace('.','_'),'-',state.env.project_version,'.conf']) for d in domain_sites()]
         site_paths = ['/etc/apache2','/etc/nginx']
         
         #activate new sites

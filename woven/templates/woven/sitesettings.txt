@@ -1,9 +1,18 @@
 #Created from the sitesettings.txt template
 
 #Import global project settings
+import getpass
 from {{ project_package_name }}.settings import *
 
 #This module is the base for all production/staging sites
+
+USER = getpass.getuser()
+if 'site' not in USER: USER = 'site_1'
+try:
+    SITE_ID = int(USER[-1])
+except ValueError: 
+    SITE_ID = 1
+
 
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
@@ -15,7 +24,7 @@ TEMPLATE_DEBUG = DEBUG
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': '{{ deployment_root }}/database/{{ project_name }}.db', # Or path to database file if using sqlite3.
+        'NAME': ''.join(['{{ deployment_root }}/database/','{{ project_name }}','_',USER,'.db']), # Or path to database file if using sqlite3.
         'USER': '', # Not used with sqlite3.
         'PASSWORD': '', # Not used with sqlite3.
         'HOST': '',  # Set to empty string for localhost. Not used with sqlite3.
@@ -23,8 +32,7 @@ DATABASES = {
     }
 }
 
-#Amend this if required
-SITE_ID = {{ site_id }}
+
 
 #Normally you shouldn't amend these settings, unless you have changed your local media settings
 MEDIA_ROOT = '{{ deployment_root }}/public/{{ MEDIA_URL|slice:"1:" }}'
