@@ -13,16 +13,21 @@ from fabric.network import join_host_strings, normalize
 from woven.deployment import _backup_file, _restore_file, deploy_files, upload_template
 from woven.environment import server_state, set_server_state
     
-def add_user(username='',password='',group=''):
+def add_user(username='',password='',group='', site_user=False):
     """
     Adds the username
     """
     if group: group = '-g %s'% group
-    
-    run('echo %s:%s > /tmp/users.txt'% (username,password))
-    sudo('useradd -m -s /bin/bash %s %s'% (group,username))
-    sudo('chpasswd < /tmp/users.txt')
-    sudo('rm -rf /tmp/users.txt')
+    if not site_user:
+        run('echo %s:%s > /tmp/users.txt'% (username,password))
+    if not site_user:
+        sudo('useradd -m -s /bin/bash %s %s'% (group,username))
+        sudo('chpasswd < /tmp/users.txt')
+        sudo('rm -rf /tmp/users.txt')
+    else:
+        sudo('useradd -M -d /var/www -s /bin/bash %s'% username)
+        sudo('usermod -a -G www-data %s'% username)
+
     
 def apt_get_install(package):
     """
@@ -121,8 +126,6 @@ def disable_root():
     
     host_string=join_host_strings(root_user,host,str(env.DEFAULT_SSH_PORT))
     with settings(host_string=host_string,  password=env.ROOT_PASSWORD):
-
-            
         if env.verbosity:
             print "You may be asked to re-enter your password to run administrative tasks."
         if not contains('sudo','/etc/group',use_sudo=True):
