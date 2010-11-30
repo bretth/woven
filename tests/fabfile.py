@@ -32,6 +32,8 @@ from ubu import test_ubu_setup_ufw, test_ubu_post_install_packages, test_ubu_pos
 
 from vir import test_vir_post_deploy
 
+from web import test_web_site_users
+
 #Set the environ for Django
 settings_module = os.environ['DJANGO_SETTINGS_MODULE'] = 'example_project.settings'
 
@@ -79,4 +81,10 @@ def test_vir():
     Run all virtualenv tests
     """
     _run_tests('vir')
+    
+def test_web():
+    """
+    Run all virtualenv tests
+    """
+    _run_tests('web')
 

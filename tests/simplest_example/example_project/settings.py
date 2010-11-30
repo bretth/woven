@@ -100,6 +100,6 @@ INSTALLED_APPS = (
     'woven',
 )
 
-HOSTS = ['woven@example.com']
+#HOSTS = ['woven@example.com']
 
 PROJECT_APPS_PATH = 'apps'
