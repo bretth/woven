@@ -35,16 +35,18 @@ While woven tries to be agnostic about your project layout there are some conven
         |--requirements.txt (a requirements.txt will be created if one doesn't exist)
         |--example_project (the standard django startproject)
                  |--__init__.py
+                 |--deploy.py (optional hooks for custom setupnode or deploy functions)
                  |--manage.py
                  |--settings.py (global settings & local development settings)
                  |--urls.py
                  |--sitesettings (will be created if it doesn't exist)
                          |--__init__.py
-                         |--example_com.py (the site specific setting overrides)
-                         |--settings.py (the global sites specific setting overrides)
+                         |--settings.py (the sites specific setting overrides)
+                         |--subdomain_settings.py (a site subdomain with the same SITE_ID)
                          |--manage.py (a convenience for running on node against site settings.py)
                  |--local_apps (you can define an optional PROJECT_APPS_PATH in settings that will hold apps and be in site-packages path on deployment)
                          |--app1
+                              |--deploy.py (hooks can be at app level as well)
                          |--...
         |--media (actual location as defined in settings)
         |   |--(any user content here)
@@ -69,7 +71,7 @@ While woven tries to be agnostic about your project layout there are some conven
                          |--sshd_config
                  |--django-apache-template.txt (sites conf)          
                  |--django-wsgi-template.txt 
-                 |--maintenance.html
+                 |--maintenance.html (for when your site is being deployed)
                  |--nginx-template.txt (sites conf)
                  |--requirements.txt
                  |--sitesettings.txt (default sitesetting)
@@ -157,6 +159,4 @@ Woven keeps track of server state and other housekeeping functions using the
 
 `/var/local/woven/` directory
 
-Currently state is stored as a filename with or without content. This may change.
-
-
+Currently state is stored as a filename with or without content.

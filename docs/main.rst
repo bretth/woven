@@ -12,6 +12,8 @@ Woven
 * enable you to define roles for your servers with combinations of Ubuntu packages
     
 * integrates into standard Fabric fabfile.py scripts as projects grow.
+
+* hooks for custom per project and per app deployment and setup functionality
     
 * integrates with South for migrations
     
@@ -64,6 +66,28 @@ Woven is just fabric. To integrate with your own fabfiles you can do:
     def your_function():
         ...
 
+Custom Hooks
+============
+
+Woven provides hooks into the setupnode and deploy commands.
+
+To add custom functionality to a woven deployment create a `deploy.py` file in your project or django app, and define any of the following.
+
+Post install package
+---------------------
+
+Define a `def post_install_[package_name]()` function to run code if the Ubuntu package is installed by woven, and after any /etc configuration is uploaded. For example you might define `def post_install_postgresql()` to setup a postgresql database.
+
+Post setupnode
+--------------
+
+`def post_setupnode()` executes at the end of the setupnode process.
+
+Post deploy
+-----------
+
+`def post_deploy()` executes at the end of deployment of your project but prior to activation.
+
 Development
 ===========
 
@@ -71,7 +95,7 @@ The core highlevel functions setupnode, deploy, patch, bundle, and activate will
 
 Testing
 --------
-Fabric doesn't appear to be compatible with standard python tests. Instead woven stores tests in a fabfile.py in the tests directory.
+Woven stores tests in a fabfile.py in the tests directory. The tests are pretty incomplete at this time.
 
 Individual tests are split across multiple modules corresponding to the module they are testing.
 

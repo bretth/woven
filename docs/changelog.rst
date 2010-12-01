@@ -2,7 +2,21 @@
 Changelog
 ==========
 
-Release 0.6.1 26-Nov-2010
+Release 0.7.0
+--------------------------
+
+**Changes from 0.6**
+
+*Multi-site functionality has changed dramatically. Instead of using one wsgi file and settings file per domain, woven now uses dynamic SITE_IDs in a single settings file based on the OS user, and process groups in modwsgi. Subdomains with the same SITE_ID can also be catered for by prefixing the settings filename. For example, if the SITE_ID=1 matches example.com, a settings file for the subdomain admin.example.com on the same SITE_ID would be admin_settings.py
+
+**New Features**
+
+* Implemented hooks. Can define a deploy.py with post_setupnode, post_install_package, or post_deploy functions. The deploy.py can be at project level or app level.
+* Added a DISABLE_APACHE_MODULES setting to disable a number of unneeded modules on setup.
+
+
+
+Release 0.6.1 (26-Nov-2010)
 ---------------------------
 
 * Fix UFW rules
