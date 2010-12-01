@@ -501,7 +501,9 @@ def upgrade_ubuntu():
     sudo('apt-get -qqy update')
     if env.verbosity:
         print " * running apt-get upgrade"
-        print " NOTE: If apt-get upgrade does not complete within 10 minutes see troubleshooting docs before aborting the process"
+        print " NOTE: apt-get upgrade has been known in rare cases to require user input."
+        print "If apt-get upgrade does not complete within 10 minutes"
+        print "see troubleshooting docs *before* aborting the process to avoid package management corruption."
     sudo('apt-get -qqy upgrade')
 
 def _get_template_files(template_dir):
@@ -554,12 +556,10 @@ def upload_etc():
         directory = os.path.split(dest)[0]
         if directory in ['/etc','/etc/init.d','/etc/init','/etc/logrotate.d','/etc/rsyslog.d']:
             #must be replacing an existing file
-            if exists(dest): upload = True
-            else: upload = False
-        elif exists(directory, use_sudo=True): upload = True
-        else: upload = False
-        if upload:
-            upload_template(t,dest,context=context,use_sudo=True)
+            if not exists(dest): continue
+        elif not exists(directory, use_sudo=True): continue
+        uploaded = upload_template(t,dest,context=context,use_sudo=True, modified_only=True)
+        if uploaded:
             sudo(' '.join(["chown root:root",dest]))
             if 'init.d' in dest: sudo(' '.join(["chmod ugo+rx",dest]))
             else: sudo(' '.join(["chmod ugo+r",dest]))

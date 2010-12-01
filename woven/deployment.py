@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from functools import wraps
 from glob import glob
+from hashlib import sha1
 import os, shutil, sys, tempfile
 
 from django.template.loader import render_to_string
@@ -185,7 +186,7 @@ def run_once_per_host_version(func):
           
     return decorated
 
-def upload_template(filename,  destination,  context={},  use_sudo=False, backup=True):
+def upload_template(filename,  destination,  context={},  use_sudo=False, backup=True, modified_only=False):
     """
     Render and upload a template text file to a remote host using the Django
     template api. 
@@ -205,6 +206,22 @@ def upload_template(filename,  destination,  context={},  use_sudo=False, backup
     #Replaces the default fabric.contrib.files.upload_template
     basename = os.path.basename(filename)
     text = render_to_string(filename,context)
+
+    func = use_sudo and sudo or run
+    
+    #check hashed template on server first
+    if modified_only:
+        hashed = sha1(text).hexdigest()
+        hashfile_dir, hashfile = os.path.split(destination)
+        if hashfile:
+            hashfile = '.%s'% hashfile
+            hashfile_path = os.path.join(hashfile_dir, hashfile)
+            func('touch %s'% hashfile_path) #store the hash near the template
+            previous_hashed = func('cat %s'% hashfile_path).strip()
+            if previous_hashed == hashed: return False
+            else: func('echo %s > %s'% (hashed, hashfile_path))
+            
+            
     temp_destination = '/tmp/' + basename
 
     # This temporary file should not be automatically deleted on close, as we
@@ -214,13 +231,13 @@ def upload_template(filename,  destination,  context={},  use_sudo=False, backup
     
     output.write(text)
     output.close()
-
+        
     # Upload the file.
     put(tempfile_name, temp_destination)
     os.close(tempfile_fd)
     os.remove(tempfile_name)
 
-    func = use_sudo and sudo or run
+    
     # Back up any original file (need to do figure out ultimate destination)
     if backup:
         to_backup = destination
@@ -233,3 +250,4 @@ def upload_template(filename,  destination,  context={},  use_sudo=False, backup
             _backup_file(to_backup)
     # Actually move uploaded template to destination
     func("mv %s %s" % (temp_destination, destination))
+    return True
