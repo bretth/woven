@@ -275,7 +275,7 @@ def install_packages(rollback = False,overwrite=False):
         #Finally remove any unneeded packages
         sudo('apt-get autoremove -qqy')
 
-def post_install_packages():
+def post_install_package():
     """
     Run any functions post install a matching Ubuntu package.
     Hook functions are in the form post_install_[package name] and are

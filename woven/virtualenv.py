@@ -328,7 +328,7 @@ def post_deploy():
     """
     A post_deploy func can be defined in a deploy.py in the project or in an app
     """
-    #post_setupnode hook
+    
     module_name = '.'.join([env.project_package_name,'deploy'])
     
     try:
