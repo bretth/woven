@@ -46,6 +46,11 @@ woven_env = _AttributeDict({
 'HOST_EXTRA_PACKAGES':[], #optional - additional ubuntu packages as required
 
 'ROLE_PACKAGES':{},#define ROLEDEFS packages instead of using HOST_BASE_PACKAGES + HOST_EXTRA_PACKAGES
+
+#Apache list of modules to disable for performance and memory efficiency
+'APACHE_DISABLE_MODULES':['alias','auth_basic','authn_file','authz_default','authz_groupfile',
+                          'authz_user','autoindex','cgid','dir',
+                          'setenvif','status'], 
     
 #Virtualenv/Pip
 'DEPLOYMENT_ROOT':'',

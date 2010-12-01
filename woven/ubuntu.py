@@ -238,7 +238,8 @@ def install_packages(rollback = False,overwrite=False):
 
             if package == 'apache2':
                 sed('/etc/apache2/apache2.conf',before='KeepAlive On',after='KeepAlive Off',use_sudo=True)
- 
+                for module in env.APACHE_DISABLE_MODULES:
+                    sudo('rm -f /etc/apache2/mods-enabled/%s*'% module)
         #Install base python packages
         #We'll use easy_install at this stage since it doesn't download if the package
         #is current whereas pip always downloads.
