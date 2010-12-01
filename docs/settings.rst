@@ -49,7 +49,12 @@ Django settings.py. They are all optional.
     #Role packages give you complete flexibility in defining packages with ROLEDEFS.
     #By default any role that does not have role packages defined installs the HOST_BASE_PACKAGES + EXTRA_PACKAGES instead
     ROLE_PACKAGES = {} #eg ROLE_PACKAGES = {'postgresql':['postgresql']}
-        
+    
+    #Apache list of modules to disable for performance and memory efficiency
+    #defaults to the following:
+    'APACHE_DISABLE_MODULES'=['alias','auth_basic','authn_file','authz_default','authz_groupfile',
+                              'authz_user','autoindex','cgid','dir',
+                          'setenvif','status'],         
     #Virtualenv/Pip
     DEPLOYMENT_ROOT = ''# defaults to /home/$USER. 
     DJANGO_REQUIREMENT = '' #defaults to your current django version. A pip requirements string for the version of Django to install
