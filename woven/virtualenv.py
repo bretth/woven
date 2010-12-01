@@ -16,7 +16,7 @@ from fabric.contrib.console import confirm
 
 from woven.deployment import mkdirs, run_once_per_host_version, deploy_files
 from woven.environment import deployment_root,set_server_state, server_state, State
-from woven.webservers import _get_django_sites, _ls_sites, stop_webservers, start_webservers, domain_sites
+from woven.webservers import _get_django_sites, _ls_sites, _sitesettings_files, stop_webservers, start_webservers, domain_sites
 from fabric.contrib.files import append
 
 def active_version():
@@ -115,14 +115,14 @@ def sync_db():
         site_ids = sites.keys()
         site_ids.sort()
         for site in site_ids:
-            site_settings = '.'.join([env.project_package_name,'sitesettings',sites[site].replace('.','_')])
-            site_settings_py = '.'.join([sites[site].replace('.','_'),'py'])
-            if not exists(site_settings_py): continue
-            if env.verbosity:
-                print " * python manage.py syncdb --noinput --settings=%s"% site_settings
-            output = run(' '.join(['source',venv,'&&',"./manage.py syncdb --noinput --settings=%s"% site_settings]))
-            if env.verbosity:
-                print output
+            for settings_file in _sitesettings_files():
+                site_settings = '.'.join([env.project_package_name,'sitesettings',settings_file.replace('.py','')])
+                if env.verbosity:
+                    print " * python manage.py syncdb --noinput --settings=%s"% site_settings
+                output = sudo(' '.join(['source',venv,'&&',"./manage.py syncdb --noinput --settings=%s"% site_settings]),
+                              user='site_%s'% site)
+                if env.verbosity:
+                    print output
 
 @runs_once
 def manual_migration():
@@ -159,18 +159,17 @@ def migration():
         site_ids = sites.keys()
         site_ids.sort()
         for site in site_ids:
-            site_settings = '.'.join([env.project_package_name,'sitesettings',sites[site].replace('.','_')])
-            site_settings_py = '.'.join([sites[site].replace('.','_'),'py'])
-            if not exists(site_settings_py): continue
-            cmdpt2 = ' '.join(["python manage.py migrate",env.migration])
-            if hasattr(env,"fakemigration"):
-                cmdpt2 = ' '.join([cmdpt2,'--fake'])
-            cmdpt2 = ''.join([cmdpt2,'--settings=',site_settings])
+            for settings_file in _sitesettings_files():
+                site_settings = '.'.join([env.project_package_name,'sitesettings',settings_file.replace('.py','')])
+                cmdpt2 = ' '.join(["python manage.py migrate",env.migration])
+                if hasattr(env,"fakemigration"):
+                    cmdpt2 = ' '.join([cmdpt2,'--fake'])
+                cmdpt2 = ''.join([cmdpt2,'--settings=',site_settings])
+                if env.verbosity:
+                    print " *", cmdpt2
+                output = sudo(' '.join([cmdpt1,cmdpt2]),user='site_%s'% site)
             if env.verbosity:
-                print " *", cmdpt2
-            output = run(' '.join([cmdpt1,cmdpt2]))
-        if env.verbosity:
-            print output
+                print output
     return           
 
 @run_once_per_host_version

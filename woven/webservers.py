@@ -128,13 +128,14 @@ def _get_django_sites():
             #a point of failure for installations
             with settings(warn_only=True):
                 output = run(' '.join(['source',venv,'&&',"./manage.py dumpdata sites"]))
+
                 if output.failed:
                     print "ERROR: There was an error running ./manage.py on the node"
                     print "See the troubleshooting docs for hints on how to diagnose deployment issues"
                     if hasattr(output, 'stderr'):
                         print output.stderr
                     sys.exit(1)
-                    
+            output = output.split('\n')[-1] #ignore any lines prior to the data being dumped
             sites = json.loads(output)
             env.sites = {}
             for s in sites:
