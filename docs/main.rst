@@ -7,9 +7,9 @@ Woven
     
 * provides a standard Apache & Nginx webserver configuration that you can change as required.
     
-* enables you to define custom Ubuntu etc configuration files in your project
+* enables you to define custom linux etc configuration files in your project
 
-* enable you to define roles for your servers with combinations of Ubuntu packages
+* enable you to define roles for your servers with combinations of linux packages
     
 * integrates into standard Fabric fabfile.py scripts as projects grow.
 

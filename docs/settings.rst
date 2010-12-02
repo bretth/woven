@@ -46,6 +46,9 @@ Django settings.py. They are all optional.
     Put any additional packages here to save overwriting the base_packages 
     HOST_EXTRA_PACKAGES = []
     
+    #define a list of repositories/sources to search for packages
+    LINUX_PACKAGE_REPOSITORIES = [] # eg ['ppa:bchesneau/gunicorn']
+    
     #Role packages give you complete flexibility in defining packages with ROLEDEFS.
     #By default any role that does not have role packages defined installs the HOST_BASE_PACKAGES + EXTRA_PACKAGES instead
     ROLE_PACKAGES = {} #eg ROLE_PACKAGES = {'postgresql':['postgresql']}
