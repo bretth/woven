@@ -34,8 +34,9 @@ woven_env = _AttributeDict({
 'UFW_RULES':['allow woven_project'], 
 'ROLE_UFW_RULES':{},
     
-#The default ubuntu packages that are setup. It is NOT recommended you change these:
-'HOST_BASE_PACKAGES':['ufw', #firewall
+#The default packages that are setup. It is NOT recommended you change these:
+'HOST_BASE_PACKAGES':[
+        'ufw', #firewall
         'subversion','git-core','mercurial','bzr', #version control
         'gcc','build-essential', 'python-dev', 'python-setuptools', #build
         'apache2','libapache2-mod-wsgi','nginx', #webservers
@@ -43,14 +44,20 @@ woven_env = _AttributeDict({
         'python-imaging', #pil
         'python-psycopg2','python-mysqldb','python-pysqlite2'], #default database drivers
 
-'HOST_EXTRA_PACKAGES':[], #optional - additional ubuntu packages as required
+'HOST_EXTRA_PACKAGES':[], #optional - additional packages as required
 
 'ROLE_PACKAGES':{},#define ROLEDEFS packages instead of using HOST_BASE_PACKAGES + HOST_EXTRA_PACKAGES
 
 #Apache list of modules to disable for performance and memory efficiency
+#This list gets disabled
 'APACHE_DISABLE_MODULES':['alias','auth_basic','authn_file','authz_default','authz_groupfile',
                           'authz_user','autoindex','cgid','dir',
                           'setenvif','status'], 
+#Specify a linux base backend to use. Not yet implemented
+#'LINUX_BASE':'debian',
+
+#define a list of repositories/sources to search for packages
+'LINUX_PACKAGE_REPOSITORIES':[], # eg ppa:bchesneau/gunicorn
     
 #Virtualenv/Pip
 'DEPLOYMENT_ROOT':'',

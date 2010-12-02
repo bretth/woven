@@ -10,7 +10,7 @@ from fabric.decorators import runs_once
 
 from woven.deployment import deploy_files, mkdirs, run_once_per_host_version, upload_template
 from woven.environment import deployment_root, server_state, _root_domain
-from woven.ubuntu import add_user
+from woven.linux import add_user
 
 def _activate_sites(path, filenames):
     enabled_sites = _ls_sites(path)            

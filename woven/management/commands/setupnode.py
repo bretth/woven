@@ -12,7 +12,7 @@ from woven.management.base import WovenCommand
 
 class Command(WovenCommand):
     """
-    Setup a baseline Ubuntu server ready for deployment
+    Setup a baseline linux server ready for deployment
     
     Basic Usage:
     ``python manage.py setupnode [user]@[hoststring]``
@@ -30,7 +30,7 @@ class Command(WovenCommand):
         ),
         
     )
-    help = "Setup a baseline Ubuntu host"
+    help = "Setup a baseline linux host"
     requires_model_validation = False
     
     def handle_host(self,*args, **options):

@@ -9,11 +9,11 @@ from woven.environment import check_settings, deployment_root, set_env, patch_pr
 
 from woven.project import deploy_static, deploy_media, deploy_project, deploy_db, deploy_templates
 
-from woven.ubuntu import add_user, apt_get_install, apt_get_purge, port_is_open, skip_disable_root
-from woven.ubuntu import install_packages, post_install_package, post_setupnode
-from woven.ubuntu import upgrade_ubuntu, setup_ufw, disable_root
-from woven.ubuntu import uncomment_sources, restrict_ssh, upload_ssh_key
-from woven.ubuntu import change_ssh_port, set_timezone, ubuntu_version, upload_etc
+from woven.linux import add_user, install_package, port_is_open, skip_disable_root
+from woven.linux import install_packages, post_install_package, post_setupnode
+from woven.linux import upgrade_packages, setup_ufw, disable_root
+from woven.linux import add_repositories, restrict_ssh, upload_ssh_key
+from woven.linux import change_ssh_port, set_timezone, lsb_release, upload_etc
 
 from woven.virtualenv import activate, active_version
 from woven.virtualenv import mkvirtualenv, rmvirtualenv, pip_install_requirements
@@ -47,10 +47,10 @@ def setupnode(overwrite=False):
       
     upload_ssh_key()
     restrict_ssh()
-    uncomment_sources()
-    upgrade_ubuntu()
+    add_repositories()
+    upgrade_packages()
     setup_ufw()
-    install_packages(overwrite=overwrite)
+    install_packages()
     upload_etc()
     post_install_package()
     
