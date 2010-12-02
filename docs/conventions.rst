@@ -16,7 +16,7 @@ A setup file must be defined in your distribution.
 
     from distutils.core import setup
     
-    setup(name='example_distribution',
+    setup(name='example_distribution', #This is what your virtualenvs will be called
           version='0.1',
           packages=['example_project'],
           )

@@ -13,7 +13,7 @@ Woven
     
 * integrates into standard Fabric fabfile.py scripts as projects grow.
 
-* hooks for custom per project and per app deployment and setup functionality
+* hooks for custom per project and per app deploy and setupnode functionality
     
 * integrates with South for migrations
     
@@ -71,27 +71,41 @@ Custom Hooks
 
 Woven provides hooks into the setupnode and deploy commands.
 
-To add custom functionality to a woven deployment create a `deploy.py` file in your project or django app, and define any of the following.
+To add custom functionality to a woven deployment create a ``deploy.py`` file in your project or django app, and define any of the following.
 
 Post install package
 ---------------------
 
-Define a `def post_install_[package_name]()` function to run code if the Ubuntu package is installed by woven, and after any /etc configuration is uploaded. For example you might define `def post_install_postgresql()` to setup a postgresql database.
+Define a ``def post_install_[package_name]()`` function to run code if the Ubuntu package is installed by woven, and after any /etc configuration is uploaded. For example you might define ``def post_install_postgresql()`` to setup a postgresql database.
 
 Post setupnode
 --------------
 
-`def post_setupnode()` executes at the end of the setupnode process.
+``def post_setupnode()`` executes at the end of the setupnode process.
 
 Post deploy
 -----------
 
-`def post_deploy()` executes at the end of deployment of your project but prior to activation.
+``def post_deploy()`` executes at the end of deployment of your project but prior to activation.
+
+Multiple Sites
+==============
+
+Woven creates a user on the node for each SITE_ID. The users will be called ``site_1``, ``site_2`` ... The Apache site templates use process groups to launch modwsgi daemons running as the site user. The settings file template uses getpass.getuser() to get the current user and dynamically set the SITE_ID in the settings. In this fashion a single settings file can be used for multiple sites.
+
+Since Django sites uses a SITE_ID rather than a domain to represent the site, it doesn't really know about subdomains, but you might want might make a default admin view of your SITE_ID = 1 at admin.example.com. To accommodate this you can make a settings file called admin_settings.py in the sitesettings folder. 
 
 Development
 ===========
 
-The core highlevel functions setupnode, deploy, patch, bundle, and activate will not change, but some other parts of the api may still change between versions. I am aiming to release a beta version sometime after the release of Fabric 1.0.
+The core highlevel functions setupnode, deploy, patch, bundle, and activate will not change, but some other parts of the api may still change between versions. I am aiming to release a beta version (something less than 1.0) sometime after the release of Fabric 1.0, since Fabric 1.0 will currently break Woven due to backwards incompatabilities. After that time Woven will depend on Fabric >= 1.0. 
+
+Future Goals
+------------
+
+* I would like to see other ways of serving django behind nginx implemented. Particularly I'm interested in implementing backends for uwsgi and gunicorn.
+* Although it's currently tied to Ubuntu, I'm happy to accept patches to make it work on other similar distributions.
+* The future is distutils2. I actually think the 1.0 version of woven should make full use of the new packaging system and metadata. When packaging no longer sucks, I can simplify woven to leverage it, and it has implications for django project conventions. I'll be looking for distutils2 to move to beta before I begin to develop for it.
 
 Testing
 --------

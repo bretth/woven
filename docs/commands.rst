@@ -55,7 +55,7 @@ Basic Usage:
 
 *options*
 
-The ``--overwrite`` option will remove and re-deploy the entire project.
+The ``--overwrite`` option will remove and re-deploy the entire project for that version. By default deploy will never overwrite an existing version of your project.
 
 *South migration options*
 
@@ -71,16 +71,16 @@ deploy integrates with south if it is installed. By default *all* migrations are
 
 The deploy command does the following:
 
-1. For your first deployment it will deploy your sqlite database
-2. Create a virtualenv for the project version
-3. Install django. By default it will install the development version. You can set a pip requirements string DJANGO_REQUIREMENT in your settings.py if you want svn trunk or some other specific version
+1. For your first deployment it will deploy your development sqlite database (if it exists)
+2. Create a virtualenv for the distribution version
+3. Install django. By default it will install the local version. You can set a pip requirements string DJANGO_REQUIREMENT in your settings.py if you want svn trunk or some other specific version.
 4. Install dependencies from one or more requirement req* files. eg. req, requirements.txt etc. If one doesn't exist then it will create one locally and add woven in it by default.
-5. Creates a local sitesettings folder and a settings file for your server [domain].py if it doesn't already exist. You can see how woven lays out your project on the server in the sitesettings file.
+5. Creates a local sitesettings folder and a settings file for your server settings.py if it doesn't already exist. You can see how woven lays out your project on the server in the sitesettings\settings.py file.
 6. Deploys your project to the virtualenv on the server
 7. Deploys your root (shortest path) TEMPLATE_DIR into a templates directory on the server.
 8. Deploys admin media or STATIC_ROOT setting (if you use django-staticfiles) into a virtualenv static directory.
 9. Deploys anything at MEDIA_ROOT into a non-virtualenv public directory.
-10. Deploys your domain wsgi file into a virtualenv wsgi directory as [domain].wsgi
+10. Deploys your wsgi file into a virtualenv wsgi directory as settings.wsgi
 11. Renders your apache and nginx templates and deploys them into the sites-available with the version in the name.
 12. Stops the webservices
 13. Syncs the database
@@ -93,7 +93,7 @@ The deploy command does the following:
 patch
 -----
 
-Patch the current version of your project on host[s] and restart webservices
+Patch the current version of your project on host[s] and restart\reload webservices
 Includes project, web configuration, media, and wsgi but does not pip install
 
 Basic Usage:
@@ -104,11 +104,11 @@ You can just patch a part of the deployment with a subcommand.
 
 The possible subcommands are::
 
-    project, templates, static, public, wsgi, webconf
+    project, templates, static, media, wsgi, webconf
 
 Example:
 
-``python manage.py patch public woven@host.example.com``
+``python manage.py patch media woven@host.example.com``
 
 
 activate
@@ -141,7 +141,7 @@ Example:
 startsites
 ----------
 
-Create new sitesettings files for new sites, and deploy sitesettings, wsgi, and webconf for the new sites.
+Deploy webconf for the new sites and create a new user ``site_n`` where n is the SITE_ID of the new site(s).
 
 Within Django sites are created on the database but use the SITE_ID in the settings file to designate which site is loaded. This command does not create the sites in the database but merely creates and deploys the configuration files needed to serve them.
 

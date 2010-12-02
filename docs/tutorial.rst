@@ -175,7 +175,7 @@ Lets deploy our helloadmin project
 
 Deploy sets up a virtual environment on the server and deploys your sqlite3 database, django, and your project and all your dependencies into it. Everything is versioned right down to the web configuration files. The only thing that isn't versioned is your database and MEDIA_ROOT. If you get errors, from misconfiguration or package installs, you can just fix your issue and run it again until it completes and activates your environment.
 
-You'll also notice woven has created a pip ``requirements.txt`` file and a ``sitesettings`` folder with some settings files inside. These will inherit and override your local settings file. A settings file is created for each site, just in case you get inspired to start rolling out sites for friends.
+You'll also notice woven has created a pip ``requirements.txt`` file and a ``sitesettings`` folder with some settings files inside. These will inherit and override your local settings file. 
 
 Patch
 ------
@@ -186,7 +186,7 @@ Of course mistakes are made, but to avoid stupidity and overwriting a working in
 
     python manage.py patch woven@example.com
     
-This will update existing files in your project, media and webserver configurations. It won't delete any files or update any dependencies. To update dependencies to a new library version you would need to increase your setup.py version and re-run deploy (or use the destructive --overwrite option).
+This will update existing files in your project, media and webserver configurations. It won't delete any files or update any dependencies. To update dependencies to a new library version you should increase your setup.py version and re-run deploy.
 
 Patch can also just upload a specific part of your project using a subcommand. For example to just patch your webconf files:
 
@@ -201,9 +201,9 @@ Where to now
 
 If you want to work directly on the server you can SSH into your host and type::
 
-    workon example
+    workon hellodjango
     
-This will use virtualenvwrapper to activate your current virtualenv and drop you into the project sitesettings manage.py directory. A convenience manage.py and settings.py is provided to run manage.py from there on the first site.
+This will use virtualenvwrapper to activate your current virtualenv and drop you into the project sitesettings manage.py directory. A convenience manage.py is provided to run manage.py from there on the first site.
 
 Of course installing packages from a requirements file can be problematic if pypi is down.  To get around this first set your DJANGO_REQUIREMENT setting to file:///path/to/Django-x.x.x.tar.gz to rsync against a local copy. Next make use of  ``manage.py bundle`` command. This will use pip to bundle all the requirements into a dist folder in the distribution. When deploying woven will look in the dist directory first and install from a bundle with the same name as the requirements file.
 
