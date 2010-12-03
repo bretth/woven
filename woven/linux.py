@@ -1,9 +1,14 @@
-#!/usr/bin/env python
+"""
+Replaces the ubuntu.py module with more generic linux functions.
+"""
+#To implement different backends we'll either
+#split out functions into function and _backend_functions
+#or if the difference is marginal just use if statements
 import os, socket, sys
 
 from django.utils import importlib
 
-from fabric.state import env, connections
+from fabric.state import  _AttributeDict, env, connections
 from fabric.context_managers import settings, hide
 from fabric.operations import prompt, run, sudo, get, put
 from fabric.contrib.files import comment, uncomment, contains, exists, append, sed
@@ -12,7 +17,38 @@ from fabric.network import join_host_strings, normalize
 
 from woven.deployment import _backup_file, _restore_file, deploy_files, upload_template
 from woven.environment import server_state, set_server_state
-    
+
+def _get_template_files(template_dir):
+    etc_dir = os.path.join(template_dir,'woven','etc')
+    templates = []
+    for root, dirs, files in os.walk(etc_dir):
+        if files:
+            for f in files:
+                if f[0] <> '.':
+                    new_root = root.replace(template_dir,'')
+                    templates.append(os.path.join(new_root,f))
+
+    return set(templates)
+
+def add_repositories():
+    """
+    Adds additional sources as defined in LINUX_PACKAGE_REPOSITORIES.
+
+    """
+    if env.LINUX_PACKAGE_REPOSITORIES == server_state('linux_package_repositories'): return
+    if env.verbosity:
+        print env.host, "UNCOMMENTING SOURCES in /etc/apt/sources.list and adding PPAs"
+    if contains(filename='/etc/apt/sources.list',text='#(.?)deb(.*)http:(.*)universe'):
+
+        _backup_file('/etc/apt/sources.list')
+        uncomment('/etc/apt/sources.list','#(.?)deb(.*)http:(.*)universe',use_sudo=True)
+    install_package('python-software-properties')
+    for p in env.LINUX_PACKAGE_REPOSITORIES:
+        sudo('add-apt-repository %s'% p)
+        if env.verbosity:
+            print 'added source', p
+    set_server_state('linux_package_repositories',env.LINUX_PACKAGE_REPOSITORIES)
+
 def add_user(username='',password='',group='', site_user=False):
     """
     Adds the username
@@ -26,22 +62,8 @@ def add_user(username='',password='',group='', site_user=False):
         sudo('rm -rf /tmp/users.txt')
     else:
         sudo('useradd -M -d /var/www -s /bin/bash %s'% username)
-        sudo('usermod -a -G www-data %s'% username)
+        sudo('usermod -a -G www-data %s'% username)    
 
-    
-def apt_get_install(package):
-    """
-    Wrapper around apt_get install
-    """
-    #install silent and answer yes by default -qqy
-    sudo('apt-get install -qqy %s'% package, pty=True)
-
-def apt_get_purge(package):
-    """
-    Wrapper around apt-get purge
-    """
-    sudo('apt-get purge -qqy %s'% package, pty=True)
-    
 def change_ssh_port():
     """
     For security woven changes the default ssh port.
@@ -62,28 +84,6 @@ def change_ssh_port():
 
         sudo('/etc/init.d/ssh restart')
         return True
-
-def port_is_open():
-    """
-    Determine if the default port and user is open for business.
-    """
-    with settings(hide('aborts'), warn_only=True ):
-        try:
-            if env.verbosity:
-                print "Testing node for previous installation on port %s:"% env.port
-            distribution, version = ubuntu_version()
-        except KeyboardInterrupt:
-            if env.verbosity:
-                print >> sys.stderr, "\nStopped."
-            sys.exit(1)
-        except: #No way to catch the failing connection without catchall? 
-            return False
-        if version < 9.10 and 'Ubuntu' in distribution:
-            print env.host, 'ERROR: Woven is only compatible with Ubuntu versions 9.10 and greater'
-            sys.exit(1)
-        elif distribution <> 'Ubuntu':
-            print env.host, 'WARNING: Woven has only been tested on Ubuntu >= 9.10. It may not work as expected on',distribution, version
-    return True
 
 def disable_root():
     """
@@ -172,112 +172,123 @@ def disable_root():
 
     return True
 
-def skip_disable_root():
-    return env.root_disabled
-
-def _isOpen(host,port):
+def install_package(package):
     """
-    Determine if a host port is open
+    apt-get install [package]
     """
-    ip = socket.gethostbyname(host)
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        s.connect((ip, int(port)))
-        s.shutdown(2)
-        return True
-    except:
-        return False
-
-def ubuntu_version():
-    """
-    Get the version # of Ubuntu as a float
-    """
-    if not exists('/etc/issue'): return 'UNKNOWN',0
-    version = run('cat /etc/issue').split(' ')[:2]
-    try:
-        version[1] = float(version[1])
-    except ValueError:
-        pass
-    return version[0],version[1]
-
-   
-def install_packages(rollback = False,overwrite=False):
-    """
-    Install a set of baseline packages on Ubuntu Server
-    and configure where necessary
+    #install silent and answer yes by default -qqy
+    sudo('apt-get install -qqy %s'% package, pty=True)
     
-    overwrite will allow existing configurations to be overwritten
+def install_packages():
+    """
+    Install a set of baseline packages and configure where necessary
+
     """
 
-    if not rollback:
-        if env.verbosity:
-            print env.host, "INSTALLING & CONFIGURING HOST PACKAGES:"
-        #Remove apparmor - TODO we may enable this later
+    if env.verbosity:
+        print env.host, "INSTALLING & CONFIGURING HOST PACKAGES:"
+    #Get a list of installed packages
+    p = run("dpkg -l | awk '/ii/ {print $2}'").split('\n')
+    
+    #Remove apparmor - TODO we may enable this later
+    if not server_state('apparmor-disabled') and 'apparmor' in p:
         with settings(warn_only=True):
             sudo('/etc/init.d/apparmor stop')
             sudo('update-rc.d -f apparmor remove')
-        #Get a list of installed packages
-        p = run("dpkg -l | awk '/ii/ {print $2}'").split('\n')
+            set_server_state('apparmor-disabled')
+
+    #The principle we will use is to only install configurations and packages
+    #if they do not already exist (ie not manually installed or other method)
     
-        #The principle we will use is to only install configurations and packages
-        #if they do not already exist (ie not manually installed or other method)
-        
-        for package in env.packages:
-            if not package in p:
-                preinstalled = False
-                apt_get_install(package)
-                sudo("echo '%s' >> /var/local/woven/packages_installed.txt"% package)
-                if package == 'apache2':
-                    sudo("a2dissite 000-default")
-
-                if env.verbosity:
-                    print ' * installed '+package
-                env.installed_packages += package
-            else:
-                preinstalled = True
-
-            if package == 'apache2':
-                sed('/etc/apache2/apache2.conf',before='KeepAlive On',after='KeepAlive Off',use_sudo=True)
-                for module in env.APACHE_DISABLE_MODULES:
-                    sudo('rm -f /etc/apache2/mods-enabled/%s*'% module)
-        #Install base python packages
-        #We'll use easy_install at this stage since it doesn't download if the package
-        #is current whereas pip always downloads.
-        #Once both these packages mature we'll move to using the standard Ubuntu packages
-        if 'python-setuptools' in env.packages:
-            sudo("easy_install -U virtualenv")
-            sudo("easy_install -U pip")
-            sudo("easy_install -U virtualenvwrapper")
-            if env.verbosity:
-                print " * easy installed pip, virtualenv, virtualenvwrapper"
-            if not contains("source /usr/local/bin/virtualenvwrapper.sh","/home/%s/.profile"% env.user):
-                append("export WORKON_HOME=$HOME/env","/home/%s/.profile"% env.user)
-                append("source /usr/local/bin/virtualenvwrapper.sh","/home/%s/.profile"% env.user)
-
-        #cleanup after easy_install
-        sudo("rm -rf build")
-    else: #rollback
-        p = sudo('cat /var/local/woven/packages_installed.txt').split('\n')
-        for package in env.packages:
-            if package in p:
-                apt_get_purge(package)
-                p.remove(package)
-    
-        #Finally write back the list of packages
-        sudo('rm -f /var/local/woven/packages_installed.txt')
-        for package in p:
+    for package in env.packages:
+        if not package in p:
+            preinstalled = False
+            install_package(package)
             sudo("echo '%s' >> /var/local/woven/packages_installed.txt"% package)
-        
-        #Rollback unattended updates
-        if server_state('unattended_config_created'):
-            sudo('rm -rf /etc/apt/apt.conf.d/10periodic')
-            set_server_state('unattended_config_created',delete=True)
-        #Finally remove any unneeded packages
-        sudo('apt-get autoremove -qqy')
+            if package == 'apache2':
+                sudo("rm -f /etc/apache2/sites-enabled/000-default")
+                sed('/etc/apache2/apache2.conf',before='KeepAlive On',after='KeepAlive Off',use_sudo=True)
+
+
+            if env.verbosity:
+                print ' * installed '+package
+            env.installed_packages += package
+        else:
+            preinstalled = True
+        if package == 'apache2':
+            for module in env.APACHE_DISABLE_MODULES:
+                sudo('rm -f /etc/apache2/mods-enabled/%s*'% module)
+
+    #Install base python packages
+    #We'll use easy_install at this stage since it doesn't download if the package
+    #is current whereas pip always downloads.
+    #Once both these packages mature we'll move to using the standard Ubuntu packages
+    if not server_state('pip-venv-wrapper-installed') and 'python-setuptools' in env.packages:
+        sudo("easy_install virtualenv")
+        sudo("easy_install pip")
+        sudo("easy_install virtualenvwrapper")
+        if env.verbosity:
+            print " * easy installed pip, virtualenv, virtualenvwrapper"
+        set_server_state('pip-venv-wrapper-installed')
+    if not contains("source /usr/local/bin/virtualenvwrapper.sh","/home/%s/.profile"% env.user):
+        append("export WORKON_HOME=$HOME/env","/home/%s/.profile"% env.user)
+        append("source /usr/local/bin/virtualenvwrapper.sh","/home/%s/.profile"% env.user)
+
+    #cleanup after easy_install
+    sudo("rm -rf build")
+
+def lsb_release():
+    """
+    Get the linux distribution information and return in an attribute dict
+    
+    The following attributes should be available:
+    base, distributor_id, description, release, codename
+    
+    For example Ubuntu Lucid would return
+    base = debian
+    distributor_id = Ubuntu
+    description = Ubuntu 10.04.x LTS
+    release = 10.04
+    codename = lucid
+    
+    """
+    
+    output = run('lsb_release -a').split('\n')
+    release = _AttributeDict({})
+    for line in output:
+        try:
+            key, value = line.split(':')
+        except ValueError:
+            continue
+        release[key.strip().replace(' ','_').lower()]=value.strip()
+   
+    if exists('/etc/debian_version'): release.base = 'debian'
+    elif exists('/etc/redhat-release'): release.base = 'redhat'
+    else: release.base = 'unknown'
+    return release
+    
+def port_is_open():
+    """
+    Determine if the default port and user is open for business.
+    """
+    with settings(hide('aborts'), warn_only=True ):
+        try:
+            if env.verbosity:
+                print "Testing node for previous installation on port %s:"% env.port
+            distribution = lsb_release()
+        except KeyboardInterrupt:
+            if env.verbosity:
+                print >> sys.stderr, "\nStopped."
+            sys.exit(1)
+        except: #No way to catch the failing connection without catchall? 
+            return False
+        if distribution.distributor_id <> 'Ubuntu':
+            print env.host, 'WARNING: Woven has only been tested on Ubuntu >= 10.04. It may not work as expected on',distribution.description
+    return True
 
 def post_install_package():
     """
-    Run any functions post install a matching Ubuntu package.
+    Run any functions post install a matching package.
     Hook functions are in the form post_install_[package name] and are
     defined in a deploy.py file
     
@@ -476,24 +487,12 @@ def setup_ufw():
             set_server_state('ufw_rules',list(u))
     sudo('ufw reload')
 
+def skip_disable_root():
+    return env.root_disabled
 
-def uncomment_sources(rollback=False):
+def upgrade_packages():
     """
-    Uncomments universe sources in /etc/apt/sources.list if necessary
-    #(.?)deb(.*)http:(.*)universe
-    """
-    if not rollback:
-        if contains(filename='/etc/apt/sources.list',text='#(.?)deb(.*)http:(.*)universe'):
-            if env.verbosity:
-                print env.host, "UNCOMMENTING universe SOURCES in /etc/apt/sources.list"
-            _backup_file('/etc/apt/sources.list')
-            uncomment('/etc/apt/sources.list','#(.?)deb(.*)http:(.*)universe',use_sudo=True)
-    else:
-        _restore_fie('/etc/apt/sources.list')
-
-def upgrade_ubuntu():
-    """
-    Update to latest packages 
+    apt-get update and apt-get upgrade
     """
     if env.verbosity:
         print env.host, "apt-get UPDATING and UPGRADING SERVER PACKAGES"
@@ -505,18 +504,6 @@ def upgrade_ubuntu():
         print "If apt-get upgrade does not complete within 10 minutes"
         print "see troubleshooting docs *before* aborting the process to avoid package management corruption."
     sudo('apt-get -qqy upgrade')
-
-def _get_template_files(template_dir):
-    etc_dir = os.path.join(template_dir,'woven','etc')
-    templates = []
-    for root, dirs, files in os.walk(etc_dir):
-        if files:
-            for f in files:
-                if f[0] <> '.':
-                    new_root = root.replace(template_dir,'')
-                    templates.append(os.path.join(new_root,f))
-
-    return set(templates)
 
 def upload_etc():
     """
@@ -607,4 +594,9 @@ def upload_ssh_key(rollback=False):
             _restore_file('/home/%s/.ssh/authorized_keys'% env.user)
         else: #no pre-existing keys remove the .ssh directory
             sudo('rm -rf /home/%s/.ssh')
-        return
+        return    
+
+  
+
+        
+
