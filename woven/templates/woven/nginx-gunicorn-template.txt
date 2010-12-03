@@ -1,0 +1,40 @@
+#basic template for nginx with gunicorn backend
+server {
+    listen   80;
+    server_name  {{ domain }};
+
+    error_log /var/log/nginx/{{ u_domain }}_nginx_error.log;
+    access_log off;
+    #access_log /var/log/nginx/{{ u_domain }}_nginx_access.log;
+    
+    
+    location / {
+        allow all;
+        proxy_pass    http://127.0.0.1:10081/;
+        include       /etc/nginx/proxy.conf;
+        
+    }
+
+    error_page 502 503 504 /maintenance.html;
+    location /maintenance.html {
+        root /var/www/nginx-default/;
+    }
+    
+
+    {% if MEDIA_URL %}
+    location {{ MEDIA_URL }} {
+            root  {{ deployment_root }}/public/; 
+
+    }
+    {% endif %}
+    
+    {% if STATIC_URL %}
+    location {{ STATIC_URL }} {
+            root  {{ deployment_root }}/env/{{ project_name }}/static/; 
+
+    }    
+    {% endif %}
+    
+    
+
+}
