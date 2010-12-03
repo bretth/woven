@@ -543,10 +543,11 @@ def upload_etc():
     context = {'host_ip':socket.gethostbyname(env.host)}
     for t in etc_templates:
         dest = t.replace('woven','',1)
-        directory = os.path.split(dest)[0]
+        directory,filename = os.path.split(dest)
         if directory in ['/etc','/etc/init.d','/etc/init','/etc/logrotate.d','/etc/rsyslog.d']:
             #must be replacing an existing file
-            if not exists(dest): continue
+            package_name = filename.split('.')[0]
+            if not exists(dest) and package_name not in env.packages: continue
         elif not exists(directory, use_sudo=True): continue
         uploaded = upload_template(t,dest,context=context,use_sudo=True, modified_only=True)
         if uploaded:
