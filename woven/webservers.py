@@ -48,6 +48,7 @@ def _deploy_webconf(remote_dir,template):
                     "root_domain":env.root_domain,
                     "user":env.user,
                     "site_user":site_user,
+                    "SITE_ID":d.site_id,
                     "host_ip":socket.gethostbyname(env.host),
                     "wsgi_filename":wsgi_filename,
                     "MEDIA_URL":media_url,
@@ -184,14 +185,18 @@ def deploy_webconf():
     deployed = []
     log_dir = '/'.join([deployment_root(),'log'])
     #TODO - incorrect - check for actual package to confirm installation
-    if exists('/etc/apache2/sites-enabled/') and exists('/etc/nginx/sites-enabled'):
+    if webserver_list():
         if env.verbosity:
             print env.host,"DEPLOYING webconf:"
         if not exists(log_dir):
             run('ln -s /var/log log')
         #deploys confs for each domain based on sites app
-        deployed += _deploy_webconf('/etc/apache2/sites-available','django-apache-template.txt')
-        deployed += _deploy_webconf('/etc/nginx/sites-available','nginx-template.txt')
+        if 'apache2' in env.packages:
+            deployed += _deploy_webconf('/etc/apache2/sites-available','django-apache-template.txt')
+            deployed += _deploy_webconf('/etc/nginx/sites-available','nginx-template.txt')
+        elif 'gunicorn' in env.packages:
+            deployed += _deploy_webconf('/etc/nginx/sites-available','nginx-gunicorn-template.txt')
+            
         upload_template('woven/maintenance.html','/var/www/nginx-default/maintenance.html',use_sudo=True)
         sudo('chmod ugo+r /var/www/nginx-default/maintenance.html')
     else:
@@ -203,8 +208,13 @@ def deploy_webconf():
 def deploy_wsgi():
     """
     deploy python wsgi file(s)
-    """
-    remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'wsgi'])
+    """ 
+    if 'libapache2-mod-wsgi' in env.packages:
+        remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'wsgi'])
+        wsgi = 'apache2'
+    elif 'gunicorn' in env.packages:
+        remote_dir = '/etc/init'
+        wsgi = 'gunicorn'
     deployed = []
     
     #ensure project apps path is also added to environment variables as well as wsgi
@@ -220,40 +230,55 @@ def deploy_wsgi():
             append(pap,postactivate)
         
     if env.verbosity:
-        print env.host,"DEPLOYING wsgi", remote_dir
+        print env.host,"DEPLOYING wsgi", wsgi, remote_dir
 
     for file in _sitesettings_files(): 
         deployed += mkdirs(remote_dir)
         with cd(remote_dir):
-            filename = file.replace('.py','.wsgi')
+            settings_module = file.replace('.py','')
             context = {"deployment_root":deployment_root(),
                        "user": env.user,
                        "project_name": env.project_name,
                        "project_package_name": env.project_package_name,
                        "project_apps_path":env.PROJECT_APPS_PATH,
-                       "settings": filename.replace('.wsgi',''),
+                       "settings": settings_module,
                        }
-            upload_template('/'.join(['woven','django-wsgi-template.txt']),
+            if wsgi == 'apache2':
+                filename = file.replace('.py','.wsgi')
+                upload_template('/'.join(['woven','django-wsgi-template.txt']),
                                 filename,
                                 context,
                             )
+            elif wsgi == 'gunicorn':
+                filename = 'gunicorn-%s.conf'% env.project_name
+                upload_template('/'.join(['woven','gunicorn.conf']),
+                                filename,
+                                context,
+                                backup=False,
+                                use_sudo=True
+                            )                
+                
             if env.verbosity:
                 print " * uploaded", filename
             #finally set the ownership/permissions
             #We'll use the group to allow www-data execute
-            sudo("chown %s:www-data %s"% (env.user,filename))
-            run("chmod ug+xr %s"% filename)
+            if wsgi == 'apache2':
+                sudo("chown %s:www-data %s"% (env.user,filename))
+                run("chmod ug+xr %s"% filename)
+            elif wsgi == 'gunicorn':
+                sudo("chown root:root %s"% filename)
+                sudo("chmod go+r %s"% filename)
+                
     return deployed
 
-def has_webservers():
+def webserver_list():
     """
-    simple test for webserver packages
+    list of webserver packages
     """
     p = set(env.packages)
-    w = set(['apache','nginx'])
+    w = set(['apache2','gunicorn','uwsgi','nginx'])
     installed = p & w
-    if installed: return True
-    else: return False
+    return list(installed)
     
 def reload_webservers():
     """
@@ -279,46 +304,63 @@ def reload_webservers():
         print ' *',n
     return True    
 
-def stop_webservers():
+def stop_webserver(server):
     """
-    Stop apache2
+    Stop server
     """
     #TODO - distinguish between a warning and a error on apache
-    with settings(warn_only=True):
-        if env.verbosity:
-            print env.host,"STOPPING apache2"
-        a = sudo("/etc/init.d/apache2 stop")
-        if env.verbosity:
-            print '',a
-        
+    if server == 'apache2':
+        with settings(warn_only=True):
+            if env.verbosity:
+                print env.host,"STOPPING apache2"
+            a = sudo("/etc/init.d/apache2 stop")
+            if env.verbosity:
+                print '',a
+    elif server == 'gunicorn':
+        with settings(warn_only=True):
+            if env.verbosity:
+                print env.host,"STOPPING","%s-%s"% (server,env.project_name)
+            a = sudo("stop %s-%s"% (server,env.project_name))
+            if env.verbosity:
+                print '',a
     return True
 
-def start_webservers():
+def start_webserver(server):
     """
-    Start apache2 and start/reload nginx
+    Start server
     """
-    with settings(warn_only=True):
+    if server == 'apache2':
+        with settings(warn_only=True):
+            if env.verbosity:
+                print env.host,"STARTING apache2"
+            a = sudo("/etc/init.d/apache2 start")
+            if env.verbosity:
+                print '',a
+            
+        if a.failed:
+            print "ERROR: /etc/init.d/apache2 start failed"
+            print env.host, a
+            sys.exit(1)
+    elif server == 'nginx':
         if env.verbosity:
-            print env.host,"STARTING apache2"
-        a = sudo("/etc/init.d/apache2 start")
+            #Reload used to fail on Ubuntu but at least in 10.04 it works
+            print env.host,"RELOADING nginx"
+        with settings(warn_only=True):
+            s = run("/etc/init.d/nginx status")
+            if 'running' in s:
+                n = sudo("/etc/init.d/nginx reload")
+            else:
+                n = sudo("/etc/init.d/nginx start")
         if env.verbosity:
-            print '',a
-        
-    if a.failed:
-        print "ERROR: /etc/init.d/apache2 start failed"
-        print env.host, a
-        sys.exit(1)
-    if env.verbosity:
-        #Reload used to fail on Ubuntu but at least in 10.04 it works
-        print env.host,"RELOADING nginx"
-    with settings(warn_only=True):
-        s = run("/etc/init.d/nginx status")
-        if 'running' in s:
-            n = sudo("/etc/init.d/nginx reload")
-        else:
-            n = sudo("/etc/init.d/nginx start")
-    if env.verbosity:
-        print ' *',n
+            print ' *',n
+    else:
+        if env.verbosity:
+            print env.host, "STARTING","%s-%s"% (server,env.project_name)
+        with settings(warn_only=True):
+            n = sudo('start %s-%s'% (server,env.project_name))
+            if env.verbosity:
+                print ' *', n
+            
     return True
 
     

@@ -209,7 +209,6 @@ def install_packages():
                 #some sensible defaults -might move to putting this config in a template
                 sudo("rm -f /etc/apache2/sites-enabled/000-default")
                 sed('/etc/apache2/apache2.conf',before='KeepAlive On',after='KeepAlive Off',use_sudo=True)
-
                 sed('/etc/apache2/apache2.conf',before='StartServers          2', after='StartServers          1', use_sudo=True)
                 sed('/etc/apache2/apache2.conf',before='MaxClients          150', after='MaxClients          100', use_sudo=True)
 

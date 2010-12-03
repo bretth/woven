@@ -19,8 +19,8 @@ from woven.virtualenv import activate, active_version
 from woven.virtualenv import mkvirtualenv, rmvirtualenv, pip_install_requirements
 from woven.virtualenv import post_deploy
 
-from woven.webservers import deploy_wsgi, deploy_webconf, start_webservers, stop_webservers, reload_webservers
-from woven.webservers import has_webservers
+from woven.webservers import deploy_wsgi, deploy_webconf, start_webserver, stop_webserver, reload_webservers
+from woven.webservers import webserver_list
 
 def deploy(overwrite=False):
     """
@@ -55,8 +55,8 @@ def setupnode(overwrite=False):
     post_install_package()
     
     set_timezone()
-    #stop and start apache - and reload nginx
-    if has_webservers():
-        stop_webservers()
-        start_webservers()
+    #stop and start webservers - and reload nginx
+    for s in webserver_list():
+        stop_webserver(s)
+        start_webserver(s)
 

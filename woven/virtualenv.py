@@ -16,7 +16,7 @@ from fabric.contrib.console import confirm
 
 from woven.deployment import mkdirs, run_once_per_host_version, deploy_files
 from woven.environment import deployment_root,set_server_state, server_state, State
-from woven.webservers import _get_django_sites, _ls_sites, _sitesettings_files, stop_webservers, start_webservers, domain_sites
+from woven.webservers import _get_django_sites, _ls_sites, _sitesettings_files, stop_webserver, start_webserver, webserver_list, domain_sites
 from fabric.contrib.files import append
 
 def active_version():
@@ -47,9 +47,11 @@ def activate():
         sys.exit(1)
 
     active = active_version()
+    servers = webserver_list()
 
     if env.patch or active <> env.project_fullname:
-        stop_webservers()
+        for s in servers:
+            stop_webserver(s)
         
     if not env.patch and active <> env.project_fullname:
         
@@ -67,7 +69,10 @@ def activate():
       
         #activate sites
         activate_sites = [''.join([d.name.replace('.','_'),'-',env.project_version,'.conf']) for d in domain_sites()]
-        site_paths = ['/etc/apache2','/etc/nginx']
+        if 'apache2' in env.packages:
+            site_paths = ['/etc/apache2','/etc/nginx']
+        else:
+            site_paths = ['/etc/nginx']
         
         #disable existing sites
         for path in site_paths:
@@ -100,7 +105,8 @@ def activate():
             print env.project_fullname,"is the active version"
 
     if env.patch or active <> env.project_fullname:
-        start_webservers()
+        for s in servers:
+            start_webserver(s)
         print
     return
 
