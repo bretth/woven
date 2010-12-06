@@ -5,6 +5,7 @@ Replaces the ubuntu.py module with more generic linux functions.
 #split out functions into function and _backend_functions
 #or if the difference is marginal just use if statements
 import os, socket, sys
+import getpass
 
 from django.utils import importlib
 
@@ -584,7 +585,12 @@ def upload_ssh_key(rollback=False):
     Upload your ssh key for passwordless logins
     """
     auth_keys = '/home/%s/.ssh/authorized_keys'% env.user
-    if not rollback:    
+    if not rollback:
+        local_user = getpass.getuser()
+        host = socket.gethostname()
+        u = '@'.join([local_user,host])
+        u = 'ssh-key-uploaded-%s'% u
+        if not env.overwrite and server_state(u): return
         if not exists('.ssh'):
             run('mkdir .ssh')
            
@@ -614,6 +620,7 @@ def upload_ssh_key(rollback=False):
             if env.verbosity:
                 print env.host, "UPLOADING SSH KEY if it doesn't already exist on host"
             append(ssh_file,auth_keys) #append prevents uploading twice
+            set_server_state(u)
         return
     else:
         if exists(auth_keys+'.wovenbak'):
