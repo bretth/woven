@@ -397,8 +397,6 @@ def set_timezone(rollback=False):
     """
     if not rollback:
         if contains(text=env.TIME_ZONE,filename='/etc/timezone',use_sudo=True):
-            if env.verbosity:
-                print env.host, 'Time Zone already set to '+env.TIME_ZONE
             return False
         if env.verbosity:
             print env.host, "CHANGING TIMEZONE /etc/timezone to "+env.TIME_ZONE
