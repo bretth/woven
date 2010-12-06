@@ -570,6 +570,9 @@ def upload_etc():
         if directory in ['/etc','/etc/init.d','/etc/init','/etc/logrotate.d','/etc/rsyslog.d']:
             #must be replacing an existing file
             if not exists(dest) and package_name not in env.packages: continue
+        elif directory == '/etc/ufw/applications.d':
+            #must be a package name
+            if filename not in env.packages: continue
         elif not exists(directory, use_sudo=True): continue
         uploaded = upload_template(t,dest,context=context,use_sudo=True, modified_only=mod_only)
             
