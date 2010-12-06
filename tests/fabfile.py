@@ -26,17 +26,21 @@ from woven.environment import set_env
 
 #import tests
 from env import test_env_set_env, test_env_server_state, test_env_parse_project_version, test_env_root_domain
+from env import test_env_version_state
 
-from ubu import test_ubu_disable_root, test_ubu_change_ssh_port, test_ubu_port_is_open
-from ubu import test_ubu_setup_ufw, test_ubu_post_install_packages, test_ubu_post_setupnode
+#from ubu import test_ubu_disable_root, test_ubu_change_ssh_port, test_ubu_port_is_open
+#from ubu import test_ubu_setup_ufw, test_ubu_post_install_package, test_ubu_post_setupnode
 
 from vir import test_vir_post_deploy
-
 from web import test_web_site_users
+from lin import test_lin_add_repositories, test_lin_uninstall_packages
+from dec import test_dec_run_once_per_node, test_dec_run_once_per_version
+from dep import test_dep_backup_file
 
 #Set the environ for Django
-settings_module = os.environ['DJANGO_SETTINGS_MODULE'] = 'example_project.settings'
+settings_module = os.environ['DJANGO_SETTINGS_MODULE'] = 'example_project.setting'
 
+env.INTERACTIVE = False
 #Normally you would run fab or manage.py under the setup.py path
 #since we are testing outside the normal working directory we need to pass it in
 setup_dir = os.path.join(os.path.split(os.path.realpath(__file__))[0],'simplest_example')
@@ -69,12 +73,12 @@ def test_env():
     Run all environment tests
     """
     _run_tests('env')
-    
-def test_ubu():
+
+def test_lin():
     """
-    Run all ubuntu tests
+    Run all linux tests
     """
-    _run_tests('ubu')
+    _run_tests('lin')
     
 def test_vir():
     """
@@ -87,4 +91,18 @@ def test_web():
     Run all virtualenv tests
     """
     _run_tests('web')
+    
+def test_dec():
+    """
+    Run all decorator tests
+    """
+    _run_tests('dec')
+    
+def test_dep():
+    """
+    Run all deployment tests
+    """
+    _run_tests('dep')
+    
+
 

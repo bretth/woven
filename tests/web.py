@@ -1,7 +1,7 @@
 from fabric.api import *
 
 from woven.webservers import _site_users
-from woven.ubuntu import add_user
+from woven.linux import add_user
 
 def test_web_site_users():
     with settings(host_string='root@192.168.188.10:22', user='root',password='root'):
