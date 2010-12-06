@@ -8,8 +8,9 @@ from fabric.context_managers import cd, settings
 from fabric.contrib.files import append, contains, exists
 from fabric.decorators import runs_once
 
-from woven.deployment import deploy_files, mkdirs, run_once_per_host_version, upload_template
-from woven.environment import deployment_root, server_state, _root_domain
+from woven.decorators import run_once_per_version
+from woven.deployment import deploy_files, mkdirs, upload_template
+from woven.environment import deployment_root, version_state, _root_domain
 from woven.linux import add_user
 
 def _activate_sites(path, filenames):
@@ -121,7 +122,7 @@ def _get_django_sites():
     Get a list of sites as dictionaries {site_id:'domain.name'}
 
     """
-    deployed = server_state('deploy_project')
+    deployed = version_state('deploy_project')
     if not env.sites and 'django.contrib.sites' in env.INSTALLED_APPS and deployed:
         with cd('/'.join([deployment_root(),'env',env.project_fullname,'project',env.project_package_name,'sitesettings'])):
             venv = '/'.join([deployment_root(),'env',env.project_fullname,'bin','activate'])
@@ -179,9 +180,9 @@ def domain_sites():
             
     return env.domains
 
-@run_once_per_host_version
+@run_once_per_version
 def deploy_webconf():
-    """ Deploy apache & nginx site configurations to the host """
+    """ Deploy nginx and other wsgi server site configurations to the host """
     deployed = []
     log_dir = '/'.join([deployment_root(),'log'])
     #TODO - incorrect - check for actual package to confirm installation
@@ -204,7 +205,7 @@ def deploy_webconf():
         
     return deployed
 
-@run_once_per_host_version
+@run_once_per_version
 def deploy_wsgi():
     """
     deploy python wsgi file(s)

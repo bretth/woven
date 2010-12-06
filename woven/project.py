@@ -15,7 +15,8 @@ from fabric.contrib.console import confirm
 #Required for a bug in 0.9
 from fabric.version import get_version
 
-from woven.deployment import deploy_files, run_once_per_host_version
+from woven.decorators import run_once_per_version
+from woven.deployment import deploy_files
 from woven.environment import deployment_root, _root_domain
 
 @runs_once
@@ -55,7 +56,7 @@ def _make_local_sitesettings(overwrite=False):
 
     return
 
-@run_once_per_host_version
+@run_once_per_version
 def deploy_project():
     """
     Deploy to the project directory in the virtualenv
@@ -95,7 +96,7 @@ def deploy_sitesettings():
             tail = path.split('/')[-1]
             print ' * uploaded',tail
 
-@run_once_per_host_version
+@run_once_per_version
 def deploy_templates():
     """
     Deploy any templates from your shortest TEMPLATE_DIRS setting
@@ -120,7 +121,7 @@ def deploy_templates():
         deployed = deploy_files(env.project_template_dir,remote_dir)
     return deployed
      
-@run_once_per_host_version
+@run_once_per_version
 def deploy_static():
     """
     Deploy static (application) versioned media
@@ -151,7 +152,7 @@ def deploy_static():
         print env.host,"DEPLOYING static",remote_dir
     return deploy_files(local_dir,remote_dir)
 
-@run_once_per_host_version       
+@run_once_per_version       
 def deploy_media():
     """
     Deploy MEDIA_ROOT unversioned on host

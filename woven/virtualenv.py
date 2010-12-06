@@ -14,8 +14,9 @@ from fabric.context_managers import cd, settings
 from fabric.contrib.files import exists
 from fabric.contrib.console import confirm
 
-from woven.deployment import mkdirs, run_once_per_host_version, deploy_files
-from woven.environment import deployment_root,set_server_state, server_state, State
+from woven.decorators import run_once_per_version
+from woven.deployment import mkdirs, deploy_files
+from woven.environment import deployment_root,set_version_state, version_state, State
 from woven.webservers import _get_django_sites, _ls_sites, _sitesettings_files, stop_webserver, start_webserver, webserver_list, domain_sites
 from fabric.contrib.files import append
 
@@ -178,7 +179,7 @@ def migration():
                 print output
     return           
 
-@run_once_per_host_version
+@run_once_per_version
 def mkvirtualenv():
     """
     Create the virtualenv project environment
@@ -210,14 +211,14 @@ def rmvirtualenv():
     """
     path = '/'.join([deployment_root(),'env',env.project_fullname])
     link = '/'.join([deployment_root(),'env',env.project_name])
-    if server_state('mkvirtualenv'):
+    if version_state('mkvirtualenv'):
         sudo(' '.join(['rm -rf',path]))
         sudo(' '.join(['rm -f',link]))
-        sudo('rm -f /var/local/woven/*%s'% env.project_fullname)
-        set_server_state('mkvirtualenv',delete=True)
+        sudo('rm -f /var/local/woven/%s*'% env.project_fullname)
+        set_version_state('mkvirtualenv',delete=True)
       
 
-@run_once_per_host_version    
+@run_once_per_version    
 def pip_install_requirements():
     """
     Install on current installed virtualenv version from a pip bundle [dist/project name-version].zip or pip ``req.txt``|``requirements.txt``
@@ -229,7 +230,7 @@ def pip_install_requirements():
     The limitations of installing requirements are that you cannot point directly to packages
     in your local filesystem. In this case you would bundle instead.
     """
-    if not server_state('mkvirtualenv'):
+    if not version_state('mkvirtualenv'):
         print env.host,'Error: Cannot run pip_install_requirements. A virtualenv is not created for this version. Run mkvirtualenv first'
         return
     if env.verbosity:

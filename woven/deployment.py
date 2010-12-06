@@ -12,24 +12,28 @@ from fabric.context_managers import cd, settings, hide
 from fabric.contrib.files import exists
 from fabric.contrib.project import rsync_project
 
-from woven.environment import server_state, set_server_state
-
 def _backup_file(path):
     """
     Backup a file but never overwrite an existing backup file
     """
-    if not exists(path+'.wovenbak'):
-        sudo('cp '+path+' '+path+'.wovenbak')
+    backup_base = '/var/local/woven-backup'
+    backup_path = ''.join([backup_base,path])
+    if not exists(backup_path):
+        directory = ''.join([backup_base,os.path.split(path)[0]])
+        sudo('mkdir -p %s'% directory)
+        sudo('cp %s %s'% (path,backup_path))
 
 def _restore_file(path, delete_backup=True):
     """
     Restore a file if it exists and remove the backup
     """
-    if exists(path+'.wovenbak'):
+    backup_base = '/var/local/woven-backup'
+    backup_path = ''.join([backup_base,path])
+    if exists(backup_path):
         if delete_backup:
-            sudo('mv -f '+path+'.wovenbak '+path)
+            sudo('mv -f %s %s'% (backup_path,path))
         else:
-            sudo('cp -f '+path+'.wovenbak '+path)
+            sudo('cp -f %s %s'% (backup_path,path))
 
 
 def _get_local_files(local_dir, pattern=''):
@@ -128,7 +132,6 @@ def deploy_files(local_dir, remote_dir, pattern = '',rsync_exclude=['*.pyc','.*'
     #create the final destination
     created_dir_list = mkdirs(remote_dir, use_sudo)
     
-    #
     if not os.listdir(staging_dir): return created_list
 
     func = use_sudo and sudo or run
@@ -155,37 +158,6 @@ def mkdirs(remote_dir, use_sudo=False):
     if result[0]: result = [dir.split(' ')[3][1:-1] for dir in result if dir]
     return result
 
-def run_once_per_host_version(func):
-    """
-    Decorator preventing wrapped function from running more than
-    once per host and env.project_version not just interpreter session.
-    
-    If env.project_version is not set then it will effectively be once per host.
-    Using env.patch = True will allow the function to be run
-    
-    Stores the result of a function as server state for rollback
-    
-    Returns a state object
-    """
-    @wraps(func)
-    def decorated(*args, **kwargs):
-        if not hasattr(env,'patch'): env.patch = False
-        state = server_state(func.__name__)
-        if not env.patch and state:
-            state.failed = False       
-            verbose = " ".join([env.host,state,"completed. Skipping..."])
-        elif env.patch and not state:
-            verbose = " ".join([env.host,state,"not previously completed. Skipping..."])
-        else:
-            state = func(*args, **kwargs)
-            verbose =''
-            #if the returning function is a state object with an object attr we will store it as json in the file 
-            set_server_state(func.__name__,object=getattr(state,'object',None))
-        if env.verbosity and verbose: print verbose
-        return state            
-          
-    return decorated
-
 def upload_template(filename,  destination,  context={},  use_sudo=False, backup=True, modified_only=False):
     """
     Render and upload a template text file to a remote host using the Django
@@ -211,17 +183,19 @@ def upload_template(filename,  destination,  context={},  use_sudo=False, backup
     
     #check hashed template on server first
     if modified_only:
-        hashed = sha1(text).hexdigest()
         hashfile_dir, hashfile = os.path.split(destination)
+        hashfile_dir = ''.join(['/var/local/woven-backup',hashfile_dir])
+        hashfile = '%s.hashfile'% hashfile
+        hashfile_path = os.path.join(hashfile_dir, hashfile)
+        hashed = sha1(text).hexdigest()
         if hashfile:
-            hashfile = '.%s'% hashfile
-            hashfile_path = os.path.join(hashfile_dir, hashfile)
-            func('touch %s'% hashfile_path) #store the hash near the template
-            previous_hashed = func('cat %s'% hashfile_path).strip()
-            if previous_hashed == hashed: return False
-            else: func('echo %s > %s'% (hashed, hashfile_path))
-            
-            
+            if not exists(hashfile_dir): sudo('mkdir -p %s'% hashfile_dir)
+            sudo('touch %s'% hashfile_path) #store the hash near the template
+            previous_hashed = sudo('cat %s'% hashfile_path).strip()
+            if previous_hashed == hashed:
+                return False
+            else: sudo('echo %s > %s'% (hashed, hashfile_path))
+
     temp_destination = '/tmp/' + basename
 
     # This temporary file should not be automatically deleted on close, as we

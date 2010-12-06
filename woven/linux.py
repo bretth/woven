@@ -35,7 +35,7 @@ def add_repositories():
     Adds additional sources as defined in LINUX_PACKAGE_REPOSITORIES.
 
     """
-    if env.LINUX_PACKAGE_REPOSITORIES == server_state('linux_package_repositories'): return
+    if env.overwrite or env.LINUX_PACKAGE_REPOSITORIES == server_state('linux_package_repositories'): return
     if env.verbosity:
         print env.host, "UNCOMMENTING SOURCES in /etc/apt/sources.list and adding PPAs"
     if contains(filename='/etc/apt/sources.list',text='#(.?)deb(.*)http:(.*)universe'):
@@ -182,7 +182,6 @@ def install_package(package):
 def install_packages():
     """
     Install a set of baseline packages and configure where necessary
-
     """
 
     if env.verbosity:
@@ -191,7 +190,7 @@ def install_packages():
     p = run("dpkg -l | awk '/ii/ {print $2}'").split('\n')
     
     #Remove apparmor - TODO we may enable this later
-    if not server_state('apparmor-disabled') and 'apparmor' in p:
+    if env.overwrite or not server_state('apparmor-disabled') and 'apparmor' in p:
         with settings(warn_only=True):
             sudo('/etc/init.d/apparmor stop')
             sudo('update-rc.d -f apparmor remove')
@@ -199,33 +198,30 @@ def install_packages():
 
     #The principle we will use is to only install configurations and packages
     #if they do not already exist (ie not manually installed or other method)
-    
+    env.installed_packages = []
     for package in env.packages:
         if not package in p:
-            preinstalled = False
             install_package(package)
-            sudo("echo '%s' >> /var/local/woven/packages_installed.txt"% package)
-            if package == 'apache2':
-                #some sensible defaults -might move to putting this config in a template
-                sudo("rm -f /etc/apache2/sites-enabled/000-default")
-                sed('/etc/apache2/apache2.conf',before='KeepAlive On',after='KeepAlive Off',use_sudo=True)
-                sed('/etc/apache2/apache2.conf',before='StartServers          2', after='StartServers          1', use_sudo=True)
-                sed('/etc/apache2/apache2.conf',before='MaxClients          150', after='MaxClients          100', use_sudo=True)
-
             if env.verbosity:
                 print ' * installed '+package
-            env.installed_packages += package
-        else:
-            preinstalled = True
-        if package == 'apache2':
+            env.installed_packages.append(package)
+    if env.overwrite or env.installed_packages:
+        set_server_state('packages_installed',env.packages)
+        env.installed_packages = env.packages
+
+    if env.overwrite or 'apache2' in env.installed_packages: 
+            #some sensible defaults -might move to putting this config in a template
+            sudo("rm -f /etc/apache2/sites-enabled/000-default")
+            sed('/etc/apache2/apache2.conf',before='KeepAlive On',after='KeepAlive Off',use_sudo=True, backup='')
+            sed('/etc/apache2/apache2.conf',before='StartServers          2', after='StartServers          1', use_sudo=True, backup='')
+            sed('/etc/apache2/apache2.conf',before='MaxClients          150', after='MaxClients          100', use_sudo=True, backup='')
             for module in env.APACHE_DISABLE_MODULES:
                 sudo('rm -f /etc/apache2/mods-enabled/%s*'% module)
-
     #Install base python packages
     #We'll use easy_install at this stage since it doesn't download if the package
     #is current whereas pip always downloads.
     #Once both these packages mature we'll move to using the standard Ubuntu packages
-    if not server_state('pip-venv-wrapper-installed') and 'python-setuptools' in env.packages:
+    if env.overwrite or not server_state('pip-venv-wrapper-installed') and 'python-setuptools' in env.packages:
         sudo("easy_install virtualenv")
         sudo("easy_install pip")
         sudo("easy_install virtualenvwrapper")
@@ -435,7 +431,7 @@ def setup_ufw():
             print env.host, "INSTALLING & ENABLING FIREWALL ufw"
         apt_get_install('ufw')
     ufw_state = server_state('ufw_installed')
-    if not ufw_state or ufw_state <> env.HOST_SSH_PORT:
+    if env.overwrite or not ufw_state or ufw_state <> env.HOST_SSH_PORT:
         if env.verbosity:
             print env.host, "CONFIGURING FIREWALL ufw"
         #upload basic woven (ssh) ufw app config
@@ -453,7 +449,7 @@ def setup_ufw():
         _backup_file('/etc/ufw/ufw.conf')
         
         #enable ufw
-        sed('/etc/ufw/ufw.conf','ENABLED=no','ENABLED=yes',use_sudo=True)
+        sed('/etc/ufw/ufw.conf','ENABLED=no','ENABLED=yes',use_sudo=True, backup='')
         
         #upload project component
         upload_template('/'.join(['woven','ufw-woven_project.txt']),
@@ -491,6 +487,32 @@ def setup_ufw():
 
 def skip_disable_root():
     return env.root_disabled
+
+def uninstall_package(package):
+    """
+    apt-get autoremove --purge
+    """
+    sudo('apt-get autoremove --purge -qqy %s'% package, pty=True)
+
+def uninstall_packages():
+    """
+    Uninstall unwanted packages
+    """
+    p = server_state('packages_installed')
+    if p: installed = set(p)
+    else: return
+
+    #first uninstall any that have been taken off the list
+    packages = set(env.packages)
+    uninstall = installed - packages
+    if uninstall and env.verbosity:
+        print env.host,'UNINSTALLING HOST PACKAGES'
+    for p in uninstall:
+        if env.verbosity:
+            print ' - uninstalling',p
+        uninstall_package(p)
+        env.uninstalled_packages.append(p)
+    return
 
 def upgrade_packages():
     """
@@ -540,15 +562,18 @@ def upload_etc():
     etc_templates = user_templates | default_templates
 
     context = {'host_ip':socket.gethostbyname(env.host)}
+    if env.overwrite or env.installed_packages: mod_only = False
+    else: mod_only = True
     for t in etc_templates:
         dest = t.replace('woven','',1)
         directory,filename = os.path.split(dest)
+        package_name = filename.split('.')[0]
         if directory in ['/etc','/etc/init.d','/etc/init','/etc/logrotate.d','/etc/rsyslog.d']:
             #must be replacing an existing file
-            package_name = filename.split('.')[0]
             if not exists(dest) and package_name not in env.packages: continue
         elif not exists(directory, use_sudo=True): continue
-        uploaded = upload_template(t,dest,context=context,use_sudo=True, modified_only=True)
+        uploaded = upload_template(t,dest,context=context,use_sudo=True, modified_only=mod_only)
+            
         if uploaded:
             sudo(' '.join(["chown root:root",dest]))
             if 'init.d' in dest: sudo(' '.join(["chmod ugo+rx",dest]))
@@ -598,8 +623,3 @@ def upload_ssh_key(rollback=False):
         else: #no pre-existing keys remove the .ssh directory
             sudo('rm -rf /home/%s/.ssh')
         return    
-
-  
-
-        
-

@@ -349,9 +349,20 @@ def set_env(settings=None, setup_dir=''):
         packages = env.ROLE_PACKAGES.get(r,[])
         u = u | set(packages)
     if not u:
-        u = env.HOST_BASE_PACKAGES + env.HOST_EXTRA_PACKAGES
+        u = set(env.HOST_BASE_PACKAGES + env.HOST_EXTRA_PACKAGES)
+    #sanity check for unwanted combinations
+    wsgi = u & set(['gunicorn','uwsgi'])
+    if wsgi and 'apache2' in u:
+        u = u - set(['apache2','libapache2-mod-wsgi'])
     env.packages = list(u)
     env.installed_packages = []
+    env.uninstalled_packages = []
+    
+    if 'gunicorn' in env.packages:
+        if 'ppa:bchesneau/gunicorn' not in env.LINUX_PACKAGE_REPOSITORIES:
+            env.LINUX_PACKAGE_REPOSITORIES.append('ppa:bchesneau/gunicorn')
+            
+    
     #Now update the env with any settings that are not defined by woven but may
     #be used by woven or fabric
     env.MEDIA_ROOT = project_settings.MEDIA_ROOT
@@ -377,6 +388,9 @@ def set_env(settings=None, setup_dir=''):
     #noinput
     if not hasattr(env,'INTERACTIVE'): env.INTERACTIVE=True
     if not hasattr(env,'verbosity'): env.verbosity=1
+    
+    #overwrite existing settings
+    if not hasattr(env,'overwrite'):env.overwrite=False
     
     #South integration defaults
     env.nomigration = False
@@ -407,13 +421,8 @@ def project_version(full_version):
 
 class State(str):
     """
-    State class - similar in principle and use to the _AttributeString in Fabric.
-    
+    State class     
     It may be used to store stdout stderr etc.
-
-    State has an object attribute to store objects
-    for storage on the host using the set_server_state function and
-    retrieve it using server_state.
 
     """
     def __init__(self,name,object=None):
@@ -445,9 +454,19 @@ def set_server_state(name,object=None,delete=False):
     
     returns the filename used to store state   
     """
-    if not hasattr(env,'project_name'): env.project_name = ''
-    if not hasattr(env,'project_version'): env.project_version = ''
-    state_name = '-'.join([name,env.project_name,env.project_version])
+    with settings(project_fullname=''):
+        return set_version_state(name,object,delete)
+
+
+def set_version_state(name,object=None,delete=False):
+    """
+    Sets a simple 'state' on the server by creating a file
+    with the desired state's name + version and storing ``content`` as json strings if supplied
+    
+    returns the filename used to store state   
+    """
+    if env.project_fullname: state_name = '-'.join([env.project_fullname,name])
+    else: state_name = name
     with settings(warn_only=True):
         #Test for os state
         if not exists('/var/local/woven', use_sudo=True):
@@ -465,37 +484,45 @@ def set_server_state(name,object=None,delete=False):
     else:
         sudo('rm -f /var/local/woven/%s'% state_name)
     return state_name
-
-def server_state(name, prefix=False):
-    """
-    If the server state exists return parsed json as a python object or True if
-    no content exists.
     
-    If prefix returns True if any files exist with ls name*
+
+def server_state(name, no_content=False):
     """
-    if not hasattr(env,'project_name'): env.project_name = ''
-    if not hasattr(env,'project_version'): env.project_version = ''
-    full_name = '-'.join([name,env.project_name,env.project_version])
+    If the server state exists return parsed json as a python object or True 
+    prefix=True returns True if any files exist with ls [prefix]*
+    """
+    with settings(project_fullname=''):
+        return version_state(name, no_content=no_content)
+
+
+def version_state(name, prefix=False, no_content=False):
+    """
+    If the server state exists return parsed json as a python object or True 
+    prefix=True returns True if any files exist with ls [prefix]*
+    """
+    if env.project_fullname: full_name = '-'.join([env.project_fullname,name])
+    else: full_name = name
+    current_state = False
     state = State(full_name)
     state_path = '/var/local/woven/%s'% full_name
-    state.content = None
-    state.failed = True
-    if not prefix and exists(state_path, use_sudo=True):
+    if not prefix and not no_content and exists(state_path):
         content = int(sudo('ls -s %s'% state_path).split()[0]) #get size
-        state.name = full_name
-        state.failed = False
         if content:
             fd, file_path = tempfile.mkstemp()
             os.close(fd)
             get(state_path,file_path)
             with open(file_path, "r") as f:
                 content = f.read()
-                state.object = json.loads(content)
+                object = json.loads(content)
+                current_state = object
+        else:
+            current_state = True
+    elif not prefix and no_content and exists(state_path):
+        current_state = True
     elif prefix:
-        with settings(warn_only=True):
-            current_state = sudo('ls /var/local/woven/%s*'% name)
-        if not current_state.failed:
-            state.name = name
-            state.failed = False
-    return state
-    
+        with settings(warn_only=True): #find any version
+            current_state = sudo('ls /var/local/woven/*%s'% name)
+        if not current_state.failed:current_state = True
+      
+    return current_state
+   
