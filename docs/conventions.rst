@@ -93,7 +93,7 @@ Templates in the etc folder are uploaded using the following rules:
 
 - If an etc subdirectory is not package related (eg init.d) the template will only be uploaded to overwrite an existing template.
 
-etc templates are uploaded each time setupnode is run
+etc templates are uploaded if the template has changed or if the packages on the node change.
 
 *UFW firewall rules*
 
@@ -127,18 +127,16 @@ Within the root folder on the node are the following::
                     |--settings.py (global & dev specific settings)
                     |--sitesettings (site local setting files)
                             |--__init__.py 
-                            |--example_com.py (site local settings)
                             |--manage.py (you run this on the node)
                             |--settings.py (primary settings file for nodes)
             |--templates (your project templates go here)
             |--static (admin and other app media)
             |--wsgi (web server scripts go here including modwsgi python file)
-                 |--example_com.py
-       |--example_project-0.2 (next release version - as above)
+                 |--settings.wsgi (for modwsgi)
+       |--example_distribution-0.2 (next release version - as above)
     ...
     |--log (symlinks to /var/log)
     | Another media directory for files that in the user domain (MEDIA_URL) rather than required for the application
-    | These would normally be hosted on something like s3, but you may want to host it locally
     |--public  (for single domain deployments any project media goes here if you are hosting media locally)
     |--src (pip will store any source repositories here)
     
@@ -160,3 +158,7 @@ Woven keeps track of server state and other housekeeping functions using the
 `/var/local/woven/` directory
 
 Currently state is stored as a filename with or without content.
+
+Backups of initial configuration files are stored at
+
+`/var/local/woven-backup`

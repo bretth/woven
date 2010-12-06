@@ -5,19 +5,22 @@ Woven
 
 * provides six Django commands/functions; ``setupnode``, ``deploy``, ``patch``, ``activate``, ``bundle``, ``startsites``
     
-* provides a standard Apache & Nginx webserver configuration that you can change as required.
+* provides a standard Apache & Nginx webserver configuration that you can change as required, and includes experimental support for Gunicorn.
+
+* versions your project with virtualenv
     
 * enables you to define custom linux etc configuration files in your project
 
 * enable you to define roles for your servers with combinations of linux packages
     
-* integrates into standard Fabric fabfile.py scripts as projects grow.
+* provides an api for fabfile.py scripts.
 
 * hooks for custom per project and per app deploy and setupnode functionality
     
 * integrates with South for migrations
     
 * basic multi-site multi-db capabilities
+
 
 **Woven currently doesn't:**
 
@@ -33,7 +36,7 @@ Installation
 Getting Started
 ===============
 
-To use Woven you must define a minimal :ref:`setup.py` and have root access to an Ubuntu Server host >= 9.10
+To use Woven you must define a minimal :ref:`setup.py` and have root access to an linux host (currently only tested on Ubuntu >= 10.04).
 
 Woven provides six management commands for your Django project:
 
@@ -91,9 +94,9 @@ Post deploy
 Multiple Sites
 ==============
 
-Woven creates a user on the node for each SITE_ID. The users will be called ``site_1``, ``site_2`` ... The Apache site templates use process groups to launch modwsgi daemons running as the site user. The settings file template uses getpass.getuser() to get the current user and dynamically set the SITE_ID in the settings. In this fashion a single settings file can be used for multiple sites.
+Woven creates a user on the node for each SITE_ID. The users will be called ``site_1``, ``site_2`` ... The Apache site templates use process groups to launch modwsgi daemons running as the site user. The settings file gets the current user and dynamically sets the SITE_ID in the settings. In this fashion a single settings file can be used for multiple sites.
 
-Since Django sites uses a SITE_ID rather than a domain to represent the site, it doesn't really know about subdomains, but you might want might make a default admin view of your SITE_ID = 1 at admin.example.com. To accommodate this you can make a settings file called admin_settings.py in the sitesettings folder. 
+Since Django sites uses a SITE_ID rather than a domain to represent the site, it doesn't really know about subdomains, but you might want might make a default admin view of your SITE_ID = 1 at admin.example.com. To accommodate this you can make a settings file called admin_settings.py in the sitesettings folder. You would add a prefix for any other alternative view of the same site using [sub_domain]_settings.py
 
 Development
 ===========
@@ -103,8 +106,8 @@ The core highlevel functions setupnode, deploy, patch, bundle, and activate will
 Future Goals
 ------------
 
-* I would like to see other ways of serving django behind nginx implemented. Particularly I'm interested in implementing backends for uwsgi and gunicorn.
-* Although it's currently tied to Ubuntu, I'm happy to accept patches to make it work on other similar distributions.
+* I would like to see other ways of serving django behind nginx implemented. Ubuntu 11.04 will ship with a nginx that doesn't need to be compiled to use uwsgi, so that will be a good time to add support for it.
+* Although it's currently tested on Ubuntu (or at least debian based distros), I'm happy to accept patches to make it work on other similar distributions.
 * The future is distutils2. I actually think the 1.0 version of woven should make full use of the new packaging system and metadata. When packaging no longer sucks, I can simplify woven to leverage it, and it has implications for django project conventions. I'll be looking for distutils2 to move to beta before I begin to develop for it.
 
 Testing

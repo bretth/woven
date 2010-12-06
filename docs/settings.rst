@@ -47,6 +47,7 @@ Django settings.py. They are all optional.
     HOST_EXTRA_PACKAGES = []
     
     #define a list of repositories/sources to search for packages
+    #Current just handles Personal Package Archives (PPAs)
     LINUX_PACKAGE_REPOSITORIES = [] # eg ['ppa:bchesneau/gunicorn']
     
     #Role packages give you complete flexibility in defining packages with ROLEDEFS.
@@ -55,7 +56,7 @@ Django settings.py. They are all optional.
     
     #Apache list of modules to disable for performance and memory efficiency
     #defaults to the following:
-    'APACHE_DISABLE_MODULES'=['alias','auth_basic','authn_file','authz_default','authz_groupfile',
+    APACHE_DISABLE_MODULES=['alias','auth_basic','authn_file','authz_default','authz_groupfile',
                               'authz_user','autoindex','cgid','dir',
                           'setenvif','status'],         
     #Virtualenv/Pip

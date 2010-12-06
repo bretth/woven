@@ -7,13 +7,22 @@ Release 0.7.0
 
 **Changes from 0.6**
 
-*Multi-site functionality has changed dramatically. Instead of using one wsgi file and settings file per domain, woven now uses dynamic SITE_IDs in a single settings file based on the OS user, and process groups in modwsgi. Subdomains with the same SITE_ID can also be catered for by prefixing the settings filename. For example, if the SITE_ID=1 matches example.com, a settings file for the subdomain admin.example.com on the same SITE_ID would be admin_settings.py
+* Multi-site functionality has changed dramatically. Instead of using one wsgi file and settings file per domain, woven now uses dynamic SITE_IDs in a single settings file based on the OS user, and process groups in modwsgi. Subdomains with the same SITE_ID can also be catered for by prefixing the settings filename. For example, if the SITE_ID=1 matches example.com, a settings file for the subdomain admin.example.com on the same SITE_ID would be admin_settings.py
+
+* The ubuntu module has become linux. Woven should be compatible with debian based distributions, and it would be nice to add support for redhat if someone wants to. I don't imagine there is too much difference beyond apt/yum (and ufw) between lsb distros for the purposes of using woven.
+
+* run_once_per_host_version has changed name to run_once_per_version and another decorator has been added run_once_per_node. Both have moved to new decorators module.
 
 **New Features**
 
 * Implemented hooks. Can define a deploy.py with post_setupnode, post_install_package, or post_deploy functions. The deploy.py can be at project level or app level.
 * Added a DISABLE_APACHE_MODULES setting to disable a number of unneeded modules on setup.
-
+* Can add Personal Package Archives (PPA's) to a LINUX_PACKAGE_REPOSITORIES setting
+* Basic support and template for gunicorn added, and auto adds a PPA for gunicorn
+* Backups of configuration files don't pollute the package directories anymore.
+* Auto-uninstalls packages that are no longer listed in settings
+* Auto-uninstalls or doesn't install Apache modwsgi if you use gunicorn.
+* Only uploads templates if they have changed or if any packages are installed 
 
 
 Release 0.6.1 (26-Nov-2010)
