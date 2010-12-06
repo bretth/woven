@@ -203,7 +203,7 @@ def install_packages():
         if not package in p:
             install_package(package)
             if env.verbosity:
-                print ' * installed '+package
+                print ' * installed',package
             env.installed_packages.append(package)
     if env.overwrite or env.installed_packages:
         set_server_state('packages_installed',env.packages)
