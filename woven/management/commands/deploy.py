@@ -4,7 +4,7 @@ from optparse import make_option
 from fabric.context_managers import settings
 
 from woven.api import deploy
-from woven.virtualenv import activate, post_deploy
+from woven.virtualenv import activate
 from woven.management.base import WovenCommand
 
 

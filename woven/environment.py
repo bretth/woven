@@ -448,7 +448,7 @@ def post_install_package():
     module_name = '.'.join([env.project_package_name,'deploy'])
     funcs_run = []
     try:
-        imported = importlib.import_module(module_name)
+        imported = import_module(module_name)
         funcs = vars(imported)
         for f in env.installed_packages[env.host]:
             func = funcs.get(''.join(['post_install_',f.replace('.','_').replace('-','_')]))
@@ -463,7 +463,7 @@ def post_install_package():
         if app == 'woven': continue
         module_name = '.'.join([app,'deploy'])
         try:
-            imported = importlib.import_module(module_name)
+            imported = import_module(module_name)
             funcs = vars(imported)
             for f in env.installed_packages[env.host]:
                 func = funcs.get(''.join(['post_install_',f.replace('.','_').replace('-','_')]))
@@ -488,7 +488,7 @@ def post_exec_hook(hook):
     module_name = '.'.join([env.project_package_name,'deploy'])
     funcs_run = []
     try:
-        imported = importlib.import_module(module_name)
+        imported = import_module(module_name)
         func = vars(imported).get(hook)
         if func:
             func()
@@ -501,7 +501,7 @@ def post_exec_hook(hook):
         if app == 'woven': continue
         module_name = '.'.join([app,'deploy'])
         try:
-            imported = importlib.import_module(module_name)
+            imported = import_module(module_name)
             func = vars(imported).get(hook)
             if func and func not in funcs_run:
                 func()
