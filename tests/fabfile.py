@@ -34,6 +34,7 @@ from env import test_env_version_state
 from vir import test_vir_post_deploy
 from web import test_web_site_users
 from lin import test_lin_add_repositories, test_lin_uninstall_packages
+from lin import test_lin_setup_ufw_rules
 from dec import test_dec_run_once_per_node, test_dec_run_once_per_version
 from dep import test_dep_backup_file
 
@@ -103,6 +104,7 @@ def test_dep():
     Run all deployment tests
     """
     _run_tests('dep')
+
     
 
 

@@ -7,10 +7,16 @@ from fabric.state import connections, env
 from fabric.network import join_host_strings, normalize
 
 from woven.linux import disable_root, change_ssh_port, port_is_open, setup_ufw
+from woven.linux import setup_ufw_rules
 from woven.linux import post_install_package, post_setupnode, uninstall_packages
 from woven.linux import add_repositories
 
 from woven.environment import server_state, set_server_state
+
+H = '192.168.188.10'
+HS = 'woven@192.168.188.10:10022'
+R = 'woven'
+
 
 def test_lin_add_repositories():
     add_repositories()
@@ -109,6 +115,14 @@ def test_lin_post_install_package():
     
 def test_lin_post_setupnode():
     post_setupnode()
+
+def test_lin_setup_ufw_rules():
+    #first define some rules that was in the settings
+    UFW_RULES = ['allow from 127.0.0.1 to any app apache2', 'allow 5432/tcp']
+
+    with settings(packages=p,UFW_RULES=UFW_RULES, host_string=HS,user=R,password=R):
+        setup_ufw_rules()
+        
         
 def test_lin_setup_ufw():
     with settings(host_string='root@192.168.188.10', user='root',password='root'):
@@ -150,3 +164,4 @@ def test_lin_setup_ufw():
 
 def test_lin_uninstall_packages():
     uninstall_packages()
+    
