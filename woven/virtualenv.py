@@ -16,8 +16,9 @@ from fabric.contrib.console import confirm
 
 from woven.decorators import run_once_per_version
 from woven.deployment import mkdirs, deploy_files
-from woven.environment import deployment_root,set_version_state, version_state, get_packages, State
-from woven.webservers import _get_django_sites, _ls_sites, _sitesettings_files, stop_webserver, start_webserver, webserver_list, domain_sites
+from woven.environment import deployment_root,set_version_state, version_state, get_packages
+from woven.environment import post_exec_hook, State
+from woven.webservers import _get_django_sites, _ls_sites, _sitesettings_filespo, stop_webserver, start_webserver, webserver_list, domain_sites
 from fabric.contrib.files import append
 
 def active_version():
@@ -94,7 +95,7 @@ def activate():
         ln_path = '/'.join([deployment_root(),'env',env.project_name])
         run('rm -f '+ln_path)
         #run post deploy hooks
-        post_deploy()
+        post_exec_hook('post_deploy')
         #activate
         run('ln -s %s %s'% (env_path,ln_path))
 
@@ -238,7 +239,7 @@ def pip_install_requirements():
     
     #Remove any pre-existing pip-log from any previous failed installation
     pip_log_dir = '/'.join(['/home',env.user,'.pip'])
-    if exists(pip_log_dir): run(' '.join(['rm -rf' ,pip_log_dir]))
+    if exists(pip_log_dir): run('rm -f %s/*.txt'% pip_log_dir)
     
     #determine what req files or bundle files we need to deploy
     if not env.PIP_REQUIREMENTS:
@@ -285,8 +286,8 @@ def pip_install_requirements():
     if req_files: file_patterns = '|'.join([file_patterns,'req*.zip'])
 
     #create a pip cache & src directory
-    cache =  '/'.join(['/home',env.user,'.package-cache'])
-    src = '/'.join([deployment_root(),'src'])
+    cache =  '/'.join([deployment_root(),'.pip','package-cache'])
+    src = '/'.join([deployment_root(),'.pip','src'])
     deployed = mkdirs(cache)
     deployed += mkdirs(src)
     #deploy bundles and any local copy of django
@@ -330,30 +331,3 @@ def pip_install_requirements():
         print "Review the pip install logs at %s/.pip and re-deploy"% deployment_root()
         sys.exit(1)
     return out
-
-def post_deploy():
-    """
-    A post_deploy func can be defined in a deploy.py in the project or in an app
-    """
-    
-    module_name = '.'.join([env.project_package_name,'deploy'])
-    
-    try:
-        imported = importlib.import_module(module_name)
-        func = vars(imported).get('post_deploy')
-        if func: func()
-    except ImportError:
-        return
-    
-    #run per app
-    for app in env.INSTALLED_APPS:
-        if app == 'woven': continue
-        module_name = '.'.join([app,'deploy'])
-        try:
-            imported = importlib.import_module(module_name)
-            func = vars(imported).get('post_deploy')
-            if func: func()
-        except ImportError:
-            pass
-    
-    

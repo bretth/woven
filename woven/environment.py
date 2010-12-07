@@ -436,6 +436,82 @@ def get_packages():
 def patch_project():
     return env.patch
 
+def post_install_package():
+    """
+    Run any functions post install a matching package.
+    Hook functions are in the form post_install_[package name] and are
+    defined in a deploy.py file
+    
+    Will be executed post install_packages and upload_etc
+    """
+
+    module_name = '.'.join([env.project_package_name,'deploy'])
+    funcs_run = []
+    try:
+        imported = importlib.import_module(module_name)
+        funcs = vars(imported)
+        for f in env.installed_packages[env.host]:
+            func = funcs.get(''.join(['post_install_',f.replace('.','_').replace('-','_')]))
+            if func:
+                func()
+                funcs_run.append(func)
+    except ImportError:
+        pass
+    
+    #run per app
+    for app in env.INSTALLED_APPS:
+        if app == 'woven': continue
+        module_name = '.'.join([app,'deploy'])
+        try:
+            imported = importlib.import_module(module_name)
+            funcs = vars(imported)
+            for f in env.installed_packages[env.host]:
+                func = funcs.get(''.join(['post_install_',f.replace('.','_').replace('-','_')]))
+                if func and func not in funcs_run:
+                    func()
+                    funcs_run.append(func)
+        except ImportError:
+            pass
+    #run woven last
+    import woven.deploy
+    funcs = vars(woven.deploy)
+    for f in env.installed_packages[env.host]:
+        func = funcs.get(''.join(['post_install_',f.replace('.','_').replace('-','_')]))
+        if func and func not in funcs_run: func()
+    
+
+def post_exec_hook(hook):
+    """
+    Runs a hook function defined in a deploy.py file
+    """
+    #post_setupnode hook
+    module_name = '.'.join([env.project_package_name,'deploy'])
+    funcs_run = []
+    try:
+        imported = importlib.import_module(module_name)
+        func = vars(imported).get(hook)
+        if func:
+            func()
+            funcs_run.append(func)
+    except ImportError:
+        return
+
+   #run per app
+    for app in env.INSTALLED_APPS:
+        if app == 'woven': continue
+        module_name = '.'.join([app,'deploy'])
+        try:
+            imported = importlib.import_module(module_name)
+            func = vars(imported).get(hook)
+            if func and func not in funcs_run:
+                func()
+                funcs_run.append(func)
+        except ImportError:
+            pass
+    import woven.deploy
+    func = vars(woven.deploy).get(hook)
+    if func and func not in funcs_run: func()
+
 def project_version(full_version):
     """
     project_version context manager

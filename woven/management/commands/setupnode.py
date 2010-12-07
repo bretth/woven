@@ -7,7 +7,7 @@ from fabric import state
 from fabric.context_managers import settings
 from fabric.main import is_task
 
-from woven.api import setupnode, post_setupnode
+from woven.api import setupnode, post_exec_hook
 from woven.management.base import WovenCommand
 
 class Command(WovenCommand):
@@ -36,7 +36,7 @@ class Command(WovenCommand):
     def handle_host(self,*args, **options):
         state.env.root_disabled = options.get('root_disabled')
         setupnode()
-        post_setupnode()
+        post_exec_hook('post_setupnode')
         
 
 
