@@ -5,7 +5,7 @@ import site
 
 from django import get_version
 from django.template.loader import render_to_string
-from django.utils import importlib
+
 
 from fabric.decorators import runs_once
 from fabric.state import env 
@@ -286,7 +286,7 @@ def pip_install_requirements():
     if req_files: file_patterns = '|'.join([file_patterns,'req*.zip'])
 
     #create a pip cache & src directory
-    cache =  '/'.join([deployment_root(),'.pip','package-cache'])
+    cache =  '/'.join([deployment_root(),'.pip','cache'])
     src = '/'.join([deployment_root(),'.pip','src'])
     deployed = mkdirs(cache)
     deployed += mkdirs(src)
