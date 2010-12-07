@@ -36,7 +36,7 @@ def add_repositories():
     Adds additional sources as defined in LINUX_PACKAGE_REPOSITORIES.
 
     """
-    if env.overwrite or env.LINUX_PACKAGE_REPOSITORIES == server_state('linux_package_repositories'): return
+    if not env.overwrite and env.LINUX_PACKAGE_REPOSITORIES == server_state('linux_package_repositories'): return
     if env.verbosity:
         print env.host, "UNCOMMENTING SOURCES in /etc/apt/sources.list and adding PPAs"
     if contains(filename='/etc/apt/sources.list',text='#(.?)deb(.*)http:(.*)universe'):
@@ -74,9 +74,10 @@ def change_ssh_port():
 
     after = env.port
     before = str(env.DEFAULT_SSH_PORT)
+    
 
     host_string=join_host_strings(env.user,host,before)
-    with settings(host_string=host_string, user=env.user, password=env.ROOT_PASSWORD):
+    with settings(host_string=host_string, user=env.user):
         if env.verbosity:
             print env.host, "CHANGING SSH PORT TO: "+str(after)
         sed('/etc/ssh/sshd_config','Port '+ str(before),'Port '+str(after),use_sudo=True)
@@ -127,16 +128,13 @@ def disable_root():
     
     host_string=join_host_strings(root_user,host,str(env.DEFAULT_SSH_PORT))
     with settings(host_string=host_string,  password=env.ROOT_PASSWORD):
-        if env.verbosity:
-            print "You may be asked to re-enter your password to run administrative tasks."
         if not contains('sudo','/etc/group',use_sudo=True):
             sudo('groupadd sudo')
-            #set_server_state('sudo-added')
+
         home_path = '/home/%s'% sudo_user
         if not exists(home_path):
             if env.verbosity:
                 print env.host, 'CREATING A NEW ACCOUNT WITH SUDO PRIVILEGE: %s'% sudo_user
-            
             if not original_password:
 
                 original_password = enter_password()
@@ -159,6 +157,7 @@ def disable_root():
             sudo('rm -rf /tmp/sudoers.tmp')
             
     env.password = original_password
+
     #finally disable root
     host_string=join_host_strings(sudo_user,host,str(env.DEFAULT_SSH_PORT))
     with settings(host_string=host_string):
@@ -224,7 +223,7 @@ def install_packages():
     #We'll use easy_install at this stage since it doesn't download if the package
     #is current whereas pip always downloads.
     #Once both these packages mature we'll move to using the standard Ubuntu packages
-    if env.overwrite or not server_state('pip-venv-wrapper-installed') and 'python-setuptools' in env.packages:
+    if (env.overwrite or not server_state('pip-venv-wrapper-installed')) and 'python-setuptools' in packages:
         sudo("easy_install virtualenv")
         sudo("easy_install pip")
         sudo("easy_install virtualenvwrapper")
