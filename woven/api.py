@@ -16,7 +16,7 @@ from woven.project import deploy_static, deploy_media, deploy_project, deploy_db
 
 from woven.linux import add_user, install_package, port_is_open, skip_disable_root
 from woven.linux import install_packages, post_install_package, post_setupnode, uninstall_packages
-from woven.linux import upgrade_packages, setup_ufw, disable_root
+from woven.linux import upgrade_packages, setup_ufw, setup_ufw_rules, disable_root
 from woven.linux import add_repositories, restrict_ssh, upload_ssh_key
 from woven.linux import change_ssh_port, set_timezone, lsb_release, upload_etc
 
@@ -51,7 +51,8 @@ def setupnode(overwrite=False):
         port_changed = change_ssh_port()
     #avoid trying to take shortcuts if setupnode did not finish 
     #on previous execution
-    if server_state('setupnode-incomplete'): env.overwrite=True
+    if server_state('setupnode-incomplete'):
+        env.overwrite=True
     else: set_server_state('setupnode-incomplete')
     upload_ssh_key()
     restrict_ssh()
@@ -63,7 +64,7 @@ def setupnode(overwrite=False):
 
     upload_etc()
     post_install_package()
-    
+    setup_ufw_rules()
     set_timezone()
     set_server_state('setupnode-incomplete',delete=True)
     #stop and start webservers - and reload nginx
