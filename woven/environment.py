@@ -502,7 +502,7 @@ def set_version_state(name,object=None,delete=False):
             sudo('mkdir /var/local/woven')
     if not delete:
         sudo('touch /var/local/woven/%s'% state_name)
-        if object:
+        if object <> None:
             fd, file_path = tempfile.mkstemp()
             f = os.fdopen(fd,'w')
             f.write(json.dumps(object))
