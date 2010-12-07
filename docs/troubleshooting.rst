@@ -3,6 +3,8 @@ Troubleshooting
 
 Stuff happens.
 
+Adding --verbosity=2 to setupnode or deploy will show the debug view of fabric.
+
 **setupnode hangs on upgrade**
 
 Most likely some package in the apt-get upgrade process is incorrectly asking for user input.
