@@ -10,7 +10,7 @@ from fabric.decorators import runs_once
 
 from woven.decorators import run_once_per_version
 from woven.deployment import deploy_files, mkdirs, upload_template
-from woven.environment import deployment_root, version_state, _root_domain
+from woven.environment import deployment_root, version_state, _root_domain, get_packages
 from woven.linux import add_user
 
 def _activate_sites(path, filenames):
@@ -192,10 +192,10 @@ def deploy_webconf():
         if not exists(log_dir):
             run('ln -s /var/log log')
         #deploys confs for each domain based on sites app
-        if 'apache2' in env.packages:
+        if 'apache2' in get_packages():
             deployed += _deploy_webconf('/etc/apache2/sites-available','django-apache-template.txt')
             deployed += _deploy_webconf('/etc/nginx/sites-available','nginx-template.txt')
-        elif 'gunicorn' in env.packages:
+        elif 'gunicorn' in get_packages():
             deployed += _deploy_webconf('/etc/nginx/sites-available','nginx-gunicorn-template.txt')
             
         upload_template('woven/maintenance.html','/var/www/nginx-default/maintenance.html',use_sudo=True)
@@ -210,10 +210,10 @@ def deploy_wsgi():
     """
     deploy python wsgi file(s)
     """ 
-    if 'libapache2-mod-wsgi' in env.packages:
+    if 'libapache2-mod-wsgi' in get_packages():
         remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'wsgi'])
         wsgi = 'apache2'
-    elif 'gunicorn' in env.packages:
+    elif 'gunicorn' in get_packages():
         remote_dir = '/etc/init'
         wsgi = 'gunicorn'
     deployed = []
@@ -276,7 +276,7 @@ def webserver_list():
     """
     list of webserver packages
     """
-    p = set(env.packages)
+    p = set(get_packages())
     w = set(['apache2','gunicorn','uwsgi','nginx'])
     installed = p & w
     return list(installed)

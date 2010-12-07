@@ -16,7 +16,7 @@ from fabric.contrib.console import confirm
 
 from woven.decorators import run_once_per_version
 from woven.deployment import mkdirs, deploy_files
-from woven.environment import deployment_root,set_version_state, version_state, State
+from woven.environment import deployment_root,set_version_state, version_state, get_packages, State
 from woven.webservers import _get_django_sites, _ls_sites, _sitesettings_files, stop_webserver, start_webserver, webserver_list, domain_sites
 from fabric.contrib.files import append
 
@@ -70,7 +70,7 @@ def activate():
       
         #activate sites
         activate_sites = [''.join([d.name.replace('.','_'),'-',env.project_version,'.conf']) for d in domain_sites()]
-        if 'apache2' in env.packages:
+        if 'apache2' in get_packages():
             site_paths = ['/etc/apache2','/etc/nginx']
         else:
             site_paths = ['/etc/nginx']

@@ -326,42 +326,64 @@ def set_env(settings=None, setup_dir=''):
         env.user = woven_env.HOST_USER
     env.password = woven_env.HOST_PASSWORD
     
-    #set the hosts
+    #set the hosts if they aren't already
     if not env.hosts: env.hosts = woven_env.HOSTS
     if not env.roledefs: env.roledefs = woven_env.ROLEDEFS
     
-    #since port is not handled by fabric.main.normalize we'll do it ourselves
-    host_list = []
-    if 'hosts' in env and isinstance(env['hosts'], list):
-        for host_string in env.hosts:
-            if not ':' in host_string:
-                host_string += ':%s'% str(woven_env.HOST_SSH_PORT)
-            #not sure that this is necessary but it seems clearer to make full
-            #hoststrings with the correct user
-            if not '@' in host_string:
-                host_string = env.user + '@' + host_string
-            host_list.append(host_string)
-            env.hosts = host_list
-    #packages
-    u = set([])
-    packages = []
-    for r in env.roles:
-        packages = env.ROLE_PACKAGES.get(r,[])
-        u = u | set(packages)
-    if not u:
-        u = set(env.HOST_BASE_PACKAGES + env.HOST_EXTRA_PACKAGES)
-    #sanity check for unwanted combinations
+    #reverse_lookup hosts to roles
+    
+    role_lookup  = {}
+    for role in env.roles:
+        r_hosts = env.roledefs[role]
+        for host in r_hosts:
+            #since port is not handled by fabric.main.normalize we'll do it ourselves
+            role_lookup['%s:%s'% (host,str(woven_env.HOST_SSH_PORT))]=role
+    #now add any hosts that aren't already defined in roles
+    for host in env.hosts:
+        host_string = '%s:%s'% (host,str(woven_env.HOST_SSH_PORT))
+        if host_string not in role_lookup.keys():
+            role_lookup[host_string] = ''
+    env.role_lookup = role_lookup
+    env.hosts = role_lookup.keys()
+    
+    #packages can be just the base + extra packages
+    #or role dependent we need to just map out the packages to hosts and roles here
+    packages = {}
+    all_packages = set([])
+    for role in env.roles:
+        packages[role]=env.ROLE_PACKAGES.get(role,[])
+        if not packages[role]:
+            packages[role] = env.HOST_BASE_PACKAGES + env.HOST_EXTRA_PACKAGES
+        all_packages = set(packages[role]) | all_packages
+
+    #no role
+    packages[''] = env.HOST_BASE_PACKAGES + env.HOST_EXTRA_PACKAGES
+    all_packages = set(packages['']) | all_packages
+
+    #conveniently add gunicorn ppa
+    if 'gunicorn' in all_packages:
+        if 'ppa:bchesneau/gunicorn' not in env.LINUX_PACKAGE_REPOSITORIES:
+            env.LINUX_PACKAGE_REPOSITORIES.append('ppa:bchesneau/gunicorn')    
+
+    env.packages = packages
+    
+    #sanity check for unwanted combinations in the empty role
+    u = set(packages[''])
     wsgi = u & set(['gunicorn','uwsgi'])
     if wsgi and 'apache2' in u:
         u = u - set(['apache2','libapache2-mod-wsgi'])
-    env.packages = list(u)
-    env.installed_packages = []
-    env.uninstalled_packages = []
+    env.packages[''] = list(u)
+   
+    #per host
+    env.installed_packages = {} 
+    env.uninstalled_packages = {}
     
-    if 'gunicorn' in env.packages:
-        if 'ppa:bchesneau/gunicorn' not in env.LINUX_PACKAGE_REPOSITORIES:
-            env.LINUX_PACKAGE_REPOSITORIES.append('ppa:bchesneau/gunicorn')
-            
+    #UFW firewall rules
+    firewall_rules = {}
+    for role in env.roles:
+        firewall_rules[role]= env.ROLE_UFW_RULES.get(role,[])
+    firewall_rules['']=env.UFW_RULES
+    env.firewall_rules = firewall_rules
     
     #Now update the env with any settings that are not defined by woven but may
     #be used by woven or fabric
@@ -403,6 +425,13 @@ def set_env(settings=None, setup_dir=''):
     env.sites = {}
     env.shell = '/bin/bash --noprofile -l -c'
     #output.debug = True
+
+def get_packages():
+    """
+    per host list of packages
+    """
+    packages = env.packages[env.role_lookup[env.host_string]]
+    return packages
     
 def patch_project():
     return env.patch

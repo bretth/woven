@@ -10,7 +10,7 @@ from woven.deployment import deploy_files, mkdirs
 from woven.deployment import upload_template
 
 from woven.environment import check_settings, deployment_root, set_env, patch_project, get_project_version, server_state, set_server_state
-from woven.environment import set_version_state, version_state
+from woven.environment import set_version_state, version_state, get_packages
 
 from woven.project import deploy_static, deploy_media, deploy_project, deploy_db, deploy_templates
 
