@@ -322,7 +322,7 @@ def stop_webserver(server):
             if env.verbosity:
                 print env.host,"STOPPING","%s-%s"% (server,env.project_name)
             a = sudo("stop %s-%s"% (server,env.project_name))
-            if env.verbosity:
+            if env.verbosity and a.strip():
                 print '',a
     return True
 
@@ -359,7 +359,7 @@ def start_webserver(server):
             print env.host, "STARTING","%s-%s"% (server,env.project_name)
         with settings(warn_only=True):
             n = sudo('start %s-%s'% (server,env.project_name))
-            if env.verbosity:
+            if env.verbosity and n.strip():
                 print ' *', n
             
     return True
