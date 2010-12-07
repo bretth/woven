@@ -18,7 +18,7 @@ from woven.decorators import run_once_per_version
 from woven.deployment import mkdirs, deploy_files
 from woven.environment import deployment_root,set_version_state, version_state, get_packages
 from woven.environment import post_exec_hook, State
-from woven.webservers import _get_django_sites, _ls_sites, _sitesettings_filespo, stop_webserver, start_webserver, webserver_list, domain_sites
+from woven.webservers import _get_django_sites, _ls_sites, _sitesettings_files, stop_webserver, start_webserver, webserver_list, domain_sites
 from fabric.contrib.files import append
 
 def active_version():
