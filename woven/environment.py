@@ -31,7 +31,7 @@ woven_env = _AttributeDict({
 'DISABLE_SSH_PASSWORD': False, #optional - setting this to true will disable password login and use ssh keys only.
 'ENABLE_UFW':True, #optional - If some alternative firewall is already pre-installed
 #optional - the default firewall rules (note ssh is always allowed)
-'UFW_RULES':['allow woven_project'], 
+'UFW_RULES':['allow 80,443/tcp'], 
 'ROLE_UFW_RULES':{},
     
 #The default packages that are setup. It is NOT recommended you change these:
