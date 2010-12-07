@@ -293,16 +293,19 @@ def post_install_package():
     Hook functions are in the form post_install_[package name] and are
     defined in a deploy.py file
     
-    Should be executed post install_packages and upload_etc
+    Will be executed post install_packages and upload_etc
     """
 
     module_name = '.'.join([env.project_package_name,'deploy'])
+    funcs_run = []
     try:
         imported = importlib.import_module(module_name)
         funcs = vars(imported)
-        for f in env.installed_packages:
-            func = funcs.get(''.join(['post_install_',f]))
-            if func: func()
+        for f in env.installed_packages[env.host]:
+            func = funcs.get(''.join(['post_install_',f.replace('.','_').replace('-','_')]))
+            if func:
+                func()
+                funcs_run.append(func)
     except ImportError:
         pass
     
@@ -313,11 +316,20 @@ def post_install_package():
         try:
             imported = importlib.import_module(module_name)
             funcs = vars(imported)
-            for f in env.installed_packages:
-                func = funcs.get(''.join(['post_install_',f]))
-                if func: func()
+            for f in env.installed_packages[env.host]:
+                func = funcs.get(''.join(['post_install_',f.replace('.','_').replace('-','_')]))
+                if func and func not in funcs_run:
+                    func()
+                    funcs_run.append(func)
         except ImportError:
             pass
+    #run woven last
+    import woven.deploy
+    funcs = vars(woven.deploy)
+    for f in env.installed_packages[env.host]:
+        func = funcs.get(''.join(['post_install_',f.replace('.','_').replace('-','_')]))
+        if func and func not in funcs_run: func()
+    
 
 def post_setupnode():
     """
@@ -325,11 +337,13 @@ def post_setupnode():
     """
     #post_setupnode hook
     module_name = '.'.join([env.project_package_name,'deploy'])
-    
+    funcs_run = []
     try:
         imported = importlib.import_module(module_name)
         func = vars(imported).get('post_setupnode')
-        if func: func()
+        if func:
+            func()
+            funcs_run.append(func)
     except ImportError:
         return
 
@@ -340,10 +354,14 @@ def post_setupnode():
         try:
             imported = importlib.import_module(module_name)
             func = vars(imported).get('post_setupnode')
-            if func: func()
+            if func and func not in funcs_run:
+                func()
+                funcs_run.append(func)
         except ImportError:
             pass
-    
+    import woven.deploy
+    func = vars(woven.deploy).get('post_setupnode')
+    if func and func not in funcs_run: func()
 
 def restrict_ssh(rollback=False):
     """
