@@ -72,14 +72,14 @@ Custom Hooks
 
 Woven provides hooks into the setupnode, deploy, and post package installation commands.
 
-To add custom functionality to a woven deployment create a ``deploy.py`` file in your project or django app, and define any of the following. 
+To add custom functionality to a woven deployment create a ``deploy.py`` file in your project or django app, and define any of the following.
+
+Hooks execute in a project, app, woven order of precedence. Only one hook per function will execute. A project scope hook for instance will override the same function at app or provided by woven itself.
 
 Post install package
 ---------------------
 
 Define a ``def post_install_[package_name]()`` function to run code if the Ubuntu package is installed by woven, and after any /etc configuration is uploaded. For example you might define ``def post_install_postgresql()`` to setup a postgresql database. Replace any dashes or fullstops with underscores to make it a valid python function.
-
-Hooks execute according to scope. A project scope hook will mean an app hook, or one defined by Woven itself won't execute.
 
 A sample hook is defined in Woven for installing postgresql
 
