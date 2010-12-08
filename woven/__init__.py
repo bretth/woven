@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-VERSION = (0, 7, 0,'final', 0)
+VERSION = (0, 8, 0,'alpha', 0)
 
 def get_version():
     version = '%s.%s' % (VERSION[0], VERSION[1])
