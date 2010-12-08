@@ -293,6 +293,9 @@ def set_env(settings=None, setup_dir=''):
     else:
 
         project_settings = settings
+    #If sqlite is used we can manage the database on first deployment
+    env.DEFAULT_DATABASE_ENGINE = project_settings.DATABASES['default']['ENGINE']
+    env.DEFAULT_DATABASE_NAME = project_settings.DATABASES['default']['NAME']
     
     #overwrite with main sitesettings module
     #just for MEDIA_URL, ADMIN_MEDIA_PREFIX, and STATIC_URL
@@ -301,6 +304,7 @@ def set_env(settings=None, setup_dir=''):
         site_settings = import_module('.'.join([env.project_name,'sitesettings.settings']))
         project_settings.MEDIA_URL = site_settings.MEDIA_URL
         project_settings.ADMIN_MEDIA_PREFIX = site_settings.ADMIN_MEDIA_PREFIX
+        project_settings.DATABASES = site_settings.DATABASES 
         if hasattr(site_settings,'STATIC_URL'):
             project_settings.STATIC_URL = site_settings.STATIC_URL
         else:
@@ -331,7 +335,6 @@ def set_env(settings=None, setup_dir=''):
     if not env.roledefs: env.roledefs = woven_env.ROLEDEFS
     
     #reverse_lookup hosts to roles
-    
     role_lookup  = {}
     for role in env.roles:
         r_hosts = env.roledefs[role]
@@ -346,6 +349,16 @@ def set_env(settings=None, setup_dir=''):
     env.role_lookup = role_lookup
     env.hosts = role_lookup.keys()
     
+    #remove any unneeded db adaptors - except sqlite
+    remove_backends = ['postgresql_psycopg2', 'mysql']
+    for db in project_settings.DATABASES:
+        engine = project_settings.DATABASES[db]['ENGINE'].split('.')[-1]
+        if engine in remove_backends: remove_backends.remove(engine)
+    for backend in remove_backends:
+        if backend == 'postgresql_psycopg2': rm = 'python-psycopg2'
+        elif backend == 'mysql': rm = 'python-mysqldb'
+        env.HOST_BASE_PACKAGES.remove(rm)
+
     #packages can be just the base + extra packages
     #or role dependent we need to just map out the packages to hosts and roles here
     packages = {}
@@ -392,11 +405,6 @@ def set_env(settings=None, setup_dir=''):
     env.ADMIN_MEDIA_PREFIX = project_settings.ADMIN_MEDIA_PREFIX
     if not env.STATIC_URL: env.STATIC_URL = project_settings.ADMIN_MEDIA_PREFIX
     env.TEMPLATE_DIRS = project_settings.TEMPLATE_DIRS
-   
-   
-    #If sqlite is used we can manage the database on deployment
-    env.DEFAULT_DATABASE_ENGINE = project_settings.DATABASES['default']['ENGINE']
-    env.DEFAULT_DATABASE_NAME = project_settings.DATABASES['default']['NAME']
     
     #Set the server /etc/timezone
     env.TIME_ZONE = project_settings.TIME_ZONE
