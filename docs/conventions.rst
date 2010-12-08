@@ -97,20 +97,20 @@ etc templates are uploaded if the template has changed or if the packages on the
 
 *UFW firewall rules*
 
-UFW uses app templates defined in the `/etc/ufw/applications.d` directory. Woven uploads `ufw.txt` as `woven` in this directory to set the SSH firewall rules. Woven also uploads the `ufw-woven_project.txt` template as `woven_project` to define the application rules only ONCE when the node is setup. You can change this file prior to running setupnode for the first time.
+UFW can use app templates defined in the `/etc/ufw/applications.d` directory. Woven uploads `ufw.txt` as `woven` in this directory to set the SSH firewall rules. 
 
-If you wish to override the firewall post setupnode you can either set UFW rules in your settings file or define a woven_project template in the applications.d folder. Use the existing woven_project template and change the ports as required.
-
-A current limitation is that you cannot delete rules through woven.
+A firewall rule for all nodes can be defined at UFW_RULES or exclusively for a role at ROLE_UFW_RULES. A rule is something like `allow 5432/tcp`. See UFW documentation for rule syntax. Removing a rule will delete it from the firewall next time setupnode is run. 
 
 Project Deployment Layout
 -------------------------
 
 Within the root folder on the node are the following::
 
-   ~/.package_cache (Pip will cache packages here)
+   ~/.package_cache
    ~/.staging (all rsynced files are staged here before copying to final destination for network efficiency)
    ~/.pip (pip installation logs)
+    |  |--cache (Pip will cache packages here)
+    |  |--src (pip will store any source repositories here)
    ~/--database (for sqlite if it is used)
     |   |--example_project.db (will always be deployed as the [project-name].db)
     |--env (The root directory for all virtual environments)
@@ -138,7 +138,7 @@ Within the root folder on the node are the following::
     |--log (symlinks to /var/log)
     | Another media directory for files that in the user domain (MEDIA_URL) rather than required for the application
     |--public  (for single domain deployments any project media goes here if you are hosting media locally)
-    |--src (pip will store any source repositories here)
+ 
     
 Apache & Nginx Configuration files
 ----------------------------------
@@ -159,6 +159,6 @@ Woven keeps track of server state and other housekeeping functions using the
 
 Currently state is stored as a filename with or without content.
 
-Backups of initial configuration files are stored at
+Backups of configuration files are stored at
 
 `/var/local/woven-backup`
