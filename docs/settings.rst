@@ -38,13 +38,19 @@ Django settings.py. They are all optional.
     #The default ubuntu packages that are setup. It is NOT recommended you overwrite these
     #use ROLE_PACKAGES if you want to define all your packages
     HOST_BASE_PACKAGES = [
-            'subversion','git-core','mercurial','bzr', #version control
-            'gcc','build-essential', 'python-dev', 'python-setuptools', #build
-            'apache2','libapache2-mod-wsgi','nginx', #webservers
-            'python-imaging', #pil
-            'python-psycopg2','python-mysqldb','python-pysqlite2'] #default database drivers
+        'subversion','git-core','mercurial','bzr', #version control
+        'gcc','build-essential', 'python-dev', 'python-setuptools', #build
+        'apache2','libapache2-mod-wsgi', #wsgi server
+        'nginx', #webserver
+        'python-imaging', #pil
+        'python-psycopg2','python-mysqldb','python-pysqlite2'] #default database drivers
     
-    Put any additional packages here to save overwriting the base_packages 
+    #Package notes:
+    #If you define gunicorn in your extra packages then apache and mod-wsgi will not be
+    #installed, or will be removed. psycopg2 or mysqldb will only be installed
+    #if they are required by your DATABASES engine settings.
+    
+    #Put any additional packages here to save overwriting the base_packages 
     HOST_EXTRA_PACKAGES = []
     
     #define a list of repositories/sources to search for packages
@@ -61,10 +67,15 @@ Django settings.py. They are all optional.
                               'authz_user','autoindex','cgid','dir',
                           'setenvif','status'],         
     #Virtualenv/Pip
-    DEPLOYMENT_ROOT = ''# defaults to /home/$USER. 
+    DEPLOYMENT_ROOT = ''# defaults to /home/$USER.
+    
+    #If you are using a non-svn release or a release not on Pypi you will need to define it here
+    #eg for a local file: file://path/to/django-1.x-alpha-x.tar.gz
     DJANGO_REQUIREMENT = '' #defaults to your current django version. A pip requirements string for the version of Django to install
+
     PIP_REQUIREMENTS = [] # list of text pip requirements files (not pybundles). Defaults to any file in the setup.py directory with `req` prefix
-    # Note: Woven will also look for pybundles matching the requirements in the dist directory - you can use the bundle management command to create these.
+    # Note: Woven will also look for zip files matching the requirements in the dist directory.
+    #you can use the bundle management command to create these.
     
     PROJECT_APPS_PATH = '' #a relative path from the project package directory for any local apps. See also the wsgi template.
     

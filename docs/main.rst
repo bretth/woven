@@ -11,11 +11,11 @@ Woven
     
 * enables you to define custom linux etc configuration files in your project
 
-* enable you to define roles for your servers with combinations of linux packages
+* enable you to define roles for your servers with combinations of linux packages and firewall rules
     
 * provides an api for fabfile.py scripts.
 
-* hooks for custom per project and per app deploy and setupnode functionality
+* hooks for custom functionality
     
 * integrates with South for migrations
     
@@ -72,14 +72,18 @@ Woven is just fabric. To integrate with your own fabfiles you can do:
 Custom Hooks
 ============
 
-Woven provides hooks into the setupnode and deploy commands.
+Woven provides hooks into the setupnode, deploy, and post package installation commands.
 
-To add custom functionality to a woven deployment create a ``deploy.py`` file in your project or django app, and define any of the following.
+To add custom functionality to a woven deployment create a ``deploy.py`` file in your project or django app, and define any of the following. 
 
 Post install package
 ---------------------
 
 Define a ``def post_install_[package_name]()`` function to run code if the Ubuntu package is installed by woven, and after any /etc configuration is uploaded. For example you might define ``def post_install_postgresql()`` to setup a postgresql database.
+
+Hooks execute according to scope. A project scope hook will mean an app hook, or one defined by Woven itself won't execute.
+
+A sample hook is defined in Woven for installing postgresql
 
 Post setupnode
 --------------
@@ -107,7 +111,7 @@ Future Goals
 ------------
 
 * I would like to see other ways of serving django behind nginx implemented. Ubuntu 11.04 will ship with a nginx that doesn't need to be compiled to use uwsgi, so that will be a good time to add support for it.
-* Although it's currently tested on Ubuntu (or at least debian based distros), I'm happy to accept patches to make it work on other similar distributions.
+* Although it's currently tested on Ubuntu, I'm happy to accept patches or feedback to make it work on debian based distro's or other linux distributions.
 * The future is distutils2. I actually think the 1.0 version of woven should make full use of the new packaging system and metadata. When packaging no longer sucks, I can simplify woven to leverage it, and it has implications for django project conventions. I'll be looking for distutils2 to move to beta before I begin to develop for it.
 
 Testing
