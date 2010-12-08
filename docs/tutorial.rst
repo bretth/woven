@@ -15,6 +15,7 @@ We're going to create a virtual python environment hellodjango. You don't need t
 Create a ``distribution`` directory in the virtualenv. A distribution usually means a bundle of software configured for release. I'm using the term loosely to be the directory where the django project and *any* related packaged releases will be contained. In python the ``setup.py`` would be found in the distribution directory, and this will be the case here.
 
 ``mkdir $WORKON_HOME/hellodjango/distribution``
+
 ``cd $WORKON_HOME/hellodjango/distribution``
 
 Activate the env if it isn't already.
@@ -115,7 +116,7 @@ In the ``urls.py`` make it look like this::
    )
    
    urlpatterns += patterns('django.views.generic.simple',
-      (r'^$', 'django.views.generic.simple.direct_to_template', {'template': 'index.html'}),
+      (r'^$', 'direct_to_template', {'template': 'index.html'}),
    )
 
 Finally in your templates folder create an index.html template file:: 
@@ -132,7 +133,7 @@ Finally in your templates folder create an index.html template file::
 	</body>
 	</html>
 
-From the helloadmin folder run syncdb ``python manage.py syncdb`` to setup the database and then make sure your development environment is working by running ``python manage.py syncdb`` and opening http://127.0.0.1:8000/ in your browser.
+From the helloadmin folder run syncdb ``python manage.py syncdb`` to setup the database and then make sure your development environment is working by running ``python manage.py runserver`` and opening http://127.0.0.1:8000/ in your browser.
 
 If you have done everything right you should now see ``hello admin`` and be able to login to the django admin. You're ready to deploy!
 
