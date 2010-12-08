@@ -1,5 +1,5 @@
 
-Woven deploys versioned Django projects served by Apache and Nginx onto Linux servers. Woven is is built on `Fabric <http://docs.fabfile.org/>`_.
+Woven deploys versioned Django projects onto Linux servers behind Nginx using Apache modwsgi by default. Woven is is built on `Fabric <http://docs.fabfile.org/>`_. 
 
 :doc:`RTFM.</main>`
 

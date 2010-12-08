@@ -205,6 +205,6 @@ If you want to work directly on the server you can SSH into your host and type::
     
 This will use virtualenvwrapper to activate your current virtualenv and drop you into the project sitesettings manage.py directory. A convenience manage.py is provided to run manage.py from there on the first site.
 
-Of course installing packages from a requirements file can be problematic if pypi is down.  To get around this first set your DJANGO_REQUIREMENT setting to file:///path/to/Django-x.x.x.tar.gz to rsync against a local copy. Next make use of  ``manage.py bundle`` command. This will use pip to bundle all the requirements into a dist folder in the distribution. When deploying woven will look in the dist directory first and install from a bundle with the same name as the requirements file.
+Of course installing packages from a requirements file can be problematic if pypi is down. Make use of the ``manage.py bundle`` command. This will use pip to bundle all the requirements into a dist folder in the distribution for deployment. 
 
 We also haven't covered in this tutorial features such as integrated South migrations and multi-site creation with ``startsites``. Have a read of the woven django management :doc:`commands` to get a better feel of the woven commands.
