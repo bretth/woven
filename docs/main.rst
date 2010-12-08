@@ -36,7 +36,7 @@ Installation
 Getting Started
 ===============
 
-To use Woven you must define a minimal :ref:`setup.py` and have root access to an linux host (currently only tested on Ubuntu >= 10.04).
+To use Woven you must define a minimal :ref:`setup.py` and have root access to a linux host or vm. Woven has currently been tested on Ubuntu >= 10.04.
 
 Woven provides six management commands for your Django project:
 
@@ -52,9 +52,7 @@ Woven is just fabric. To integrate with your own fabfiles you can do:
 ::
 
     import os
-    from woven.api import set_env
-    #or
-    
+
     #import any other woven functions you want to use or all of them
     from woven.api import *
     
@@ -79,7 +77,7 @@ To add custom functionality to a woven deployment create a ``deploy.py`` file in
 Post install package
 ---------------------
 
-Define a ``def post_install_[package_name]()`` function to run code if the Ubuntu package is installed by woven, and after any /etc configuration is uploaded. For example you might define ``def post_install_postgresql()`` to setup a postgresql database.
+Define a ``def post_install_[package_name]()`` function to run code if the Ubuntu package is installed by woven, and after any /etc configuration is uploaded. For example you might define ``def post_install_postgresql()`` to setup a postgresql database. Replace any dashes or fullstops with underscores to make it a valid python function.
 
 Hooks execute according to scope. A project scope hook will mean an app hook, or one defined by Woven itself won't execute.
 
