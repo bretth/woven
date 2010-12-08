@@ -276,7 +276,7 @@ def pip_install_requirements():
         svn_version = django_version.find('SVN')
         if svn_version > -1:
             django_version = django_version[svn_version+4:]
-            django_req = ''.join(['-e svn+http://code.djangoproject.com/svn/django/trunk@',svn_version,'#egg=Django'])
+            django_req = ''.join(['-e svn+http://code.djangoproject.com/svn/django/trunk@',django_version,'#egg=Django'])
         else:
             other_builds = ['alpha','beta','rc']
             for b in other_builds:
