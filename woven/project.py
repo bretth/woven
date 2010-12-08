@@ -129,17 +129,18 @@ def deploy_static():
     if not env.STATIC_URL or 'http://' in env.STATIC_URL: return
         
     remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'static'])
-    
+    m_prefix = len(env.MEDIA_URL)
     #if app media is not handled by django-staticfiles we can install admin media by default
     if 'django.contrib.admin' in env.INSTALLED_APPS and not env.STATIC_ROOT:
-        if env.MEDIA_URL and env.MEDIA_URL in env.ADMIN_MEDIA_PREFIX:
+        
+        if env.MEDIA_URL and env.MEDIA_URL == env.ADMIN_MEDIA_PREFIX[:m_prefix]:
             print "ERROR: Your ADMIN_MEDIA_PREFIX (Application media) must not be on the same path as your MEDIA_URL (User media)"
             sys.exit(1)
         admin = AdminMediaHandler('DummyApp')
         local_dir = admin.media_dir
         remote_dir =  ''.join([remote_dir,env.ADMIN_MEDIA_PREFIX])
     else:
-        if env.MEDIA_URL and env.MEDIA_URL in env.STATIC_URL:
+        if env.MEDIA_URL and env.MEDIA_URL == env.STATIC_URL[:m_prefix]:
             print "ERROR: Your STATIC_URL (Application media) must not be on the same path as your MEDIA_URL (User media)"
             sys.exit(1)
         elif env.STATIC_ROOT:
