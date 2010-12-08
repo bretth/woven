@@ -10,7 +10,7 @@ This first bit doesn't have much to do with woven, and is more about personal pr
 
 We're going to create a virtual python environment hellodjango. You don't need to do this but virtualenv makes it easy to experiment without polluting your system installed packages.
 
-``mkvirtalenv hellodjango --no-site-packages``
+``mkvirtualenv hellodjango --no-site-packages``
 
 Create a ``distribution`` directory in the virtualenv. A distribution usually means a bundle of software configured for release. I'm using the term loosely to be the directory where the django project and *any* related packaged releases will be contained. In python the ``setup.py`` would be found in the distribution directory, and this will be the case here.
 
