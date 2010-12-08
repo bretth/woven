@@ -278,6 +278,13 @@ def pip_install_requirements():
             django_version = django_version[svn_version+4:]
             django_req = ''.join(['-e svn+http://code.djangoproject.com/svn/django/trunk@',svn_version,'#egg=Django'])
         else:
+            other_builds = ['alpha','beta','rc']
+            for b in other_builds:
+                if b in django_version:
+                    print "ERROR: Unsupported Django version", django_version
+                    print "Define a DJANGO_REQUIREMENT pointing to the tar.gz for",django_version
+                    print "and re-deploy, or use the official or SVN release of Django."
+                    sys.exit(1)
             django_req = ''.join(['Django==',django_version])
     req_files[django_req]=None
     req_files_list.insert(0,django_req)
