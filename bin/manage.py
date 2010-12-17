@@ -9,6 +9,9 @@ from django.core.management import execute_from_command_line
 from django.core.management.base import CommandError, _make_writeable
 from django.utils.importlib import import_module
 
+from fabric.state import env
+from fabric.main import find_fabfile
+
 import woven
 
 TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.realpath(woven.__file__))
@@ -134,21 +137,40 @@ if __name__ == "__main__":
                     help="admin disabled",
                     )
             options, args = parser.parse_args()
-            if not options.dist_name: dist = args[1]
-            else: dist = options.dist_name
-            if len(args) not in (1, 2, 3, 4):
+            if len(args) not in (2, 3, 4):
                 parser.print_help()
                 sys.exit(1)
+            if not options.dist_name:
+                dist = args[1]
+            else:
+                dist = options.dist_name
+
             start_distribution(args[1],options.src_dir, dist, noadmin = options.noadmin)
             sys.exit(0)
     #get the name of the settings from setup.py if DJANGO_SETTINGS_MODULE is not set
     if not os.environ.get('DJANGO_SETTINGS_MODULE') and not settings_mod:
-        if 'setup.py' in os.listdir(os.getcwd()):
-            setup = run_setup('setup.py',stop_after="init")
-            settings_mod = '.'.join([setup.packages[0],'settings'])
-            os.environ['DJANGO_SETTINGS_MODULE'] =  settings_mod
-            #be path friendly like manage.py
-            sys.path.append(os.getcwd())
+        orig_cwd = os.getcwd()
+        if not 'setup.py' in os.listdir(os.getcwd()):
+            #switch the working directory to the distribution root where setup.py is
+            original_fabfile = env.fabfile
+            env.fabfile = 'setup.py'
+            setup_path = find_fabfile()
+            if not setup_path:
+                print 'Error: You must create a setup.py file in your distribution'
+                sys.exit(1)
+                
+            local_working_dir = os.path.split(setup_path)[0]
+            env.fabfile = original_fabfile
+            os.chdir(local_working_dir)
+        setup = run_setup('setup.py',stop_after="init")
+        settings_mod = '.'.join([setup.packages[0],'settings'])
+        os.environ['DJANGO_SETTINGS_MODULE'] =  settings_mod
+        #be path friendly like manage.py
+        sys.path.append(os.getcwd())
+        
+        #switch back to the original directory just in case some command needs it
+        os.chdir(orig_cwd)
+
     if inject:
         if settings_mod:
             os.environ['DJANGO_SETTINGS_MODULE'] = settings_mod
