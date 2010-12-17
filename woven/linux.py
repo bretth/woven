@@ -98,8 +98,8 @@ def disable_root():
     """
     
     def enter_password():
-        password1 = prompt('Enter the password for %s:'% sudo_user)
-        password2 = prompt('Re-enter the password:')
+        password1 = getpass.getpass(prompt='Enter the password for %s:'% sudo_user)
+        password2 = getpass.getpass(prompt='Re-enter the password:')
         if password1 <> password2:
             print env.host, 'The password was not the same'
             enter_password()
