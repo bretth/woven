@@ -40,7 +40,6 @@ woven_env = _AttributeDict({
         'subversion','git-core','mercurial','bzr', #version control
         'gcc','build-essential', 'python-dev', 'python-setuptools', #build
         'apache2','libapache2-mod-wsgi','nginx', #webservers
-        'python-paramiko','fabric',
         'python-imaging', #pil
         'python-psycopg2','python-mysqldb','python-pysqlite2'], #default database drivers
 
@@ -385,6 +384,10 @@ def set_env(settings=None, setup_dir=''):
     wsgi = u & set(['gunicorn','uwsgi'])
     if wsgi and 'apache2' in u:
         u = u - set(['apache2','libapache2-mod-wsgi'])
+
+    #Used to detect certain apps eg South, static_builder
+    env.INSTALLED_APPS = project_settings.INSTALLED_APPS
+
     env.packages[''] = list(u)
    
     #per host
