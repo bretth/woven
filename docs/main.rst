@@ -36,7 +36,11 @@ Installation
 Getting Started
 ===============
 
-To use Woven you must define a minimal :ref:`setup.py` and have root access to a linux host or vm. Woven has currently been tested on Ubuntu >= 10.04.
+To use Woven you must have root access to a linux host or vm. Woven has currently been tested on Ubuntu >= 10.04.
+
+Woven uses a custom ``manage.py`` script that serves to replace django-admin.py and manage.py in your development environment, and allows you to use woven commands without adding woven to your installed apps.
+
+Run ``manage.py startproject`` which will create a basic django project distribution layout.
 
 Woven provides six management commands for your Django project:
 

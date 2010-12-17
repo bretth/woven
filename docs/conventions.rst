@@ -78,8 +78,7 @@ While woven tries to be agnostic about your project layout there are some conven
                  |--ufw.txt (ssh firewall rules)
                  |--ufw-woven_project.txt (project firewall rules)
             |--[template.html] (global projecttemplates here)
-            |--example.com
-                |--[template.html] (site override templates here)
+
 
 **Notes:**
 

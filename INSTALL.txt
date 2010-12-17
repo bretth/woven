@@ -1,14 +1,9 @@
-Woven assumes you have Django already installed. And you are using pip right?
+You are using pip right?
 
     ``pip install woven``
 
-.. Note::
-    
-    Woven is currently not strictly compatible with Django 1.3 alpha while contrib.staticfiles is still begin finalized.    
-
 You may also want to install the following recommended packages::
 
-    pip install south
+    ``pip install south``
     
-To use woven add ``woven`` to your ``INSTALLED_APPS`` in your ``settings.py``
     

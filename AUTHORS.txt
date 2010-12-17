@@ -1,4 +1,7 @@
 The primary author of woven is Brett Haydon
+Other contributors to woven include:
+Wil Tan
+
 
 
 

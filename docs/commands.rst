@@ -11,6 +11,23 @@ A common and recommended deployment pattern is to separate out staging servers f
     
 You would then use the role in place of the hoststring e.g. ``python manage.py deploy staging``
 
+startproject
+------------
+
+Alternative to Django startproject. Creates a distribution folder as well as the project folder. You can also use your own alternative project layout template.
+
+Usage:
+
+``manage.py startproject [project_name] [options]``
+
+Options:
+
+``-t --template`` path to an alternative template directory.
+
+``-d --dist`` an alternate distribution name for the project. Defaults to the project name.
+
+``--noadmin`` don't uncomment admin.
+
 setupnode
 ---------
 
@@ -20,7 +37,7 @@ By defining ROLEDEFS in your settings you define packages for those hosts in the
 
 Basic Usage::
 
-``python manage.py setupnode [hoststring] [options]``
+``manage.py setupnode [hoststring] [options]``
 
 Lets go through what this actually does:
 
@@ -41,7 +58,7 @@ bundle
 
 Pip bundle your requirements into pip zip bundles for efficient deployment
 
-``python manage.py bundle``
+``manage.py bundle``
 
 
 deploy
@@ -51,7 +68,7 @@ Deploy your project to host[s] run syncdb and activate
 
 Basic Usage:
 
-``python manage.py deploy [hoststring] [options]``
+``manage.py deploy [hoststring] [options]``
 
 *options*
 
@@ -98,7 +115,7 @@ Includes project, web configuration, media, and wsgi but does not pip install
 
 Basic Usage:
 
-``python manage.py patch [subcommand] [hoststring] [options]``
+``manage.py patch [subcommand] [hoststring] [options]``
 
 You can just patch a part of the deployment with a subcommand.
 
@@ -108,7 +125,7 @@ The possible subcommands are::
 
 Example:
 
-``python manage.py patch media woven@host.example.com``
+``manage.py patch media woven@host.example.com``
 
 
 activate
@@ -118,11 +135,11 @@ Activate a project version
 
 Usage:
 
-``python manage.py activate version [options]``
+``manage.py activate version [options]``
 
 Example:
 
-``python manage.py activate 0.1 woven@host.example.com``
+``manage.py activate 0.1 woven@host.example.com``
 
 node
 ----
@@ -132,11 +149,11 @@ Run a no arguments management command on host[s]. You can supply command options
 
 Basic Usage:
 
-``python manage.py node command [hoststring] [options]``
+``manage.py node command [hoststring] [options]``
 
 Example:
 
-``python manage.py node flush woven@host.example.com --options="--noinput"``
+``manage.py node flush woven@host.example.com --options="--noinput"``
 
 startsites
 ----------
@@ -147,7 +164,7 @@ Within Django sites are created on the database but use the SITE_ID in the setti
 
 Basic Usage:
 
-``python manage.py startsites [hoststring] [options]``
+``manage.py startsites [hoststring] [options]``
 
 
 
