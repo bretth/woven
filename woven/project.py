@@ -4,7 +4,11 @@ Anything related to deploying your project modules, media, and data
 """
 import os, shutil, sys
 
-from django.core.servers.basehttp import AdminMediaHandler
+#AdminMediaHandler causes error on import if settings are undefined
+if os.environ.get('DJANGO_SETTINGS_MODULE'): 
+    from django.core.servers.basehttp import AdminMediaHandler
+else:
+    AdminMediaHandler = None
 from django.template.loader import render_to_string
 
 from fabric.state import env
