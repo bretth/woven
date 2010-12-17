@@ -54,6 +54,7 @@ class Command(WovenCommand):
     requires_model_validation = False
     
     def handle_host(self,*args, **options):
+        self.validate()
         deploy(overwrite=options.get('overwrite'))
         
         with settings(nomigration = options.get('nomigration'),
