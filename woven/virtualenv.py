@@ -251,43 +251,38 @@ def pip_install_requirements():
         bundle = ''.join([key.split('.')[0],'.zip'])
         if os.path.exists(os.path.join('dist',bundle)):
             req_files[key] = bundle
+        
+    #determine the django version
+    file_patterns =''
+    django_version = get_version()
+    svn_version = django_version.find('SVN')
+    if svn_version > -1:
+        django_version = django_version[svn_version+4:]
+        django_req = ''.join(['-e svn+http://code.djangoproject.com/svn/django/trunk@',django_version,'#egg=Django'])
+    else:
+        other_builds = ['alpha','beta','rc']
+        for b in other_builds:
+            if b in django_version:
+                print "ERROR: Unsupported Django version", django_version
+                print "Define a DJANGO_REQUIREMENT pointing to the tar.gz for",django_version
+                print "and re-deploy, or use the official or SVN release of Django."
+                sys.exit(1)
+        django_req = ''.join(['Django==',django_version])
 
     #if no requirements file exists create one
+    print 'django_req',django_req
+    
     if not req_files:
         f = open("requirements.txt","w+")
-        text = render_to_string('woven/requirements.txt')
+        text = render_to_string('woven/requirements.txt', {'django':django_req})
         f.write(text)
         f.close()
+        if env.verbosity:
+            print "Created local requirements.txt"
         req_files["requirements.txt"]=''
         
     req_files_list = req_files.keys()
     req_files_list.sort()
-        
-    #determine the django version
-    file_patterns =''
-    if 'file://' in env.DJANGO_REQUIREMENT: 
-        django_req = os.path.split(env.DJANGO_REQUIREMENT.replace('file://',''))[1]
-        file_patterns = ''.join([django_req])
-
-    elif env.DJANGO_REQUIREMENT:
-        django_req = env.DJANGO_REQUIREMENT
-    else:
-        django_version = get_version()
-        svn_version = django_version.find('SVN')
-        if svn_version > -1:
-            django_version = django_version[svn_version+4:]
-            django_req = ''.join(['-e svn+http://code.djangoproject.com/svn/django/trunk@',django_version,'#egg=Django'])
-        else:
-            other_builds = ['alpha','beta','rc']
-            for b in other_builds:
-                if b in django_version:
-                    print "ERROR: Unsupported Django version", django_version
-                    print "Define a DJANGO_REQUIREMENT pointing to the tar.gz for",django_version
-                    print "and re-deploy, or use the official or SVN release of Django."
-                    sys.exit(1)
-            django_req = ''.join(['Django==',django_version])
-    req_files[django_req]=None
-    req_files_list.insert(0,django_req)
     
     #patterns for bundles
     if req_files: file_patterns = '|'.join([file_patterns,'req*.zip'])
@@ -316,11 +311,7 @@ def pip_install_requirements():
                 if bundle: req=bundle
                 if env.verbosity:
                     print ' * installing',req
-                if 'django' in req.lower():
-                    install = run('pip install %s -q --environment=%s --src=%s --download-cache=%s --log=/home/%s/.pip/django_pip_log.txt'%
-                                  (req, python_path, src, cache, env.user))  
-
-                elif '.zip' in req.lower():
+                if '.zip' in req.lower():
                     install = run('pip install %s -q --environment=%s --log=/home/%s/.pip/%s_pip_log.txt'%
                                   (req, python_path, env.user, req.replace('.','_')))
                   

@@ -68,10 +68,6 @@ Django settings.py. They are all optional.
                           'setenvif','status'],         
     #Virtualenv/Pip
     DEPLOYMENT_ROOT = ''# defaults to /home/$USER.
-    
-    #If you are using a non-svn release or a release not on Pypi you will need to define it here
-    #eg for a local file: file://path/to/django-1.x-alpha-x.tar.gz
-    DJANGO_REQUIREMENT = '' #defaults to your current django version. A pip requirements string for the version of Django to install
 
     PIP_REQUIREMENTS = [] # list of text pip requirements files (not pybundles). Defaults to any file in the setup.py directory with `req` prefix
     # Note: Woven will also look for zip files matching the requirements in the dist directory.

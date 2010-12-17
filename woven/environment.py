@@ -62,7 +62,6 @@ woven_env = _AttributeDict({
 'DEPLOYMENT_ROOT':'',
 'PROJECT_APPS_PATH':'',#a relative path from the project package directory for any local apps
 'PIP_REQUIREMENTS':[], #a list of pip requirement and or pybundle files to use for installation
-'DJANGO_REQUIREMENT':'',#A pip requirements string for the version of Django to install
 
 #Application media
 'STATIC_URL':'', #optional
