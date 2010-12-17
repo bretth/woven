@@ -4,11 +4,6 @@ Anything related to deploying your project modules, media, and data
 """
 import os, shutil, sys
 
-#AdminMediaHandler causes error on import if settings are undefined
-if os.environ.get('DJANGO_SETTINGS_MODULE'): 
-    from django.core.servers.basehttp import AdminMediaHandler
-else:
-    AdminMediaHandler = None
 from django.template.loader import render_to_string
 
 from fabric.state import env
@@ -53,6 +48,8 @@ def _make_local_sitesettings(overwrite=False):
         f = open(settings_file_path,"w+")
         f.writelines(output)
         f.close()
+        if env.verbosity:
+            print "Created local sitesettings folder and default settings file"
         #copy manage.py into that directory
         manage_path = os.path.join(os.getcwd(),env.project_package_name,'manage.py')
         dest_manage_path = os.path.join(os.getcwd(),env.project_package_name,'sitesettings','manage.py')
@@ -130,12 +127,13 @@ def deploy_static():
     """
     Deploy static (application) versioned media
     """
+    
     if not env.STATIC_URL or 'http://' in env.STATIC_URL: return
-        
+    from django.core.servers.basehttp import AdminMediaHandler
     remote_dir = '/'.join([deployment_root(),'env',env.project_fullname,'static'])
     m_prefix = len(env.MEDIA_URL)
     #if app media is not handled by django-staticfiles we can install admin media by default
-    if 'django.contrib.admin' in env.INSTALLED_APPS and not env.STATIC_ROOT:
+    if 'django.contrib.admin' in env.INSTALLED_APPS and not 'django.contrib.staticfiles' in env.INSTALLED_APPS:
         
         if env.MEDIA_URL and env.MEDIA_URL == env.ADMIN_MEDIA_PREFIX[:m_prefix]:
             print "ERROR: Your ADMIN_MEDIA_PREFIX (Application media) must not be on the same path as your MEDIA_URL (User media)"
