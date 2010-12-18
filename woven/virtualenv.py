@@ -270,8 +270,6 @@ def pip_install_requirements():
         django_req = ''.join(['Django==',django_version])
 
     #if no requirements file exists create one
-    print 'django_req',django_req
-    
     if not req_files:
         f = open("requirements.txt","w+")
         text = render_to_string('woven/requirements.txt', {'django':django_req})
