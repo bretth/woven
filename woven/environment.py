@@ -5,7 +5,8 @@ from distutils.core import run_setup
 
 from django.utils.importlib import import_module
 
-from fabric.context_managers import _setenv, settings, cd
+from fabric.context_managers import settings as fab_settings
+from fabric.context_managers import _setenv, cd
 from fabric.contrib.files import exists, comment, contains, sed, append
 from fabric.decorators import runs_once, hosts
 from fabric.main import find_fabfile
@@ -253,18 +254,19 @@ def set_env(settings=None, setup_dir=''):
     """
 
     #switch the working directory to the distribution root where setup.py is
-    original_fabfile = env.fabfile
-    env.fabfile = 'setup.py'
-    if setup_dir:
-        fabfile_path = os.path.join(setup_dir,'setup.py')
+    if hasattr(env, 'setup_path') and env.setup_path:
+        setup_path = env.setup_path
     else:
-        fabfile_path = find_fabfile()
-    if not fabfile_path:
-        print 'Error: You must create a setup.py file in your distribution'
-        sys.exit(1)
+        with fab_settings(fabfile='setup.py'):
+            if setup_dir:
+                setup_path = os.path.join(setup_dir,'setup.py')
+            else:
+                setup_path = find_fabfile()
+            if not setup_path:
+                print 'Error: You must have a setup.py file in the current or a parent folder'
+                sys.exit(1)
         
-    local_working_dir = os.path.split(fabfile_path)[0]
-    env.fabfile = original_fabfile
+    local_working_dir = os.path.split(setup_path)[0]
     os.chdir(local_working_dir)
     
     setup = run_setup('setup.py',stop_after="init")
@@ -569,7 +571,7 @@ def set_server_state(name,object=None,delete=False):
     
     returns the filename used to store state   
     """
-    with settings(project_fullname=''):
+    with fab_settings(project_fullname=''):
         return set_version_state(name,object,delete)
 
 
@@ -582,7 +584,7 @@ def set_version_state(name,object=None,delete=False):
     """
     if env.project_fullname: state_name = '-'.join([env.project_fullname,name])
     else: state_name = name
-    with settings(warn_only=True):
+    with fab_settings(warn_only=True):
         #Test for os state
         if not exists('/var/local/woven', use_sudo=True):
             sudo('mkdir /var/local/woven')
@@ -606,7 +608,7 @@ def server_state(name, no_content=False):
     If the server state exists return parsed json as a python object or True 
     prefix=True returns True if any files exist with ls [prefix]*
     """
-    with settings(project_fullname=''):
+    with fab_settings(project_fullname=''):
         return version_state(name, no_content=no_content)
 
 
@@ -635,7 +637,7 @@ def version_state(name, prefix=False, no_content=False):
     elif not prefix and no_content and exists(state_path):
         current_state = True
     elif prefix:
-        with settings(warn_only=True): #find any version
+        with fab_settings(warn_only=True): #find any version
             current_state = sudo('ls /var/local/woven/*%s'% name)
         if not current_state.failed:current_state = True
       

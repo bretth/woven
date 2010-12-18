@@ -9,6 +9,7 @@ from django.core.management import execute_from_command_line
 from django.core.management.base import CommandError, _make_writeable
 from django.utils.importlib import import_module
 
+from fabric.api import settings
 from fabric.state import env
 from fabric.main import find_fabfile
 
@@ -20,7 +21,8 @@ TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.realpath(woven.__file__))
 def copy_helper(app_or_project, name, directory, dist, template_dir, noadmin):
     """
     
-    Copies a Django project layout template into the specified directory.
+    Replacement for django copy_helper
+    Copies a Django project layout template into the specified distribution directory
 
     """
 
@@ -152,19 +154,18 @@ if __name__ == "__main__":
         orig_cwd = os.getcwd()
         if not 'setup.py' in os.listdir(os.getcwd()):
             #switch the working directory to the distribution root where setup.py is
-            original_fabfile = env.fabfile
-            env.fabfile = 'setup.py'
-            setup_path = find_fabfile()
-            if not setup_path:
-                print 'Error: You must create a setup.py file in your distribution'
+            with settings(fabfile='setup.py'):
+                env.setup_path = find_fabfile()
+            if not env.setup_path:
+                print 'Error: You must have a setup.py file in the current or a parent folder'
                 sys.exit(1)
-                
-            local_working_dir = os.path.split(setup_path)[0]
-            env.fabfile = original_fabfile
+            local_working_dir = os.path.split(env.setup_path)[0]
             os.chdir(local_working_dir)
+            
         setup = run_setup('setup.py',stop_after="init")
         settings_mod = '.'.join([setup.packages[0],'settings'])
         os.environ['DJANGO_SETTINGS_MODULE'] =  settings_mod
+        
         #be path friendly like manage.py
         sys.path.append(os.getcwd())
         
