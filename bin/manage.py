@@ -5,10 +5,11 @@ from random import choice
 import re
 import optparse
 
-from django.core.management import execute_from_command_line
+from django.core.management import execute_from_command_line, call_command
 from django.core.management.base import CommandError, _make_writeable
 from django.utils.importlib import import_module
 
+from fabric.contrib.console import confirm, prompt
 from fabric.api import settings
 from fabric.state import env
 from fabric.main import find_fabfile
@@ -115,8 +116,10 @@ def start_distribution(project_name, template_dir, dist, noadmin):
 
 if __name__ == "__main__":
     #Inject woven into the settings only if it is a woven command
-    settings_mod = None; inject = False #sp = False
-    #print sys.argv
+    settings_mod = None
+    inject = False
+    startproject = False
+    orig_cwd = os.getcwd()
 
     for arg in sys.argv:
         if '--settings' in arg:
@@ -125,7 +128,8 @@ if __name__ == "__main__":
             inject = True
         elif arg == 'startproject':
             #call woven startproject in place of django startproject
- 
+            startproject = True
+            inject = True
             parser = optparse.OptionParser()
             parser.add_option('-t', '--template-dir', dest='src_dir',
                         help='project template directory to use',
@@ -137,6 +141,11 @@ if __name__ == "__main__":
                     action='store_true',
                     default=False,
                     help="admin disabled",
+                    ),
+            parser.add_option('--nosyncdb',
+                    action='store_true',
+                    default=False,
+                    help="Does not syncdb",
                     )
             options, args = parser.parse_args()
             if len(args) not in (2, 3, 4):
@@ -148,11 +157,12 @@ if __name__ == "__main__":
                 dist = options.dist_name
 
             start_distribution(args[1],options.src_dir, dist, noadmin = options.noadmin)
-            sys.exit(0)
+
     #get the name of the settings from setup.py if DJANGO_SETTINGS_MODULE is not set
     if not os.environ.get('DJANGO_SETTINGS_MODULE') and not settings_mod:
-        orig_cwd = os.getcwd()
-        if not 'setup.py' in os.listdir(os.getcwd()):
+        if startproject:
+            os.chdir(os.path.join(orig_cwd,dist))
+        elif not 'setup.py' in os.listdir(os.getcwd()):
             #switch the working directory to the distribution root where setup.py is
             with settings(fabfile='setup.py'):
                 env.setup_path = find_fabfile()
@@ -161,16 +171,14 @@ if __name__ == "__main__":
                 sys.exit(1)
             local_working_dir = os.path.split(env.setup_path)[0]
             os.chdir(local_working_dir)
-            
+           
         setup = run_setup('setup.py',stop_after="init")
         settings_mod = '.'.join([setup.packages[0],'settings'])
         os.environ['DJANGO_SETTINGS_MODULE'] =  settings_mod
+        sys.argv.remove('setup.py')
         
         #be path friendly like manage.py
         sys.path.append(os.getcwd())
-        
-        #switch back to the original directory just in case some command needs it
-        os.chdir(orig_cwd)
 
     if inject:
         if settings_mod:
@@ -189,6 +197,23 @@ if __name__ == "__main__":
             os.chdir(moddir)
         except ImportError, ValueError:
             pass
+    
+    if startproject:
+        if not options.nosyncdb:
+            call_command('syncdb',interactive=False)
+            if 'django.contrib.auth' in settings.INSTALLED_APPS:
+                csuper = confirm('Would you like to create a superuser now?',default=True)
+                if csuper:
+                    call_command('createsuperuser')
+                else:
+                    print "No superuser created. You can run manage.py createsuperuser at any time"
+        
     #run command as per django-admin.py
-    execute_from_command_line()
+    else:
+        #switch back to the original directory just in case some command needs it
+        os.chdir(orig_cwd)
+        #inject manage.py into the args
+        if not 'manage.py' in sys.argv[0]:
+            sys.argv.insert(0,'manage.py')
+        execute_from_command_line()
 
