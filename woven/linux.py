@@ -185,7 +185,7 @@ def install_packages():
     """
 
     if env.verbosity:
-        print env.host, "INSTALLING & CONFIGURING HOST PACKAGES:"
+        print env.host, "INSTALLING & CONFIGURING NODE PACKAGES:"
     #Get a list of installed packages
     p = run("dpkg -l | awk '/ii/ {print $2}'").split('\n')
     
