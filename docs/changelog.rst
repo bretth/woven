@@ -7,13 +7,13 @@ Release 0.8.0
 
 ** Changes from 0.7**
 
-* A woven manage.py script is now the preferred way to run django commands. Woven no longer needs to be in the INSTALLED_APPS setting, and woven no longer installs fabric or  python-paramiko on the node. 
+* A woven-admin.py script is now the preferred way to run django commands. Woven no longer needs to be in the INSTALLED_APPS setting, and woven no longer installs fabric or  python-paramiko on the node. 
 
 * Removed the DJANGO_REQUIREMENT setting. Django now gets added to the requirement file instead.
 
 **New Features**
 
-* The woven manage.py script replaces the need to use the django-admin.py or project manage.py script. It can automatically pick up the settings from the setup.py file or be overriden with the usual --settings option. It injects itself into the INSTALLED_APPS for the execution of django commands so that woven will 'appear' to be installed.
+* The woven-admin.py script replaces the need to use the django-admin.py or project manage.py script. It can automatically pick up the settings from the setup.py file or be overriden with the usual --settings option. It injects itself into the INSTALLED_APPS for the execution of django commands so that woven will 'appear' to be installed.
 
 * A custom startproject command creates a much more complete project layout with distribution parent folder, setup.py and some sensible default settings to get started quickly. It also has the option of using your own template directory to source a starting layout.
 
