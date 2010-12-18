@@ -472,7 +472,7 @@ def upgrade_packages():
     if env.verbosity:
         print " * running apt-get upgrade"
         print " NOTE: apt-get upgrade has been known in rare cases to require user input."
-        print "If apt-get upgrade does not complete within 10 minutes"
+        print "If apt-get upgrade does not complete within 15 minutes"
         print "see troubleshooting docs *before* aborting the process to avoid package management corruption."
     sudo('apt-get -qqy upgrade')
 
@@ -571,7 +571,7 @@ def upload_ssh_key(rollback=False):
             if exists(auth_keys):
                 _backup_file(auth_keys)
             if env.verbosity:
-                print env.host, "UPLOADING SSH KEY if it doesn't already exist on host"
+                print env.host, "UPLOADING SSH KEY"
             append(ssh_file,auth_keys) #append prevents uploading twice
             set_server_state(u)
         return
