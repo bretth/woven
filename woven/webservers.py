@@ -129,7 +129,7 @@ def _get_django_sites():
             #since this is the first time we run ./manage.py on the server it can be
             #a point of failure for installations
             with settings(warn_only=True):
-                output = run(' '.join(['source',venv,'&&',"./manage.py dumpdata sites"]))
+                output = run(' '.join(['source',venv,'&&',"django-admin.py dumpdata sites --settings=%s.sitesettings.settings"% env.project_package_name]))
 
                 if output.failed:
                     print "ERROR: There was an error running ./manage.py on the node"

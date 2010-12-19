@@ -126,8 +126,8 @@ def sync_db():
             for settings_file in _sitesettings_files():
                 site_settings = '.'.join([env.project_package_name,'sitesettings',settings_file.replace('.py','')])
                 if env.verbosity:
-                    print " * python manage.py syncdb --noinput --settings=%s"% site_settings
-                output = sudo(' '.join(['source',venv,'&&',"./manage.py syncdb --noinput --settings=%s"% site_settings]),
+                    print " * django-admin.py syncdb --noinput --settings=%s"% site_settings
+                output = sudo(' '.join(['source',venv,'&&',"django-admin.py syncdb --noinput --settings=%s"% site_settings]),
                               user='site_%s'% site)
                 if env.verbosity:
                     print output
@@ -169,7 +169,7 @@ def migration():
         for site in site_ids:
             for settings_file in _sitesettings_files():
                 site_settings = '.'.join([env.project_package_name,'sitesettings',settings_file.replace('.py','')])
-                cmdpt2 = ' '.join(["python manage.py migrate",env.migration])
+                cmdpt2 = ' '.join(["django-admin.py migrate",env.migration])
                 if hasattr(env,"fakemigration"):
                     cmdpt2 = ' '.join([cmdpt2,'--fake'])
                 cmdpt2 = ''.join([cmdpt2,'--settings=',site_settings])
