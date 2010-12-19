@@ -38,7 +38,7 @@ Getting Started
 
 To use Woven you must have root access to a linux host or vm. Woven has currently been tested on Ubuntu >= 10.04.
 
-Woven uses a custom ``woven-admin.py`` script that serves to replace django-admin.py and manage.py in your development environment, and allows you to use woven commands without adding woven to your installed apps.
+Woven uses a custom ``woven-admin.py`` script that serves to replace ``django-admin.py`` and ``manage.py`` in your development environment, and allows you to use woven commands without adding woven to your installed apps.
 
 Run ``woven-admin.py startproject`` which will create a basic django project distribution layout.
 
@@ -78,7 +78,6 @@ Woven provides hooks into the setupnode, deploy, and post package installation c
 
 To add custom functionality to a woven deployment create a ``deploy.py`` file in your project or django app, and define any of the following.
 
-Hooks execute in a project, app, woven order of precedence. Only one hook per function will execute. A project scope hook for instance will override the same function at app or provided by woven itself.
 
 Post install package
 ---------------------
@@ -96,6 +95,8 @@ Post deploy
 -----------
 
 ``def post_deploy()`` executes at the end of deployment of your project but prior to activation.
+
+Hooks execute in a project, app, woven order of precedence. Only one hook per function will execute. A project scope hook for instance will override the same function at app or provided by woven itself.
 
 Multiple Sites
 ==============

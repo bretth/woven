@@ -32,13 +32,13 @@ It should also install django, fabric, and paramiko if they aren't already insta
 Creating the distribution and project
 --------------------------------------
 
-Create a project distribution and files using woven's woven-admin.py script. A distribution is all the files including media and other data relating to the project wheras the project is just the Django project. We're going to call the distribution something different from the actual project.
+Create a project distribution and files using woven's ``woven-admin.py`` script. A distribution is all the files including media and other data relating to the project wheras the project is just the Django project. We're going to call the distribution something different from the actual project.
 
 ``woven-admin.py startproject helloadmin woven@example.com --dist=firstdjango``
 
-woven-admin.py extends django-admin.py allowing us to use woven commands without adding woven itself to the ``INSTALLED_APPS`` setting. We can use an optional email address to create a default superuser, though if you didn't define one woven would still offer to create one based on the project name. As you'll discover, woven's ethos combines convenience with flexibility. Sometimes you need to get somewhere in a hurry.
+``woven-admin.py`` extends ``django-admin.py`` allowing us to use woven commands without adding woven itself to the ``INSTALLED_APPS`` setting. 
 
-You'll notice that it's a little different from ``django-admin.py startproject`` in that it creates a setup.py and a few other folders, and merges in the syncdb and creates a default superuser based on the user part of the optional email address (in this case 'woven') or the project name if you want one, though you can skip this behaviour with --nosyncdb.
+You'll notice that it's a little different from ``django-admin.py startproject`` in that it creates a ``setup.py`` and a few other folders, and merges in the syncdb and creates a default superuser based on the user part of the optional email address (in this case 'woven') or the project name if you want one, though you can skip this behaviour with ``--nosyncdb``. As you'll discover, woven's ethos combines convenience with flexibility. Sometimes you need to get somewhere in a hurry, or just want a project you can throw away after using.
 
 The setup.py is where woven gets your distribution name, project name and project version metadata which is used in deployments, it's just not used to package your project... yet.
 
@@ -46,9 +46,9 @@ The setup.py is where woven gets your distribution name, project name and projec
    
    Versions are critical to woven, and how woven differs from most deployment tools. Woven deploys a separate virtualenv just like the one we created earlier for *each* version of your distribution. This means you don't destroy an existing working environment when you deploy a new version. You could use this feature to test different features, or simply to rollback from a failed release. Not that you'll ever have a failed release. Ever.
 
-Woven's alternative to django's ``startproject`` creates some sensible folders for media, static (app) content, templates, and database, and uses an alternative settings file from the django default to get you up and running fast. Nothing stopping you from changing it later if you want or you can also use ``startproject -t`` option to specify alternative starting templates for your project.
+Woven's alternative to django's ``startproject`` also creates some sensible folders for media, static (app) content, templates, and database, and uses an alternative settings file from the django default. Nothing stopping you from changing it later if you want or you can also use ``startproject -t`` option to specify alternative starting templates for your project.
 
-In your urls.py we'll add a simple index page.
+In your urls.py we'll add a simple index page.::
 
    urlpatterns += patterns('django.views.generic.simple',
       (r'^$', 'direct_to_template', {'template': 'index.html'}),
@@ -115,7 +115,7 @@ Deploy sets up a virtual environment on the server and deploys your sqlite3 data
 
 Everything in a deployment is versioned right down to the web configuration files. The only thing that isn't versioned is your database and MEDIA_ROOT. If you get errors, from misconfiguration or package installs, you can just fix your issue and run it again until it completes and activates your environment.
 
-You'll also notice woven has created a pip ``requirements.txt`` file and a ``sitesettings`` folder with some settings files inside. These will import and override your local settings file on the node. 
+You'll also notice woven has created a pip ``requirements.txt`` file and a ``sitesettings`` folder with a setting file inside. Requirements are your pip requirements for the project. The sitesettings.settings.py will import and override your local settings file on the node. 
 
 Patch
 ------
