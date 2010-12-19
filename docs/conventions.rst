@@ -33,6 +33,7 @@ While woven tries to be agnostic about your project layout there are some conven
         |    |--requirements.zip (bundle will zip up python packages here with matching req*.txt file name)
         |--setup.py (a minimal setup.py is required with name, version, and packages defined)
         |--requirements.txt (a requirements.txt will be created if one doesn't exist)
+        |--req2 (extra requirements can be defined prefixed with 'req')
         |--example_project (the standard django startproject)
                  |--__init__.py
                  |--deploy.py (optional hooks for custom setupnode or deploy functions)
@@ -105,11 +106,10 @@ Project Deployment Layout
 
 Within the root folder on the node are the following::
 
-   ~/.package_cache
    ~/.staging (all rsynced files are staged here before copying to final destination for network efficiency)
    ~/.pip (pip installation logs)
     |  |--cache (Pip will cache packages here)
-    |  |--src (pip will store any source repositories here)
+    |  |--src (pip will store any editable source repositories here)
    ~/--database (for sqlite if it is used)
     |   |--example_project.db (will always be deployed as the [project-name].db)
     |--env (The root directory for all virtual environments)
