@@ -130,7 +130,9 @@ if __name__ == "__main__":
             #call woven startproject in place of django startproject
             startproject = True
             inject = True
-            parser = optparse.OptionParser()
+            parser = optparse.OptionParser(usage="usage: %prog startproject [project_name] [username@domain] [options]\n\n"
+                "project_name is the name of your django project\n"                               
+                "username@domain is an optional email address to setup a superuser")
             parser.add_option('-t', '--template-dir', dest='src_dir',
                         help='project template directory to use',
                         default=TEMPLATE_DIR)
@@ -155,8 +157,13 @@ if __name__ == "__main__":
                 dist = args[1]
             else:
                 dist = options.dist_name
+            project_name = args[1]
+            try:
+                email = args[2]
+            except IndexError:
+                email = ''
 
-            start_distribution(args[1],options.src_dir, dist, noadmin = options.noadmin)
+            start_distribution(project_name,options.src_dir, dist, noadmin = options.noadmin)
 
     #get the name of the settings from setup.py if DJANGO_SETTINGS_MODULE is not set
     if not os.environ.get('DJANGO_SETTINGS_MODULE') and not settings_mod:
@@ -202,18 +209,33 @@ if __name__ == "__main__":
         if not options.nosyncdb:
             call_command('syncdb',interactive=False)
             if 'django.contrib.auth' in settings.INSTALLED_APPS:
+                if '@' in email:
+                    u = email.split('@')[0]
+                else:
+                    u = project_name
+                    email = '%s@example.com'% project_name
+                print "\nA superuser will be created with '%s' as username and password"% u
+                print "Alternatively you can run the standard createsuperuser command separately"
                 csuper = confirm('Would you like to create a superuser now?',default=True)
                 if csuper:
-                    call_command('createsuperuser')
+                    from django.contrib.auth.models import User
+                    
+                    User.objects.create_superuser(username=u, email=email, password=u)
+                    print "\nA default superuser was created:"
+                    print "Username:", u
+                    print "Password:", u
+                    print "Email:", email
+                    print "Change your password with 'woven-admin.py changepassword %s'"% u
                 else:
-                    print "No superuser created. You can run manage.py createsuperuser at any time"
+                    print "\nNo superuser created. "
+                    print "Run 'woven-admin.py createsuperuser' to create one"
         
     #run command as per django-admin.py
     else:
         #switch back to the original directory just in case some command needs it
         os.chdir(orig_cwd)
-        #inject manage.py into the args
-        if not 'manage.py' in sys.argv[0]:
-            sys.argv.insert(0,'manage.py')
+        #inject woven-admin.py into the args
+        if not 'woven-admin.py' in sys.argv[0]:
+            sys.argv.insert(0,'woven-admin.py')
         execute_from_command_line()
 
