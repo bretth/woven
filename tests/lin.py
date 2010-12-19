@@ -8,7 +8,7 @@ from fabric.network import join_host_strings, normalize
 
 from woven.linux import disable_root, change_ssh_port, port_is_open, setup_ufw
 from woven.linux import setup_ufw_rules
-from woven.linux import post_install_package, post_setupnode, uninstall_packages
+from woven.linux import uninstall_packages
 from woven.linux import add_repositories
 
 from woven.environment import server_state, set_server_state
@@ -42,7 +42,7 @@ def teardown_disable_root():
    
 
 def test_lin_disable_root():
-    local('rm -rf .woven')
+
     #automate
     env.DISABLE_ROOT = True
     env.INTERACTIVE = False
@@ -50,15 +50,12 @@ def test_lin_disable_root():
     env.ROOT_PASSWORD = 'root'
     
     #test
-
-    disable_root()
     with settings(host_string='woven@192.168.188.10:22',user='woven',password='woven'):
+        disable_root()
         assert exists('/home/woven')
-    #should skip the 2nd time
-    disable_root()
     
-    #cleanup - re-enable root
-    teardown_disable_root()
+        #cleanup - re-enable root
+        #teardown_disable_root()
     
 def test_lin_change_ssh_port():
 
@@ -109,12 +106,12 @@ def test_lin_port_is_open():
         sudo ('cp -f /tmp/issue.bak /etc/issue')
 
 
-def test_lin_post_install_package():
-    env.installed_packages = ['postgresql','somepackage']
-    post_install_packages()
+#def test_lin_post_install_package():
+#    env.installed_packages = ['postgresql','somepackage']
+#    post_install_packages()
     
-def test_lin_post_setupnode():
-    post_setupnode()
+#def test_lin_post_setupnode():
+#    post_setupnode()
 
 def test_lin_setup_ufw_rules():
     #first define some rules that was in the settings
