@@ -13,7 +13,7 @@ Release 0.8.0
 
 **New Features**
 
-* The woven-admin.py script replaces the need to use the django-admin.py or project manage.py script. It can automatically pick up the settings from the setup.py file or be overriden with the usual --settings option. It injects itself into the INSTALLED_APPS for the execution of django commands so that woven will 'appear' to be installed.
+* The woven-admin.py script replaces the need to use the django-admin.py or project manage.py script. It can automatically pick up the settings from the setup.py file or be overriden with the usual --settings option. It injects itself into the INSTALLED_APPS for the execution of woven django commands so that woven will 'appear' to be installed.
 
 * A custom startproject command creates a much more complete project layout with distribution parent folder, setup.py and some sensible default settings to get started quickly. It also has the option of using your own template directory to source a starting layout.
 
