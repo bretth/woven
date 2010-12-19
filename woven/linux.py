@@ -144,17 +144,17 @@ def disable_root():
         #Add existing user to sudo group
         else:
             sudo('adduser %s sudo'% sudo_user)
-            #adm group used by Ubuntu logs
-            sudo('usermod -a -G adm %s'% sudo_user)
-            #add user to /etc/sudoers
-            if not exists('/etc/sudoers.wovenbak',use_sudo=True):
-                sudo('cp -f /etc/sudoers /etc/sudoers.wovenbak')
-            sudo('cp -f /etc/sudoers /tmp/sudoers.tmp')
-            append("# Members of the sudo group may gain root privileges", '/tmp/sudoers.tmp', use_sudo=True)
-            append("%sudo ALL=(ALL) ALL", '/tmp/sudoers.tmp', use_sudo=True)
-            sudo('visudo -c -f /tmp/sudoers.tmp')
-            sudo('cp -f /tmp/sudoers.tmp /etc/sudoers')
-            sudo('rm -rf /tmp/sudoers.tmp')
+        #adm group used by Ubuntu logs
+        sudo('usermod -a -G adm %s'% sudo_user)
+        #add user to /etc/sudoers
+        if not exists('/etc/sudoers.wovenbak',use_sudo=True):
+            sudo('cp -f /etc/sudoers /etc/sudoers.wovenbak')
+        sudo('cp -f /etc/sudoers /tmp/sudoers.tmp')
+        append("# Members of the sudo group may gain root privileges", '/tmp/sudoers.tmp', use_sudo=True)
+        append("%sudo ALL=(ALL) ALL", '/tmp/sudoers.tmp', use_sudo=True)
+        sudo('visudo -c -f /tmp/sudoers.tmp')
+        sudo('cp -f /tmp/sudoers.tmp /etc/sudoers')
+        sudo('rm -rf /tmp/sudoers.tmp')
             
     env.password = original_password
 
