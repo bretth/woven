@@ -79,6 +79,11 @@ def deploy_project():
         link_name = '/'.join([deployment_root(),'env',env.project_fullname,'lib/python2.6/site-packages',env.project_package_name])
         target = '/'.join([project_root,env.project_package_name])
         run(' '.join(['ln -s',target,link_name]))
+        
+        #make sure manage.py has exec permissions
+        managepy = '/'.join([target,'sitesettings','manage.py'])
+        if exists(managepy):
+            sudo('chmod ugo+x %s'% managepy)
     
     return created
 
