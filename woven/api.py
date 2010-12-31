@@ -4,6 +4,8 @@ The full public woven api
 """
 from fabric.state import env
 
+from woven.cloud import createnode
+
 from woven.decorators import run_once_per_node, run_once_per_version
 
 from woven.deployment import deploy_files, mkdirs
