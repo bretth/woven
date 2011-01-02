@@ -6,11 +6,28 @@ Woven has a number of configuration options that can be set in your project's
 Django settings.py. They are all optional.
 
 ::
-
+    
+    ## Simple host lists and roles
     #List of hoststrings to setup on as per Fabric.
     HOSTS = [] #eg ['woven@example.com','example.com','10.0.0.1']
     #You can group collections of servers instead of HOSTS as per fabric
     ROLEDEFS = {} #This would be used instead of HOSTS  eg {'staging':['woven@example.com']}
+
+    ## Libcloud integration 
+    # Nodes can be defined in place of ROLEDEFS and HOSTS 
+    # A default role can be used in place of HOSTS
+    NODES = {}
+    # eg NODES = { 
+    #             'default': { # role name
+    #                 'PROVIDER':'ec2_ap_southeast'
+    #                 'USER':'woven', # Access id / uid
+    #                 'KEY':'xxxxxxx', # Secret Key
+    #                 'LOCATION_ID':'0', 
+    #                 'IMAGE_ID':'Ubuntu',
+    #                 'SIZE_ID':'t1.micro',
+    # Define any more key value pairs as per libcloud provider driver 
+    #              }
+
     #The ssh port to be setup. We change the port for security
     HOST_SSH_PORT = 10022 #default
     #User can be defined here instead of in the hosts/roledefs
