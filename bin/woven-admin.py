@@ -124,7 +124,7 @@ if __name__ == "__main__":
     for arg in sys.argv:
         if '--settings' in arg:
             settings_mod = arg.split('=')[1].strip()
-        elif arg in ['activate','deploy','startsites','setupnode','node','bundle','patch', 'validate']:
+        elif arg in ['activate','createnode','deploy','startsites','setupnode','node','bundle','patch', 'validate']:
             inject = True
         elif arg == 'startproject':
             #call woven startproject in place of django startproject
