@@ -19,6 +19,7 @@ from fabric.version import get_version
 woven_env = _AttributeDict({
 'HOSTS':[], #optional - a list of host strings to setup on as per Fabric
 'ROLEDEFS':{}, #optional as per fabric. eg {'staging':['woven@example.com']}
+'NODES':{}, # optional libcloud definitions 
 'HOST_SSH_PORT':10022, #optional - the ssh port to be setup
 'HOST_USER':'', #optional - can be used in place of defining it elsewhere (ie host_string)
 'HOST_PASSWORD':'',#optional
