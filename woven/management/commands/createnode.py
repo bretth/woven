@@ -49,15 +49,13 @@ class Command(BaseCommand):
         confs = state.env.NODES
         named_conf = None
         drivers = [d.lower() for d in dir(Provider()) if d.isupper()]
-   
 
         if not args:
             named_conf = 'default'
-            conf = confs.get(named_conf,{})
-            if conf:
-                provider = conf.get('PROVIDER','')
         else:
-            provider = named_conf = args[0]
+            named_conf = args[0]
+        conf = confs.get(named_conf,{})
+        provider = conf.get('PROVIDER',named_conf)
                 
         if not provider in drivers:
             print "default libcloud providers:"
