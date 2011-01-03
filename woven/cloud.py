@@ -143,7 +143,7 @@ def get_node_obj(conn, attribute, id):
     if env.verbosity:
         print "* Getting %ss"% attribute
     try:
-        objs = eval('cloud_conn.list_%ss()'% attribute)
+        objs = eval('conn.list_%ss()'% attribute)
         obj_ids = [o.id for o in objs]
     except NotImplementedError:
         return
@@ -166,8 +166,8 @@ def get_node_obj(conn, attribute, id):
                     id = ''
             if not count:
                 print "%s:"% attribute.upper()
-                print "[ # ] |  ID  |  NAME "
-            print '[',i+1,']','|', o.id,'|', o.name
+                print " ID  |  NAME "
+            print o.id,'|', o.name
             count += 1
 
 
