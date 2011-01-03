@@ -1,20 +1,38 @@
 import os, sys
 
 from fabric.state import env
-from fabric.api import prompt
+from fabric.api import prompt, settings
 
-from libcloud.types import Provider
+from libcloud.types import Provider, NodeState
 from libcloud.providers import get_driver
 
-BATCH_SIZE = 15
-cloud_conn = None
+BATCH_SIZE = 10
 
+STATES = {
+    0:'RUNNING',
+    1:'REBOOTING',
+    2:'TERMINATED',
+    3:'PENDING',
+    4:'UNKNOWN',
+}
+
+def connect(provider, secret_key, uid=''):
+    """
+    Get a cloud connection
+    """
+    driver = get_driver(eval('Provider.%s'% provider.upper()))
+    if uid:
+        cloud_conn = driver(uid, secret_key)
+    else:
+        cloud_conn = driver(secret_key)
+    return cloud_conn
+    
+        
 def createnode(named_conf='default', **kwargs):
     """
     Create a node at a provider
     """
     provider = kwargs.pop('provider')
-    Driver = get_driver(eval('Provider.%s'% provider.upper()))
     uid = kwargs.pop('user','')
     if not uid and env.INTERACTIVE:
         uid = prompt('Enter the user/access id for %s (if required):'% provider)
@@ -22,23 +40,18 @@ def createnode(named_conf='default', **kwargs):
     if not secret_key and env.INTERACTIVE:
         secret_key = prompt('Enter the secret key for %s:'% provider)
     
-    global cloud_conn   
-    if uid:
-        cloud_conn = Driver(uid, secret_key)
-    else:
-        cloud_conn = Driver(secret_key)
-
-    kwargs['location'] = get_node_obj('location', kwargs.pop('location_id',''))
-    kwargs['image'] = get_node_obj('image', kwargs.pop('image_id',''))
-    kwargs['size'] = get_node_obj('size', kwargs.pop('size_id',''))
-
+    conn = connect(provider, secret_key, uid)
+    
+    kwargs['location'] = get_node_obj(conn, 'location', kwargs.pop('location_id',''))
+    kwargs['image'] = get_node_obj(conn, 'image', kwargs.pop('image_id',''))
+    kwargs['size'] = get_node_obj(conn, 'size', kwargs.pop('size_id',''))
     
     if 'ec2' in provider:
         keypair = kwargs.get('keypair')
         if not keypair and env.INTERACTIVE:
             keypair = prompt('Enter a name for an ec2 keypair:',default=env.project_name)
         try:
-            resp = cloud_conn.ex_create_keypair(name = keypair)
+            resp = conn.ex_create_keypair(name = keypair)
         except Exception as inst:
             if not 'InvalidKeyPair.Duplicate' in str(inst):
                 raise
@@ -56,7 +69,7 @@ def createnode(named_conf='default', **kwargs):
                 
         kwargs['ex_keyname'] = keypair
         
-    node = cloud_conn.create_node(**kwargs)
+    node = conn.create_node(**kwargs)
     
     if env.verbosity:
         # Output some settings for user to copy into settings
@@ -64,23 +77,66 @@ def createnode(named_conf='default', **kwargs):
         for k in kwargs:
             upper_kwargs[k.upper()] = kwargs[k]
 
-        print "\nNode '%s' created with the settings:"% str(node.id)
-        print "NODES = {"
-        print "    '%s': {"% named_conf
-        print "        'PROVIDER': '%s',"% provider
-        print "        'USER': '%s',"% uid
-        print "        'KEY': '%s',"% secret_key
-        print "        'LOCATION_ID': '%s',"% upper_kwargs.pop('LOCATION').id
-        print "        'IMAGE_ID': '%s',"% upper_kwargs.pop('IMAGE').id
-        print "        'SIZE_ID': '%s',"% upper_kwargs.pop('SIZE').id
-        keys = upper_kwargs.keys()
-        keys.sort()
-        for k in keys:
-            print "        '%s': '%s',"% (k,upper_kwargs.pop(k))
-        print "        }"
-        print "}"
+        print "\nNode '%s' created..."% str(node.id)
+        if not env.NODES.get(named_conf):
+            print "# NODES settings"
+            print "NODES = {"
+            print "    '%s': {"% named_conf
+            print "        'PROVIDER': '%s',"% provider
+            print "        'USER': '%s',"% uid
+            print "        'KEY': '%s',"% secret_key
+            print "        'LOCATION_ID': '%s',"% upper_kwargs.pop('LOCATION').id
+            print "        'IMAGE_ID': '%s',"% upper_kwargs.pop('IMAGE').id
+            print "        'SIZE_ID': '%s',"% upper_kwargs.pop('SIZE').id
+            keys = upper_kwargs.keys()
+            keys.sort()
+            for k in keys:
+                print "        '%s': '%s',"% (k,upper_kwargs.pop(k))
+            print "        }"
+            print "}"
 
-def get_node_obj(attribute, id):
+def destroynode(provider, secret_key, uid, image_id):
+    """
+    Destroy nodes 
+    """
+    if not image_id:
+        nodes = listnodes(provider, secret_key, uid)
+        
+    else:
+        with settings(verbosity=False):
+            nodes = listnodes(provider, secret_key, uid)
+        
+    resp = False
+    conn = connect(provider, secret_key, uid)
+    if env.verbosity:
+        print "CAUTION: There are no safeguards. A destroyed node may not be recoverable."
+    all = False    
+    while nodes:
+        if not all:
+            image_id = prompt('Enter the image # or ALL to destroy node(s), <enter> to exit:')
+        if not image_id:
+            sys.exit(0)
+        elif image_id == 'ALL':
+            image_id = 1
+            all = True
+        try:
+            n = nodes.pop(int(image_id)-1)
+            resp = conn.destroy_node(n)
+            if resp:
+                print "Destroyed '%s' on '%s'"% (n.id, provider)
+            else:
+                print "WARNING: '%s' on '%s' has not confirmed destruction"% (image_id, provider)
+                print "Please check directly with the provider"
+        except TypeError:
+            print "ERROR: Image # must an integer"
+        except IndexError:
+            if len(nodes) > 1:
+                print "ERROR: Image # must be between 1 and", len(nodes)
+            else:
+                print "ERROR: Invalid Image #"
+
+
+def get_node_obj(conn, attribute, id):
     """
     Get a Node attribute object
     """
@@ -110,7 +166,21 @@ def get_node_obj(attribute, id):
                     id = ''
             if not count:
                 print "%s:"% attribute.upper()
-                print "id | name"
+                print "[ # ] |  ID  |  NAME "
+            print '[',i+1,']','|', o.id,'|', o.name
             count += 1
 
-            print o.id,'|', o.name    
+
+def listnodes(provider, secret_key, uid):
+    """
+    List nodes on a provider
+    """
+    conn = connect(provider, secret_key, uid)
+    nodes = conn.list_nodes()
+    if env.verbosity:
+        print "NODES:"
+        print "[ # ] |  ID  | PUBLIC IP or HOST"
+        for (i,n) in  enumerate(nodes):
+            print '[', i+1, ']', n.id,'|',n.public_ip[0], '|', STATES.get(n.state,'UNKNOWN')
+    return nodes
+    
