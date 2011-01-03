@@ -366,7 +366,7 @@ def setup_ufw():
     if not ufw:
         if env.verbosity:
             print env.host, "INSTALLING & ENABLING FIREWALL ufw"
-        apt_get_install('ufw')
+        install_package('ufw')
 
     if env.verbosity:
         print env.host, "CONFIGURING FIREWALL ufw"
