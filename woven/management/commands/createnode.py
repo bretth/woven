@@ -45,7 +45,7 @@ class Command(BaseCommand):
         #Django passes in a dictionary instead of the optparse options objects
         for option in options:
             state.env[option] = options[option]
-        #providers = [n.get('PROVIDER') for n in state.env.NODES if n.get('PROVIDER')]
+
         confs = state.env.NODES
         named_conf = None
         drivers = [d.lower() for d in dir(Provider()) if d.isupper()]
@@ -63,7 +63,8 @@ class Command(BaseCommand):
                 print d
             print "Error: you must enter a single valid provider or define NODES configuration in your settings"
             sys.exit(1)
-
+        if state.env.verbosity:
+            print "Creating node on", provider
         kwargs = confs.get(named_conf,{})
         lower_kwargs = {}
         for k in kwargs:

@@ -3,7 +3,7 @@ import os, sys
 from fabric.state import env
 from fabric.api import prompt, settings
 
-from libcloud.types import Provider, NodeState
+from libcloud.types import Provider, NodeState, InvalidCredsException
 from libcloud.providers import get_driver
 
 BATCH_SIZE = 10
@@ -56,7 +56,7 @@ def createnode(named_conf='default', **kwargs):
             if not 'InvalidKeyPair.Duplicate' in str(inst):
                 raise
             resp = None
-            print "WARNING: Duplicate keypair '%s'. Skipping.."% keypair
+            print "Keypair '%s' already exists. Skipping.."% keypair
         if resp:
             keymaterial = resp.get('keyMaterial')
             keyfile = '%s.pem'% env.project_name
@@ -214,7 +214,7 @@ def listnodes(provider, secret_key, uid):
     nodes = conn.list_nodes()
     if env.verbosity:
         print "NODES:"
-        print "[ # ] |  ID  | PUBLIC IP or HOST"
+        print "[ # ] |  ID  | PUBLIC IP or HOST | STATE"
         for (i,n) in  enumerate(nodes):
             print '[', i+1, ']', n.id,'|',n.public_ip[0], '|', STATES.get(n.state,'UNKNOWN')
     return nodes
