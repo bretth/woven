@@ -170,6 +170,41 @@ def get_node_obj(conn, attribute, id):
             print o.id,'|', o.name
             count += 1
 
+def listhosts(role=''):
+    """
+    Get a list of host public ips or hostnames with the given role or default
+    from a provider defined by NODES settings
+    """
+    if hasattr(env,'NODES') and env.NODES:
+        if role:
+            conf = env.NODES.get(role)
+        else:
+            conf = env.NODES.get('default')
+        provider = conf.get('PROVIDER')
+        uid = conf.get('USER','')
+        secret_key = conf.get('KEY')
+        if not secret_key:
+            print "ERROR: NODES setting for", role, "does not have a KEY"
+        
+        try:
+            conn = connect(provider, secret_key, uid)
+            nodes = conn.list_nodes()
+        except InvalidCredsException:
+            print "ERROR: Invalid NODES settings credentials for", provider
+            sys.exit(1)
+        except TypeError:
+            #libcloud does not handle a missing USER well
+            if not uid:
+                print "ERROR:", "Cannot list hosts on", provider, ". It may require a NODES USER setting"
+                sys.exit(1)
+            raise
+        # list of hosts that are running
+        hosts = [n.public_ip[0] for n in nodes]
+    else:
+        hosts = []
+        
+    return hosts
+        
 
 def listnodes(provider, secret_key, uid):
     """

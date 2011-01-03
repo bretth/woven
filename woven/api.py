@@ -4,7 +4,7 @@ The full public woven api
 """
 from fabric.state import env
 
-from woven.cloud import createnode, destroynode, listnodes
+from woven.cloud import createnode, destroynode, listhosts, listnodes
 
 from woven.decorators import run_once_per_node, run_once_per_version
 
