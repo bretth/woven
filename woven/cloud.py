@@ -170,7 +170,7 @@ def get_node_obj(conn, attribute, id):
             print o.id,'|', o.name
             count += 1
 
-def listhosts(nodes_conf, role=''):
+def listhosts(nodes_conf, role):
     """
     Get a list of host public ips or hostnames with the given role or default
     from a provider defined by NODES settings
