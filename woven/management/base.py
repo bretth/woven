@@ -99,6 +99,8 @@ class WovenCommand(BaseCommand):
                 comma_hosts = ','.join(all_role_hosts)
             if comma_hosts:
                 state.env.hosts = comma_hosts
+        elif hasattr(settings, 'NODES') and settings.NODES.get('default'):
+            state.env.hosts = ','.join(listhosts(settings.NODES,'default'))
                 
         if 'hosts' in state.env and isinstance(state.env['hosts'], str):
             state.env['hosts'] = state.env['hosts'].split(',')
