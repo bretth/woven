@@ -28,7 +28,7 @@ def connect(provider, secret_key, uid=''):
     return cloud_conn
     
         
-def createnode(named_conf='default', **kwargs):
+def create_node(named_conf='default', **kwargs):
     """
     Create a node at a provider
     """
@@ -95,16 +95,16 @@ def createnode(named_conf='default', **kwargs):
             print "        }"
             print "}"
 
-def destroynode(provider, secret_key, uid, image_id):
+def destroy_node(provider, secret_key, uid, image_id):
     """
     Destroy nodes 
     """
     if not image_id:
-        nodes = listnodes(provider, secret_key, uid)
+        nodes = list_nodes(provider, secret_key, uid)
         
     else:
         with settings(verbosity=False):
-            nodes = listnodes(provider, secret_key, uid)
+            nodes = list_nodes(provider, secret_key, uid)
         
     resp = False
     conn = connect(provider, secret_key, uid)
@@ -170,11 +170,12 @@ def get_node_obj(conn, attribute, id):
             print o.id,'|', o.name
             count += 1
 
-def listhosts(nodes_conf, role):
+def list_hosts(nodes_conf, role):
     """
-    Get a list of host public ips or hostnames with the given role or default
+    Get a dict of host public ip node objects with the given role or default
     from a provider defined by NODES settings
     """
+    node_objs = {}
     if role:
         conf = nodes_conf.get(role)
     else:
@@ -198,14 +199,14 @@ def listhosts(nodes_conf, role):
             sys.exit(1)
         raise
     # list of hosts that are running
-    hosts = [n.public_ip[0] for n in nodes]
-else:
-    hosts = []
+    for n in nodes:
+        if n.state == 0: #running
+            node_objs[n.public_ip[0]] = n
         
-    return hosts
+    return nodes
         
 
-def listnodes(provider, secret_key, uid):
+def list_nodes(provider, secret_key, uid):
     """
     List nodes on a provider
     """

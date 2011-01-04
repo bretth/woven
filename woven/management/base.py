@@ -13,7 +13,7 @@ from fabric.network import normalize
 from fabric.context_managers import hide,show
 
 from woven.environment import set_env
-from woven.cloud import listhosts
+from woven.cloud import list_hosts
 
 class WovenCommand(BaseCommand):
     option_list = BaseCommand.option_list + (
@@ -94,13 +94,23 @@ class WovenCommand(BaseCommand):
 
             elif hasattr(settings,'NODES') and settings.NODES:
                 for r in normalized_host_list:
-                    all_role_hosts += listhosts(settings.NODES, r)
+                    h = list_hosts(settings.NODES, r)
+                    if h:
+                        all_role_hosts += h.keys()
+                        state.env['roles'] = state.env['roles'] + [r]
+                        state.env['node_objs'] = h
             if all_role_hosts:
                 comma_hosts = ','.join(all_role_hosts)
             if comma_hosts:
                 state.env.hosts = comma_hosts
+        elif hasattr(settings, 'ROLEDEFS') and settings.ROLEDEFS.get('default'):
+            state.env.hosts = ','.join(settings.ROLEDEFS.get('default',''))
+            state.env['roles'] = state.env['roles'] + ['default']
         elif hasattr(settings, 'NODES') and settings.NODES.get('default'):
-            state.env.hosts = ','.join(listhosts(settings.NODES,'default'))
+            h = list_hosts(settings.NODES,'default')
+            state.env.hosts = ','.join(h.keys())
+            state.env['roles'] = state.env['roles'] + ['default']
+            state.env['node_objs'] = h
                 
         if 'hosts' in state.env and isinstance(state.env['hosts'], str):
             state.env['hosts'] = state.env['hosts'].split(',')

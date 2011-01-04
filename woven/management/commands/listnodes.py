@@ -10,7 +10,7 @@ from fabric import state
 
 from libcloud.types import Provider
 
-from woven.api import listnodes, set_env
+from woven.api import list_nodes, set_env
 
 class Command(BaseCommand):
     """
@@ -68,4 +68,4 @@ class Command(BaseCommand):
             print "Error: you must enter a single valid provider or define NODES in your settings"
             sys.exit(1)
             
-        listnodes(provider, secret_key, uid)
+        list_nodes(provider, secret_key, uid)

@@ -438,6 +438,9 @@ def set_env(settings=None, setup_dir=''):
     env.sites = {}
     env.shell = '/bin/bash --noprofile -l -c'
     #output.debug = True
+    
+    #Node objs
+    env.node_objs = []
 
 def get_packages():
     """

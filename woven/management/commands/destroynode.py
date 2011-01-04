@@ -8,7 +8,7 @@ from fabric import state
 
 from libcloud.types import Provider
 
-from woven.api import destroynode, set_env
+from woven.api import destroy_node, set_env
 
 class Command(BaseCommand):
     """
@@ -71,4 +71,4 @@ class Command(BaseCommand):
             print "Error: you must enter a single valid provider or define NODES in your settings"
             sys.exit(1)
             
-        destroynode(provider, secret_key, uid, image_id)
+        destroy_node(provider, secret_key, uid, image_id)

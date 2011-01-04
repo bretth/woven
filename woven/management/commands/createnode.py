@@ -11,7 +11,7 @@ from fabric import state
 
 from libcloud.types import Provider
 
-from woven.api import createnode, post_exec_hook, set_env
+from woven.api import create_node, post_exec_hook, set_env
 
 class Command(BaseCommand):
     """
@@ -71,5 +71,5 @@ class Command(BaseCommand):
             lower_kwargs[k.lower()] = kwargs[k]
         lower_kwargs['provider'] = provider
             
-        createnode(named_conf, **lower_kwargs)
+        create_node(named_conf, **lower_kwargs)
         post_exec_hook('post_createnode')
