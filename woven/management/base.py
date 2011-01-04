@@ -13,6 +13,7 @@ from fabric.network import normalize
 from fabric.context_managers import hide,show
 
 from woven.environment import set_env
+from woven.cloud import listhosts
 
 class WovenCommand(BaseCommand):
     option_list = BaseCommand.option_list + (
@@ -78,20 +79,27 @@ class WovenCommand(BaseCommand):
        
         #args will be tuple. We convert it to a comma separated string for fabric
         #if a role is used then we lookup the host list from the ROLEDEFS setting
+        #or use a list of hosts from a cloud provider
         
         if args:
             comma_hosts = self.parse_host_args(*args)
+            normalized_host_list = comma_hosts.split(',')
+            all_role_hosts = []
             if hasattr(settings,'ROLEDEFS') and settings.ROLEDEFS: 
-                all_role_hosts = []
-                normalized_host_list = comma_hosts.split(',')
                 for r in normalized_host_list:
                     role_host = settings.ROLEDEFS.get(r,'')
                     if role_host:
                         all_role_hosts+=role_host
                         state.env['roles'] = state.env['roles'] + [r]
-                if all_role_hosts: comma_hosts = ','.join(all_role_hosts)
+
+            elif hasattr(settings,'NODES') and settings.NODES:
+                for r in normalized_host_list:
+                    all_role_hosts += listhosts(settings.NODES, r)
+            if all_role_hosts:
+                comma_hosts = ','.join(all_role_hosts)
             if comma_hosts:
                 state.env.hosts = comma_hosts
+                
         if 'hosts' in state.env and isinstance(state.env['hosts'], str):
             state.env['hosts'] = state.env['hosts'].split(',')
         elif hasattr(settings,'HOSTS') and settings.HOSTS:
