@@ -185,8 +185,7 @@ if __name__ == "__main__":
         os.environ['DJANGO_SETTINGS_MODULE'] =  settings_mod
         sys.argv.remove('setup.py')
         sys.argv.insert(0, woven_admin)
-        #be path friendly like manage.py
-        sys.path.append(os.getcwd())
+
 
     if inject:
         if settings_mod:
