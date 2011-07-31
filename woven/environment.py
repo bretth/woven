@@ -7,7 +7,7 @@ from django.utils.importlib import import_module
 
 from fabric.context_managers import settings as fab_settings
 from fabric.context_managers import _setenv, cd
-from fabric.contrib.files import exists, comment, contains, sed, append
+from fabric.contrib.files import exists, comment, sed, append
 from fabric.decorators import runs_once, hosts
 from fabric.main import find_fabfile
 from fabric.network import normalize
@@ -192,7 +192,7 @@ def check_settings():
     Validate the users settings conf prior to deploy
     """
     valid=True
-    if not get_version() < '1.0':
+    if not get_version() >= '1.0':
         print "FABRIC ERROR: Woven is only compatible with Fabric < 1.0"
         valid = False
     if not env.MEDIA_ROOT or not env.MEDIA_URL:
@@ -221,7 +221,7 @@ def disable_virtualenvwrapper():
 
 def enable_virtualenvwrapper():
     profile_path = '/'.join([deployment_root(),'.profile'])
-    append('source /usr/local/bin/virtualenvwrapper.sh',profile_path)
+    append(profile_path, 'source /usr/local/bin/virtualenvwrapper.sh')
     
 
 def deployment_root():
