@@ -144,7 +144,7 @@ def deploy_static():
             print "ERROR: Your ADMIN_MEDIA_PREFIX (Application media) must not be on the same path as your MEDIA_URL (User media)"
             sys.exit(1)
         admin = AdminMediaHandler('DummyApp')
-        local_dir = admin.media_dir
+        local_dir = admin.base_dir
         remote_dir =  ''.join([remote_dir,env.ADMIN_MEDIA_PREFIX])
     else:
         if env.MEDIA_URL and env.MEDIA_URL == env.STATIC_URL[:m_prefix]:
