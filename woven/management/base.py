@@ -77,29 +77,33 @@ class WovenCommand(BaseCommand):
             state.env[option] = options[option]
        
         #args will be tuple. We convert it to a comma separated string for fabric
-        #if a role is used then we lookup the host list from the ROLEDEFS setting
-        
+        all_role_hosts = []
+
         if args:
+            #subclasses can implement parse_host_args to strip out subcommands
             comma_hosts = self.parse_host_args(*args)
-            if hasattr(settings,'ROLEDEFS') and settings.ROLEDEFS: 
-                all_role_hosts = []
-                normalized_host_list = comma_hosts.split(',')
-                for r in normalized_host_list:
-                    role_host = settings.ROLEDEFS.get(r,'')
-                    if role_host:
-                        all_role_hosts+=role_host
-                        state.env['roles'] = state.env['roles'] + [r]
-                if all_role_hosts: comma_hosts = ','.join(all_role_hosts)
-            if comma_hosts:
-                state.env.hosts = comma_hosts
-        if 'hosts' in state.env and isinstance(state.env['hosts'], str):
-            state.env['hosts'] = state.env['hosts'].split(',')
+            normalized_host_list = comma_hosts.split(',')
+            for r in normalized_host_list:
+                #define a list of hosts for given roles
+                if hasattr(settings,'ROLEDEFS') and settings.ROLEDEFS.get(r): 
+                    all_role_hosts+=settings.ROLEDEFS[r]
+                    state.env['roles'] = state.env['roles'] + [r]
+                #simple single host 
+                else: 
+                    all_role_hosts.append(r)
+            
+        #if no args are given we'll use either a 'default' roledef/role_node
+        #or as last resort we'll use a simple HOSTS list
+        elif hasattr(settings, 'ROLEDEFS') and settings.ROLEDEFS.get('default'):
+            all_role_hosts = settings.ROLEDEFS['default']
+            state.env['roles'] = ['default']
         elif hasattr(settings,'HOSTS') and settings.HOSTS:
-            state.env['hosts'] = settings.HOSTS
+            all_role_hosts = settings.HOSTS
         else:
             print "Error: You must include a host or role in the command line or set HOSTS or ROLEDEFS in your settings file"
             sys.exit(1)
-            
+        state.env['hosts'] = all_role_hosts
+                    
         #This next section is taken pretty much verbatim from fabric.main
         #so we follow an almost identical but more limited execution strategy
         
@@ -113,8 +117,6 @@ class WovenCommand(BaseCommand):
         else: set_env(settings,state.env.setup)
         
         #Back to the standard execution strategy
-        # Set current command name (used for some error messages)
-        #state.env.command = self.name
         # Set host list (also copy to env)
         state.env.all_hosts = hosts = state.env.hosts
         # If hosts found, execute the function on each host in turn
