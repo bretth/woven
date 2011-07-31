@@ -178,12 +178,13 @@ if __name__ == "__main__":
                 sys.exit(1)
             local_working_dir = os.path.split(env.setup_path)[0]
             os.chdir(local_working_dir)
-           
+        
+        woven_admin = sys.argv[0]
         setup = run_setup('setup.py',stop_after="init")
         settings_mod = '.'.join([setup.packages[0],'settings'])
         os.environ['DJANGO_SETTINGS_MODULE'] =  settings_mod
         sys.argv.remove('setup.py')
-        
+        sys.argv.insert(0, woven_admin)
         #be path friendly like manage.py
         sys.path.append(os.getcwd())
 
@@ -234,8 +235,5 @@ if __name__ == "__main__":
     else:
         #switch back to the original directory just in case some command needs it
         os.chdir(orig_cwd)
-        #inject woven-admin.py into the args
-        if not 'woven-admin.py' in sys.argv[0]:
-            sys.argv.insert(0,'woven-admin.py')
         execute_from_command_line()
 
