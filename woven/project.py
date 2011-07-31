@@ -75,8 +75,10 @@ def deploy_project():
     _make_local_sitesettings()
     created = deploy_files(local_dir, project_root, rsync_exclude=rsync_exclude)
     if not env.patch:
-        #hook the project into sys.path - #TODO make the python version not fixed
-        link_name = '/'.join([deployment_root(),'env',env.project_fullname,'lib/python2.6/site-packages',env.project_package_name])
+        #hook the project into sys.path
+        pyvers = run('python -V').split(' ')[1].split('.')[0:2] #Python x.x.x
+        sitepackages = ''.join(['lib/python',pyvers[0],'.',pyvers[1],'/site-packages'])
+        link_name = '/'.join([deployment_root(),'env',env.project_fullname,sitepackages,env.project_package_name])
         target = '/'.join([project_root,env.project_package_name])
         run(' '.join(['ln -s',target,link_name]))
         
