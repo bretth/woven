@@ -336,7 +336,8 @@ def start_webserver(server):
         with settings(warn_only=True):
             if env.verbosity:
                 print env.host,"STARTING apache2"
-            a = sudo("/etc/init.d/apache2 start")
+            #some issues with pty=True getting apache to start on ec2
+            a = sudo("/etc/init.d/apache2 start", pty=False)
             if env.verbosity:
                 print '',a
             
