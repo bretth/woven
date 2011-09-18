@@ -5,7 +5,6 @@ from django.utils import importlib
 
 from fabric import state
 from fabric.context_managers import settings
-from fabric.main import is_task
 
 from woven.api import setupnode, post_exec_hook
 from woven.management.base import WovenCommand

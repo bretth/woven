@@ -29,6 +29,13 @@ class WovenCommand(BaseCommand):
             default=False,
             help="do not load user known_hosts file"
         ),
+        make_option('-i',
+            action='append',
+            dest='key_filename',
+            default=None,
+            help="path to SSH private key file."
+        ),
+        
         make_option('-u', '--user',
             default=state._get_system_username(),
             help="username to use when connecting to remote hosts"

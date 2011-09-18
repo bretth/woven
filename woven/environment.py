@@ -416,15 +416,20 @@ def set_env(settings=None, setup_dir=''):
     env.INSTALLED_APPS = project_settings.INSTALLED_APPS
     
     #SSH key
-    if env.SSH_KEY_FILENAME: env.KEY_FILENAME = env.SSH_KEY_FILENAME
-    else: env.KEY_FILENAME = ''
-    
+    if not hasattr(env,'key_filename') and not env.key_filename and env.SSH_KEY_FILENAME:
+        env.key_filename = env.SSH_KEY_FILENAME
+    elif not hasattr(env,'key_filename'):
+        env.key_filename = None
+        
     #noinput
-    if not hasattr(env,'INTERACTIVE'): env.INTERACTIVE=True
-    if not hasattr(env,'verbosity'): env.verbosity=1
+    if not hasattr(env,'INTERACTIVE'):
+        env.INTERACTIVE = True
+    if not hasattr(env,'verbosity'):
+        env.verbosity = 1
     
     #overwrite existing settings
-    if not hasattr(env,'overwrite'):env.overwrite=False
+    if not hasattr(env,'overwrite'):
+        env.overwrite=False
     
     #South integration defaults
     env.nomigration = False

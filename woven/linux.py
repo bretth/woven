@@ -114,8 +114,8 @@ def disable_root():
         if env.INTERACTIVE:
             root_user = prompt("\nWhat is the default administrator account for your node?", default=env.ROOT_USER)
         else: root_user = env.ROOT_USER
-        if root_user == 'root': sudo_user = env.user
-        else: sudo_user = root_user
+        if env.user <> 'root': sudo_user = env.user
+        else: sudo_user = ''
         if env.INTERACTIVE:
             sudo_user = prompt("What is the new or existing account you wish to use to setup and deploy to your node?", default=sudo_user)
            
@@ -127,7 +127,7 @@ def disable_root():
     original_password = env.get('HOST_PASSWORD','')
     
     host_string=join_host_strings(root_user,host,str(env.DEFAULT_SSH_PORT))
-    with settings(host_string=host_string,  password=env.ROOT_PASSWORD):
+    with settings(host_string=host_string, key_filename=env.key_filename, password=env.ROOT_PASSWORD):
         if not contains('/etc/group','sudo',use_sudo=True):
             sudo('groupadd sudo')
 
@@ -151,10 +151,14 @@ def disable_root():
             sudo('cp -f /etc/sudoers /etc/sudoers.wovenbak')
         sudo('cp -f /etc/sudoers /tmp/sudoers.tmp')
         append('/tmp/sudoers.tmp', "# Members of the sudo group may gain root privileges", use_sudo=True)
-        append('/tmp/sudoers.tmp', "%sudo ALL=(ALL) ALL",  use_sudo=True)
+        append('/tmp/sudoers.tmp', "%sudo ALL=(ALL) NOPASSWD:ALL",  use_sudo=True)
         sudo('visudo -c -f /tmp/sudoers.tmp')
         sudo('cp -f /tmp/sudoers.tmp /etc/sudoers')
         sudo('rm -rf /tmp/sudoers.tmp')
+        if env.key_filename:
+            sudo('mkdir -p /home/%s/.ssh'% sudo_user)
+            sudo('cp -f ~/.ssh/authorized_keys /home/%s/.ssh/authorized_keys'% sudo_user)
+            sudo('chown -R %s:sudo /home/%s/.ssh'% (sudo_user,sudo_user))
             
     env.password = original_password
 
@@ -315,7 +319,8 @@ def restrict_ssh(rollback=False):
         sudo('/etc/init.d/ssh restart')
         
         # The user can modify the sshd_config file directly but we save
-        if (env.DISABLE_SSH_PASSWORD or env.INTERACTIVE) and contains('/etc/ssh/sshd_config','#PasswordAuthentication no',use_sudo=True):
+        proceed = True
+        if not env.key_filename and (env.DISABLE_SSH_PASSWORD or env.INTERACTIVE) and contains('/etc/ssh/sshd_config','#PasswordAuthentication no',use_sudo=True):
             print "WARNING: You may want to test your node ssh login at this point ssh %s@%s -p%s"% (env.user, env.host, env.port)
             c_text = 'Would you like to disable password login and use only ssh key authentication'
             proceed = confirm(c_text,default=False)
@@ -549,21 +554,17 @@ def upload_ssh_key(rollback=False):
            
         #determine local .ssh dir
         home = os.path.expanduser('~')
-    
+        ssh_key = None
+        upload_key = True
         ssh_dsa = os.path.join(home,'.ssh/id_dsa.pub')
         ssh_rsa =  os.path.join(home,'.ssh/id_rsa.pub')
-        if env.KEY_FILENAME:
-            if not os.path.exists(env.KEY_FILENAME):
-                print "ERROR: The specified KEY_FILENAME (or SSH_KEY_FILENAME) %s does not exist"% env.KEY_FILENAME
-                sys.exit(1)
-            else:
-                ssh_key = env.KEY_FILENAME
-        elif os.path.exists(ssh_dsa):
-            ssh_key = ssh_dsa
-        elif os.path.exists(ssh_rsa):
-            ssh_key = ssh_rsa
-        else:
-            ssh_key = ''
+        if env.key_filename and env.INTERACTIVE:
+                upload_key = confirm('Would you like to upload your personal key in addition to %s'% str(env.key_filename), default=True)
+        if upload_key:  
+            if os.path.exists(ssh_dsa):
+                ssh_key = ssh_dsa
+            elif os.path.exists(ssh_rsa):
+                ssh_key = ssh_rsa
     
         if ssh_key:
             ssh_file = open(ssh_key,'r').read()

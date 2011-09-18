@@ -1,7 +1,7 @@
 Tutorial
 ========
 
-A simple project is the best way to illustrate how to get started with woven.
+A simple django project is the best way to illustrate how to get started with woven (and django)
 
 Starting the project
 --------------------
@@ -10,13 +10,15 @@ Starting the project
 
     This first bit doesn't have much to do with woven, and is more about personal preference in setting up your development environment but lets walk through *one* way you can get setup. For this you probably want pip, virtualenv and virtualenvwrapper installed and working before you can begin.
 
-We're going to create a virtual python environment firstdjango. You don't need to do this but virtualenv makes it easy to experiment without polluting your system installed packages.
+We're going to create a virtual python environment ``first-django``. You don't need to do this but virtualenv makes it easy to experiment without polluting your system installed packages.
 
-``mkvirtualenv firstdjango --no-site-packages``
+``mkproject first-django``
 
-Activate the env if it isn't already.
+Activate the env if it isn't already..
 
-``workon firstdjango``
+``workon first-django``
+
+Finally create a first-django distribution directory if mkproject hasn't already created one.
 
 Okay lets get into woven.
 
@@ -25,30 +27,27 @@ Installing the packages
 
 Install woven - making sure it correctly installs in the virtualenv.
 
+``pip install django``
 ``pip install woven``
 
-It should also install django, fabric, and paramiko if they aren't already installed.
+It should also install fabric, and paramiko if they aren't already installed.
 
 Creating the distribution and project
 --------------------------------------
 
-Create a project distribution and files using woven's ``woven-admin.py`` script. A distribution is all the files including media and other data relating to the project wheras the project is just the Django project. We're going to call the distribution something different from the actual project.
+Create a project distribution and files using woven's ``woven-admin.py`` script. A distribution is all the files including media and other data relating to the project whereas the project is just the Django project. We're going to call the distribution something different from the actual project.
 
-``woven-admin.py startproject helloadmin woven@example.com --dist=firstdjango``
+``woven-admin.py startproject helloadmin woven@example.com --dist=first-django``
 
 ``woven-admin.py`` extends ``django-admin.py`` allowing us to use woven commands without adding woven itself to the ``INSTALLED_APPS`` setting. 
 
 You'll notice that it's a little different from ``django-admin.py startproject`` in that it creates a ``setup.py`` and a few other folders, and merges in the syncdb and creates a default superuser based on the user part of the optional email address (in this case 'woven') or the project name if you want one, though you can skip this behaviour with ``--nosyncdb``. As you'll discover, woven's ethos combines convenience with flexibility. Sometimes you need to get somewhere in a hurry, or just want a project you can throw away after using.
 
-The setup.py is where woven gets your distribution name, project name and project version metadata which is used in deployments, it's just not used to package your project... yet.
-
-.. Note::
-   
-   Versions are critical to woven, and how woven differs from most deployment tools. Woven deploys a separate virtualenv just like the one we created earlier for *each* version of your distribution. This means you don't destroy an existing working environment when you deploy a new version. You could use this feature to test different features, or simply to rollback from a failed release. Not that you'll ever have a failed release. Ever.
+The setup.py is where woven gets your distribution name, project name and project version metadata which is used in deployments, it's just not used to package your project... yet. That will come when it morphs into setup.cfg and uses distutils2.
 
 Woven's alternative to django's ``startproject`` also creates some sensible folders for media, static (app) content, templates, and database, and uses an alternative settings file from the django default. Nothing stopping you from changing it later if you want or you can also use ``startproject -t`` option to specify alternative starting templates for your project.
 
-In your urls.py we'll add a simple index page.::
+In the urls.py uncomment the admin lines then at the end of your urls.py we'll add a simple index page.::
 
    urlpatterns += patterns('django.views.generic.simple',
       (r'^$', 'direct_to_template', {'template': 'index.html'}),
@@ -68,6 +67,8 @@ Finally in your templates folder create an index.html template file::
 	</body>
 	</html>
 
+To add a package to the PYTHONPATH you would normally install it using setup.py, but since we're developing, link the project folder ``helloadmin`` into your site packages. I recommend these pylink/pyunlink shell scripts: https://gist.github.com/21649. I don't recommend using add2virtualenv since it puts the setup.py in the path.
+
 Change directory into the distribution folder (the one with setup.py in it) and run ``woven-admin.py runserver``, opening http://127.0.0.1:8000/ in your browser.
 
 ``woven-admin.py`` doesn't require you to set a DJANGO_SETTINGS_MODULE in the environment (though you can). Instead it infers your settings from the ``setup.py`` project name if you're somewhere under or in the setup.py folder, but you can also use ``--settings`` option as per normal.
@@ -77,24 +78,37 @@ If you have done everything right you should now see ``hello admin`` and be able
 Setting up your server
 ----------------------
 
-Although woven does allow you to scale your deployment to multiple nodes, it currently doesn't support creating the initial image, so for now you'll need to purchase and startup an Ubuntu virtual machine separately.
+Although woven does allow you to scale your deployment to multiple nodes, it doesn't support creating the initial image, so for now you'll need to purchase and startup an Ubuntu virtual machine separately.
 
-Obtain an Ubuntu 10.04 or greater VM on the host of your choice with root and ssh access. 
+Obtain an Ubuntu 10.04 or greater VM on the host of your choice with root and ssh access. For this tutorial I'm going to use a micro instance on Amazon EC2. See http://docs.amazonwebservices.com/AWSEC2/latest/GettingStartedGuide/ for how to get started on EC2.
+
+    1. Create a micro Ubuntu 10.04 x32instance ami-95c694d0 ebs on us-west (or similar) and a woven keypair.
+    2. Save the woven.pem key into your distribution folder
+    3. ``chmod 400 woven.pem``
+    4. Create a security group with ports 22,80,10022 tcp open
+    5. Create and associate an elastic IP to the instance
 
 Because django uses ``example.com`` as it's first site, we'll stick with that for this tutorial deployment. In your local ``/etc/hosts`` file add an entry for example.com pointing to the ip address of the ubuntu host (and on osx, run ``dscacheutil -flushcache`` just to be sure).
+
+Just to be sure - check that you can login to your ec2 instance::
+
+    ssh -i woven.pem ubuntu@example.com
 
 Setupnode
 ---------
 
-Now run setupnode to setup a baseline node.
+Now run setupnode to setup a baseline node for your intended user - in this case woven. The first thing woven will do is setup an additional user and if 'root' is the default user it will be disabled. It will also change the ssh port which is how woven determines that it has been pre-installed.
 
 .. code-block:: bash
 
-    woven-admin.py setupnode woven@example.com
-    
+    woven-admin.py setupnode -i woven.pem woven@example.com
+
+or for non ec2, just woven-admin.py setupnode woven@example.com
+Answer according to your instance. Your root user may vary according to the provider. In our case with ec2 it is `ubuntu`.
+
 .. Note:: 
 	
-	You might have noticed that setupnode uploads some files to the ubuntu ``etc`` directories. *Your node (host) configuration is stored in your project*. Woven allows you to define your own etc configuration files for ubuntu packages as standard django templates in your project. If you want to modify the woven default templates you can copy them from the installed woven package into a woven folder in your projects templates folder like any other django app templates.
+	You might have noticed that setupnode uploads some files to the ubuntu ``etc`` directories. *Your node (host) configuration is stored in your project*. Woven allows you to define your own etc configuration files for ubuntu packages as standard templates in your project. If you want to modify the woven default templates you can copy them from the installed woven package into a woven folder in your projects templates folder like any other django app templates.
 
 You can re-run setupnode at any time to alter your node configuration and update, upgrade and install new debian packages.
 
@@ -105,15 +119,20 @@ Deploy
 
 *Deploy early. Deploy often.*
 
-Lets deploy.
+Lets collect the static media assets and deploy.
 
 .. code-block:: bash
 
+    woven-admin.py collectstatic 
     woven-admin.py deploy woven@example.com
 
 Deploy sets up a virtual environment on the server and deploys your sqlite3 database, django, and your project and all your dependencies into it. Sqlite3 is the default but again there's nothing stopping you dumping to a file and importing into Postgres or Mysql.
 
 Everything in a deployment is versioned right down to the web configuration files. The only thing that isn't versioned is your database and MEDIA_ROOT. If you get errors, from misconfiguration or package installs, you can just fix your issue and run it again until it completes and activates your environment.
+
+.. Note::
+   
+   Versions are critical to woven, and how woven differs from most deployment tools. Woven deploys a separate virtualenv just like the one we created earlier for *each* version of your distribution. This means you don't destroy an existing working environment when you deploy a new version. You could use this feature to test different features, or simply to rollback from a failed release. Not that you'll ever have a failed release. Ever.
 
 You'll also notice woven has created a pip ``requirements.txt`` file and a ``sitesettings`` folder with a setting file inside. Requirements are your pip requirements for the project. The sitesettings.settings.py will import and override your local settings file on the node. 
 
@@ -139,9 +158,9 @@ The different subcommands are ``project|static|media|templates|webconf``
 Where to now
 ------------
 
-If you want to work directly on the server (perhaps you need to debug something in staging) you can SSH into your host and type::
+If you want to work directly on the server (perhaps you need to debug something in staging) you can ``ssh woven@example.com -p10022`` into your host and type::
 
-    workon hellodjango
+    workon helloadmin
     
 This will use virtualenvwrapper to activate your current virtualenv and drop you into the project sitesettings manage.py directory. A convenience manage.py is provided to run ./manage.py from there on the first site.
 
