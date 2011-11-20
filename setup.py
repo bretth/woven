@@ -31,5 +31,5 @@ setup(name='woven',
                    'Topic :: Software Development :: Libraries :: Python Modules',
                    'Topic :: Utilities'],
       long_description="See http://packages.python.org/woven/ for documentation",
-      install_requires=['Fabric','Paramiko'],
+      install_requires=['Fabric'],
       )
