@@ -8,7 +8,6 @@ from django.core.management.base import BaseCommand
 from django.core.management.color import no_style
 
 from fabric import state 
-from fabric.main import _merge
 from fabric.network import normalize
 from fabric.context_managers import hide,show
 
