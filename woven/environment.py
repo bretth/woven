@@ -406,8 +406,12 @@ def set_env(settings=None, setup_dir=''):
     #be used by woven or fabric
     env.MEDIA_ROOT = project_settings.MEDIA_ROOT
     env.MEDIA_URL = project_settings.MEDIA_URL
-    env.ADMIN_MEDIA_PREFIX = project_settings.ADMIN_MEDIA_PREFIX
-    if not env.STATIC_URL: env.STATIC_URL = project_settings.ADMIN_MEDIA_PREFIX
+    try:
+        env.ADMIN_MEDIA_PREFIX = project_settings.ADMIN_MEDIA_PREFIX
+    except AttributeError:
+        env.ADMIN_MEDIA_PREFIX = ''
+    if not env.STATIC_URL:
+        env.STATIC_URL = project_settings.ADMIN_MEDIA_PREFIX
     env.TEMPLATE_DIRS = project_settings.TEMPLATE_DIRS
     
     #Set the server /etc/timezone
